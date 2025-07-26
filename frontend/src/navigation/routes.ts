@@ -4,7 +4,7 @@ export const ROUTES = {
   
   // Main tabs
   MAIN: 'Main',
-  TODAY: 'Today',
+  DASHBOARD: 'Dashboard',
   BOOSTS: 'Boosts',
   PROFILE: 'Profile',
   
@@ -16,9 +16,12 @@ export const ROUTES = {
   
   // Submission screens
   SUBMISSIONS: 'Submissions',
+  AVAILABLE_MISSIONS: 'AvailableMissions',
   
-  // Payment screens
+  // Payment & Earnings screens
   PAYMENT: 'Payment',
+  EARNINGS: 'Earnings',
+  
   // Admin
   ADMIN_DECLARATIONS: 'AdminDeclarations',
 } as const;
