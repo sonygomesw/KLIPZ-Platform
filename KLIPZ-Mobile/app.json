@@ -1,0 +1,40 @@
+{
+  "expo": {
+    "name": "KLIPZ-Mobile",
+    "slug": "KLIPZ-Mobile",
+    "owner": "klipz25",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.klipz25.KLIPZMobile",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "scheme": "klipz",
+    "extra": {
+      "eas": {
+        "projectId": "dc372929-4117-4316-9a5f-db1a3116f695"
+      }
+    }
+  }
+}

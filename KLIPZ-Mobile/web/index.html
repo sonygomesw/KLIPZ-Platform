@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+  
+  <!-- Viewport meta tag for responsive design -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover" />
+  
+  <!-- Title and meta tags -->
+  <title>KLIPZ - Plateforme de Clips TikTok</title>
+  <meta name="description" content="KLIPZ - La plateforme qui connecte les créateurs TikTok avec les streamers pour des collaborations créatives" />
+  <meta name="keywords" content="TikTok, streaming, clips, créateurs, collaboration, KLIPZ" />
+  <meta name="author" content="KLIPZ" />
+  
+  <!-- Open Graph meta tags -->
+  <meta property="og:title" content="KLIPZ - Plateforme de Clips TikTok" />
+  <meta property="og:description" content="La plateforme qui connecte les créateurs TikTok avec les streamers" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://klipz.app" />
+  <meta property="og:image" content="/assets/icon.png" />
+  
+  <!-- Twitter meta tags -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="KLIPZ - Plateforme de Clips TikTok" />
+  <meta name="twitter:description" content="La plateforme qui connecte les créateurs TikTok avec les streamers" />
+  <meta name="twitter:image" content="/assets/icon.png" />
+  
+  <!-- Icons and manifest -->
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/icon.png" />
+  <link rel="manifest" href="/manifest.json" />
+  
+  <!-- Theme color -->
+  <meta name="theme-color" content="#4F46E5" />
+  <meta name="msapplication-TileColor" content="#4F46E5" />
+  
+  <!-- PWA optimizations -->
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="KLIPZ" />
+  
+  <!-- Prevent zoom on iOS -->
+  <meta name="format-detection" content="telephone=no" />
+  
+  <!-- Custom styles -->
+  <link rel="stylesheet" href="/styles.css" />
+  
+  <!-- Preload critical resources -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://js.stripe.com" />
+  
+  <style>
+    /* Critical CSS for immediate render */
+    #root {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    /* Loading screen */
+    .initial-loading {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #ffffff;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
+    
+    .loading-logo {
+      font-size: 32px;
+      font-weight: bold;
+      color: #4F46E5;
+      margin-bottom: 20px;
+    }
+    
+    .loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #4F46E5;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    /* Hide loading screen when app is ready */
+    .app-ready .initial-loading {
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Initial loading screen -->
+  <div class="initial-loading">
+    <div class="loading-logo">KLIPZ</div>
+    <div class="loading-spinner"></div>
+  </div>
+  
+  <!-- React app mount point -->
+  <div id="root"></div>
+  
+  <!-- Remove loading screen when app is ready -->
+  <script>
+    // Remove loading screen after app initialization
+    setTimeout(() => {
+      const loadingScreen = document.querySelector('.initial-loading');
+      if (loadingScreen) {
+        loadingScreen.style.opacity = '0';
+        loadingScreen.style.transition = 'opacity 0.3s ease';
+        setTimeout(() => {
+          loadingScreen.style.display = 'none';
+        }, 300);
+      }
+    }, 1000);
+    
+    // PWA install prompt
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      // Show install button or banner
+    });
+    
+    // Service worker registration
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then((registration) => {
+            console.log('SW registered: ', registration);
+          })
+          .catch((registrationError) => {
+            console.log('SW registration failed: ', registrationError);
+          });
+      });
+    }
+  </script>
+</body>
+</html>
