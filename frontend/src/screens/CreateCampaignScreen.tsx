@@ -19,7 +19,7 @@ import { COLORS, SIZES, FONTS, SHADOWS } from '../constants';
 import Button from '../components/Button';
 import InsufficientBalanceModal from '../components/InsufficientBalanceModal';
 import ImageCropper from '../components/ImageCropper';
-import campaignService, { CreateCampaignData } from '../services/campaignService';
+import { campaignService, CreateCampaignData } from '../services/campaignService';
 import { AuthUser } from '../services/authService';
 
 interface CreateCampaignScreenProps {
@@ -54,6 +54,9 @@ const CreateCampaignScreen: React.FC<CreateCampaignScreenProps> = ({
   const [showInsufficientBalanceModal, setShowInsufficientBalanceModal] = useState(false);
   const [showImageCropper, setShowImageCropper] = useState(false);
   const [tempImageUri, setTempImageUri] = useState<string | null>(null);
+  const [showNotification, setShowNotification] = useState(false);
+  const [notificationMessage, setNotificationMessage] = useState('');
+  const [notificationType, setNotificationType] = useState<'success' | 'error'>('success');
 
   const handleCreateCampaign = async () => {
     console.log('🔵 Début création campagne...');
@@ -62,47 +65,65 @@ const CreateCampaignScreen: React.FC<CreateCampaignScreenProps> = ({
     // Field validation
     if (!title.trim()) {
       console.log('❌ Titre manquant');
-      Alert.alert('Error', 'Title is required');
+      setNotificationMessage('Title is required');
+      setNotificationType('error');
+      setShowNotification(true);
       return;
     }
     if (!description.trim()) {
       console.log('❌ Description manquante');
-      Alert.alert('Error', 'Description is required');
+      setNotificationMessage('Description is required');
+      setNotificationType('error');
+      setShowNotification(true);
       return;
     }
     if (!budget.trim() || isNaN(Number(budget)) || Number(budget) <= 0) {
       console.log('❌ Budget invalide');
-      Alert.alert('Error', 'Budget must be a positive number');
+      setNotificationMessage('Budget must be a positive number');
+      setNotificationType('error');
+      setShowNotification(true);
       return;
     }
     if (!cpm.trim() || isNaN(Number(cpm)) || Number(cpm) <= 0) {
       console.log('❌ CPM invalide');
-      Alert.alert('Error', 'CPM must be a positive number');
+      setNotificationMessage('CPM must be a positive number');
+      setNotificationType('error');
+      setShowNotification(true);
       return;
     }
     if (!duration.trim() || isNaN(Number(duration)) || Number(duration) <= 0) {
       console.log('❌ Durée invalide');
-      Alert.alert('Error', 'Duration must be a positive number');
+      setNotificationMessage('Duration must be a positive number');
+      setNotificationType('error');
+      setShowNotification(true);
       return;
     }
     if (!minViews.trim() || isNaN(Number(minViews)) || Number(minViews) <= 0) {
       console.log('❌ Vues minimum invalides');
-      Alert.alert('Error', 'Minimum views per video must be a positive number');
+      setNotificationMessage('Minimum views per video must be a positive number');
+      setNotificationType('error');
+      setShowNotification(true);
       return;
     }
     if (enableFanPage && (!fanPageCpm.trim() || isNaN(Number(fanPageCpm)) || Number(fanPageCpm) <= 0)) {
       console.log('❌ CPM fan page invalide');
-      Alert.alert('Error', 'Pay per 1k view fan page must be a positive number');
+      setNotificationMessage('Pay per 1k view fan page must be a positive number');
+      setNotificationType('error');
+      setShowNotification(true);
       return;
     }
     if (!twitchLink.trim()) {
       console.log('❌ Lien Twitch manquant');
-      Alert.alert('Error', 'Twitch rediffusion link is required');
+      setNotificationMessage('Twitch rediffusion link is required');
+      setNotificationType('error');
+      setShowNotification(true);
       return;
     }
     if (!selectedImage && !imageUrl.trim()) {
       console.log('❌ Image manquante');
-      Alert.alert('Error', 'Campaign preview image is required');
+      setNotificationMessage('Campaign preview image is required');
+      setNotificationType('error');
+      setShowNotification(true);
       return;
     }
 
@@ -144,17 +165,20 @@ const CreateCampaignScreen: React.FC<CreateCampaignScreenProps> = ({
       
       console.log('✅ Campagne créée avec succès:', campaign);
       
-      Alert.alert(
-        'Success',
-        'Your campaign has been created successfully!',
-        [
-          { text: 'OK', onPress: () => onTabChange('Dashboard') },
-        ]
-      );
+      setNotificationMessage('Your campaign has been created successfully!');
+      setNotificationType('success');
+      setShowNotification(true);
+      
+      // Rediriger vers le Dashboard après 2 secondes
+      setTimeout(() => {
+        onTabChange('Dashboard');
+      }, 2000);
     } catch (error: any) {
       console.error('❌ Error creating campaign:', error);
       console.error('❌ Message d\'erreur:', error.message);
-      Alert.alert('Error', error.message || 'Failed to create campaign');
+      setNotificationMessage(error.message || 'Failed to create campaign');
+      setNotificationType('error');
+      setShowNotification(true);
     } finally {
       console.log('🔵 Fin de la création de campagne');
       setIsLoading(false);
@@ -502,6 +526,24 @@ const CreateCampaignScreen: React.FC<CreateCampaignScreenProps> = ({
         onCancel={handleImageCropCancel}
         aspectRatio={16/9}
       />
+
+      {/* Notification Modal */}
+      {showNotification && (
+        <View style={styles.notificationOverlay}>
+          <View style={[
+            styles.notificationContainer,
+            notificationType === 'success' ? styles.notificationSuccess : styles.notificationError
+          ]}>
+            <Text style={styles.notificationText}>{notificationMessage}</Text>
+            <TouchableOpacity 
+              style={styles.notificationButton}
+              onPress={() => setShowNotification(false)}
+            >
+              <Text style={styles.notificationButtonText}>OK</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
     </View>
   );
 };
@@ -1040,6 +1082,58 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '500',
+  },
+  notificationOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  notificationContainer: {
+    backgroundColor: '#1A1A1E',
+    borderRadius: 16,
+    padding: 24,
+    marginHorizontal: 32,
+    maxWidth: 400,
+    borderWidth: 1,
+    borderColor: '#2A2A2E',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 12,
+  },
+  notificationSuccess: {
+    borderColor: '#10B981',
+  },
+  notificationError: {
+    borderColor: '#EF4444',
+  },
+  notificationText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '500',
+    textAlign: 'center',
+    marginBottom: 20,
+    lineHeight: 24,
+  },
+  notificationButton: {
+    backgroundColor: '#6366F1',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    alignSelf: 'center',
+  },
+  notificationButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 });
 
