@@ -70,29 +70,41 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
 
   const loadStats = async () => {
     try {
+      console.log('🔵 loadStats - Début avec user:', user.id, 'role:', actualUserRole);
+      
       // Charger le solde du wallet
+      console.log('🔵 Chargement du solde wallet...');
       const balance = await StripeService.getWalletBalance(user.id);
+      console.log('🔵 Solde wallet récupéré:', balance);
       setWalletBalance(balance);
 
       if (actualUserRole === 'clipper') {
+        console.log('🔵 Chargement stats clipper...');
         const clipperStats = await dashboardService.getClipperStats(user.id);
+        console.log('🔵 Stats clipper récupérées:', clipperStats);
         setStats(clipperStats);
         
         const submissions = await dashboardService.getClipperRecentSubmissions(user.id, 3);
         setRecentSubmissions(submissions);
       } else {
+        console.log('🔵 Chargement stats streamer...');
         const streamerStats = await dashboardService.getStreamerStats(user.id);
+        console.log('🔵 Stats streamer récupérées:', streamerStats);
         setStats(streamerStats);
         
         const campaigns = await dashboardService.getStreamerRecentCampaigns(user.id, 3);
+        console.log('🔵 Campagnes récentes récupérées:', campaigns?.length || 0);
         setRecentCampaigns(campaigns);
 
         // Load all streamer campaigns for mission cards
+        console.log('🔵 Chargement toutes les campagnes streamer...');
         const allStreamerCampaigns = await campaignService.getStreamerCampaigns(user.id);
+        console.log('🔵 Toutes les campagnes streamer récupérées:', allStreamerCampaigns?.length || 0);
         setStreamerCampaigns(allStreamerCampaigns);
       }
     } catch (error) {
       console.error('❌ Error loading dashboard stats:', error);
+      console.error('❌ Détails de l\'erreur:', error.message);
       // Fallback sur des valeurs par défaut
       setStats({
         totalEarnings: 0,
