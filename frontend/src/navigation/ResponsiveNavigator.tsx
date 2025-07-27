@@ -45,10 +45,12 @@ const ResponsiveMain: React.FC<ResponsiveMainProps> = ({ user, onLogout }) => {
       case 'Earnings':
         return <EarningsScreen user={user} activeTab={currentRoute} onTabChange={setCurrentRoute} onSignOut={onLogout} />;
       case 'AdminDeclarations':
-        return <AdminDeclarationsScreen />;
+        return <AdminDeclarationsScreen user={user} activeTab={currentRoute} onTabChange={setCurrentRoute} onSignOut={onLogout} />;
       
       case 'CreateCampaign':
         return <CreateCampaignScreen user={user} activeTab={currentRoute} onTabChange={setCurrentRoute} onSignOut={onLogout} />;
+      case 'Payment':
+        return <PaymentScreen user={user} activeTab={currentRoute} onTabChange={setCurrentRoute} onSignOut={onLogout} />;
       case 'Submissions':
         return <SubmissionsScreen user={user} activeTab={currentRoute} onTabChange={setCurrentRoute} onSignOut={onLogout} />;
       case 'Profile':

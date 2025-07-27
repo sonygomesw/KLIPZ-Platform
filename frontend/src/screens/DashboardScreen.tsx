@@ -439,12 +439,15 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
               <View style={styles.balanceRight}>
                 <TouchableOpacity 
                   style={styles.simpleActionButton}
-                  onPress={() => setShowAddFundsModal(true)}
+                  onPress={() => onTabChange('Payment')}
                 >
                   <Ionicons name="add" size={36} color={COLORS.primarySolid} />
                   <Text style={styles.simpleActionText}>Add</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.simpleActionButton}>
+                <TouchableOpacity 
+                  style={styles.simpleActionButton}
+                  onPress={() => onTabChange('Payment')}
+                >
                   <Ionicons name="time" size={36} color={COLORS.primarySolid} />
                   <Text style={styles.simpleActionText}>History</Text>
                 </TouchableOpacity>
@@ -525,11 +528,17 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
                 <Text style={styles.balanceAmount}>{formatCurrency(walletBalance)}</Text>
               </View>
               <View style={styles.balanceRight}>
-                <TouchableOpacity style={styles.simpleActionButton}>
+                <TouchableOpacity 
+                  style={styles.simpleActionButton}
+                  onPress={() => onTabChange('Payment')}
+                >
                   <Ionicons name="arrow-down" size={36} color={COLORS.primarySolid} />
                   <Text style={styles.simpleActionText}>Withdraw</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.simpleActionButton}>
+                <TouchableOpacity 
+                  style={styles.simpleActionButton}
+                  onPress={() => onTabChange('Payment')}
+                >
                   <Ionicons name="time" size={36} color={COLORS.primarySolid} />
                   <Text style={styles.simpleActionText}>History</Text>
                 </TouchableOpacity>

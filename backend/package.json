@@ -1,0 +1,18 @@
+{
+  "name": "klipz-webhook-server",
+  "version": "1.0.0",
+  "description": "Simple webhook server for KLIPZ Stripe integration",
+  "main": "simple-webhook-server.js",
+  "scripts": {
+    "start": "node simple-webhook-server.js",
+    "dev": "nodemon simple-webhook-server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "stripe": "^14.21.0",
+    "@supabase/supabase-js": "^2.39.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+} 

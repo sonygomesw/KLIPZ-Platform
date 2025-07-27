@@ -21,6 +21,7 @@ import campaignService from '../services/campaignService';
 import Button from '../components/Button';
 import CampaignCard from '../components/CampaignCard';
 import ResponsiveLayout from '../components/ResponsiveLayout';
+import CampaignDetailScreen from './CampaignDetailScreen';
 
 const { width } = Dimensions.get('window');
 
@@ -44,6 +45,9 @@ const CampaignsListScreen: React.FC<CampaignsListScreenProps> = ({
   const [filters, setFilters] = useState<CampaignFilters>({
     sortBy: 'new',
   });
+  
+  // Calcul du nombre de colonnes basé sur la largeur de l'écran
+  const [numColumns, setNumColumns] = useState(3);
 
   useEffect(() => {
     loadCampaigns();
@@ -83,8 +87,15 @@ const CampaignsListScreen: React.FC<CampaignsListScreenProps> = ({
     setRefreshing(false);
   };
 
+  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
+
   const handleCampaignPress = (campaign: Campaign) => {
     console.log('Navigate to campaign:', campaign.id);
+    setSelectedCampaign(campaign);
+  };
+
+  const handleBackToCampaigns = () => {
+    setSelectedCampaign(null);
   };
 
   const handleCreateCampaign = () => {
@@ -111,15 +122,48 @@ const CampaignsListScreen: React.FC<CampaignsListScreenProps> = ({
     return views.toString();
   };
 
+  // Fonctions pour calculer la largeur des cartes (comme dans AvailableMissionsScreen)
+  const getCardWidth = () => {
+    if (numColumns === 1) return '100%'; // 1 colonne : pleine largeur
+    if (numColumns === 2) return '48%'; // 2 colonnes : 48% pour laisser de l'espace
+    return '31%'; // 3 colonnes : 31% pour laisser de l'espace
+  };
+
+  const getNameMaxWidth = () => {
+    if (numColumns === 1) return 600;
+    if (numColumns === 2) return 300;
+    return 180;
+  };
+
+  const getCardPaddingHorizontal = () => {
+    if (numColumns === 1) return 32;
+    if (numColumns === 2) return 28;
+    return 24;
+  };
+
+  const getCardMaxWidth = () => {
+    if (numColumns === 1) return 600;
+    return 'none';
+  };
+
   const renderModernCampaignCard = ({ item, index }: { item: Campaign; index: number }) => (
     <TouchableOpacity
-      style={[styles.missionCard, { marginTop: index === 0 ? 0 : 24 }]}
+      style={[
+        styles.missionCard,
+        {
+          width: getCardWidth(),
+          ...(typeof getCardMaxWidth() === 'number' ? { maxWidth: getCardMaxWidth() } : {}),
+          paddingHorizontal: getCardPaddingHorizontal(),
+          alignSelf: numColumns === 1 ? 'center' : 'stretch',
+          marginTop: index === 0 ? 0 : 24
+        }
+      ]}
       onPress={() => handleCampaignPress(item)}
       activeOpacity={0.8}
     >
-      {/* Header with avatar du streamer, nom et statut */}
+      {/* Header with avatar à gauche, nom+badge+followers au centre, prix bleu à droite aligné avec l'avatar */}
       <View style={styles.cardHeaderTwitchLike}>
-        {/* Avatar */}
+        {/* Avatar on the left */}
         {item.streamerAvatar || user?.profileImage ? (
           <Image 
             source={{ uri: item.streamerAvatar || user?.profileImage }} 
@@ -130,29 +174,34 @@ const CampaignsListScreen: React.FC<CampaignsListScreenProps> = ({
             <Ionicons name="person" size={20} color={COLORS.primarySolid} />
           </View>
         )}
-        {/* Block nom+info au centre */}
+        {/* Block nom+badge+followers au centre */}
         <View style={styles.centerNameFollowersBlockk}>
           <View style={styles.nameAndBadgeContainerRefactored}>
             <Text
-              style={[styles.streamerName, { maxWidth: 200 }]}
+              style={[styles.streamerName, { maxWidth: getNameMaxWidth() }]}
               numberOfLines={1}
               ellipsizeMode="tail"
             >
               {item.title}
             </Text>
+            <Image 
+              source={require('../../assets/twitch-badge.png')} 
+              style={styles.twitchBadge}
+            />
           </View>
           <Text style={styles.streamerFollowersRefactored}>
-            {item.status === 'active' ? 'Active' : 'Completed'}
+            {item.status === 'active' ? 'Active Campaign' : 'Completed'}
           </Text>
         </View>
-        {/* Status on the right */}
-        <View style={[styles.priceContainerRefactored, {
-          backgroundColor: item.status === 'active' ? '#4CAF50' : '#757575'
-        }]}>
-          <Text style={styles.priceText}>
-            {item.submissions?.length || 0} clips
-          </Text>
-        </View>
+        {/* Price gradient bleu moderne à droite */}
+        <LinearGradient
+          colors={['#4a5cf9', '#3c82f6']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
+          style={styles.priceContainerRefactored}
+        >
+          <Text style={[styles.priceText, { color: '#FFFFFF' }]}>${(item.cpm / 10).toFixed(2)} / 1K</Text>
+        </LinearGradient>
       </View>
 
       {/* Mission thumbnail */}
@@ -167,7 +216,7 @@ const CampaignsListScreen: React.FC<CampaignsListScreenProps> = ({
           ) : (
             <View style={styles.thumbnailPlaceholder}>
               <Ionicons name="videocam" size={40} color="#999" />
-              <Text style={styles.thumbnailText}>Mission Thumbnail</Text>
+              <Text style={styles.thumbnailText}>Campaign Preview</Text>
             </View>
           )}
         </View>
@@ -190,8 +239,8 @@ const CampaignsListScreen: React.FC<CampaignsListScreenProps> = ({
         </View>
         <View style={styles.statsRow}>
           <View style={styles.statItem}>
-            <Text style={styles.statLabel}>CPM</Text>
-            <Text style={styles.statValue}>${(item.cpm / 10).toFixed(2)}</Text>
+            <Text style={styles.statLabel}>Min view / video</Text>
+            <Text style={styles.statValue}>{formatViews(item.minViewsPerVideo || 10000)}</Text>
           </View>
           <View style={styles.statItem}>
             <Text style={styles.statLabel}>Views</Text>
@@ -205,12 +254,19 @@ const CampaignsListScreen: React.FC<CampaignsListScreenProps> = ({
             }}
           >
             <LinearGradient
-              colors={['#faf9f0', '#e8e6d9']}
+              colors={['#8B5CF6', '#7C3AED']}
               start={{ x: 0, y: 0 }}
               end={{ x: 0, y: 1 }}
               style={styles.participateGradient}
             >
-              <Text style={styles.participateText}>Manage</Text>
+              <View style={styles.participateButtonContent}>
+                <Image 
+                  source={require('../../assets/twitch-logo.jpg')} 
+                  style={styles.twitchLogoButton}
+                />
+                <Text style={[styles.participateText, { color: '#FFFFFF' }]}>Manage</Text>
+                <Ionicons name="add" size={45} color="#FFFFFF" style={{ marginLeft: 10 }} />
+              </View>
             </LinearGradient>
           </TouchableOpacity>
         </View>
@@ -417,20 +473,23 @@ const CampaignsListScreen: React.FC<CampaignsListScreenProps> = ({
           <Text style={styles.loadingText}>Loading missions...</Text>
         </View>
       ) : campaigns.length > 0 ? (
-      <FlatList
-        data={campaigns}
-          renderItem={renderModernCampaignCard}
-          keyExtractor={(item, index) => item.id?.toString() || index.toString()}
-        contentContainerStyle={styles.listContainer}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-              tintColor={COLORS.primary}
-          />
-        }
-        showsVerticalScrollIndicator={false}
-      />
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+        >
+          <View style={[
+            styles.missionsList,
+            {
+              justifyContent: numColumns === 1 ? 'center' : 'space-between',
+              gap: numColumns === 1 ? 20 : 16,
+            }
+          ]}>
+            {campaigns.map((campaign, index) => renderModernCampaignCard({ item: campaign, index }))}
+          </View>
+        </ScrollView>
       ) : (
         renderEmptyState()
       )}
@@ -450,6 +509,19 @@ const CampaignsListScreen: React.FC<CampaignsListScreenProps> = ({
     </View>
   );
 
+  // Si une campagne est sélectionnée, afficher la page de détail
+  if (selectedCampaign) {
+    return (
+      <CampaignDetailScreen
+        user={user}
+        campaign={selectedCampaign}
+        onBack={handleBackToCampaigns}
+        onTabChange={onTabChange}
+      />
+    );
+  }
+
+  // Sinon, afficher la liste des campagnes
   return campaignsContent;
 };
 
@@ -865,27 +937,23 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   priceContainerRefactored: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
     alignSelf: 'center',
-    minWidth: 130,
+    minWidth: 100,
     flexShrink: 0,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#E65100',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
-    borderWidth: 1,
-    borderColor: '#FF8C42',
-    borderBottomWidth: 3,
-    borderBottomColor: '#E65100',
+    shadowColor: '#4a5cf9',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
   },
   priceText: {
     color: '#FFFFFF',
-    fontSize: 26,
+    fontSize: 22,
     fontFamily: FONTS.bold,
     fontWeight: 'semibold',
     textAlign: 'center',
@@ -1005,6 +1073,38 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#374151',
     textAlign: 'center',
+  },
+  twitchBadge: {
+    width: 20,
+    height: 20,
+    marginLeft: 6,
+  },
+  participateButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  twitchLogoButton: {
+    width: 24,
+    height: 24,
+    marginRight: 8,
+    borderRadius: 4,
+  },
+  scrollView: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
+  scrollContent: {
+    paddingBottom: 100,
+  },
+  missionsList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    width: '100%',
+    paddingHorizontal: 16,
+    minWidth: 0,
   },
 });
 

@@ -1,5 +1,6 @@
 import { supabase, supabaseUtils } from '../config/supabase';
 import { Campaign, Submission, CampaignFilters } from '../types';
+import ScrapingService from './scrapingService';
 
 export interface CreateCampaignData {
   title: string;
@@ -349,40 +350,50 @@ class CampaignService {
   // Soumettre un clip pour une campagne
   async submitClip(clipperId: string, data: SubmitClipData): Promise<Submission> {
     try {
+      console.log('🔵 submitClip - Début de soumission pour clipper:', clipperId);
+      
       // Vérifier que la campagne existe et est active
       const campaign = await this.getCampaignById(data.campaignId);
       if (campaign.status !== 'active') {
         throw new Error('Cette campagne n\'est plus active');
       }
 
-      // Vérifier que le clipper n'a pas déjà soumis pour cette campagne
-      // TEMPORAIREMENT DÉSACTIVÉ pour permettre plusieurs soumissions
-      /*
-      const { data: existingSubmission, error: existingError } = await supabase
-        .from('submissions')
-        .select('id')
-        .eq('campaign_id', data.campaignId)
-        .eq('clipper_id', clipperId)
-        .single();
-
-      if (existingSubmission) {
-        throw new Error('Vous avez déjà soumis un clip pour cette campagne');
-      }
-      */
-
       // Valider l'URL TikTok
       if (!this.validateTikTokUrl(data.tiktokUrl)) {
         throw new Error('URL TikTok invalide');
       }
 
-      // Créer la soumission
-      const submissionData: any = { // Changed to any as Database type is removed
+      // Scraper automatiquement les vues TikTok
+      console.log('🔵 submitClip - Scraping des vues pour:', data.tiktokUrl);
+      let scrapedViews = 0;
+      try {
+        const result = await ScrapingService.scrapeSingleUrl(data.tiktokUrl);
+        scrapedViews = result.views;
+        console.log('🔵 submitClip - Vues scrapées:', scrapedViews);
+      } catch (scrapingError) {
+        console.warn('⚠️ submitClip - Erreur scraping, utilisation de 0 vues:', scrapingError);
+        scrapedViews = 0;
+      }
+
+      // Calculer les gains basés sur les vues réelles
+      const earnings = this.calculateEarnings(scrapedViews, campaign.cpm);
+      console.log('🔵 submitClip - Gains calculés:', earnings, 'pour', scrapedViews, 'vues');
+
+      // Déterminer le statut initial
+      let initialStatus = 'pending';
+      if (scrapedViews >= campaign.criteria.minViews) {
+        initialStatus = 'auto_approved'; // Nouveau statut pour validation automatique
+        console.log('🔵 submitClip - Clip auto-approuvé (seuil atteint)');
+      }
+
+      // Créer la soumission avec les vues réelles
+      const submissionData: any = {
         campaign_id: data.campaignId,
         clipper_id: clipperId,
         tiktok_url: data.tiktokUrl,
-        status: 'pending',
-        views: 0,
-        earnings: 0,
+        status: initialStatus,
+        views: scrapedViews, // Vues réelles scrapées
+        earnings: earnings,
         submitted_at: new Date().toISOString(),
       };
 
@@ -399,9 +410,15 @@ class CampaignService {
 
       if (error) throw error;
 
+      // Si auto-approuvé, payer automatiquement le clipper
+      if (initialStatus === 'auto_approved' && earnings > 0) {
+        console.log('🔵 submitClip - Paiement automatique pour clipper:', clipperId);
+        await this.payClipper(clipperId, earnings);
+      }
+
       return this.formatSubmission(submissionResult);
     } catch (error) {
-      console.error('Error lors de la soumission du clip:', error);
+      console.error('❌ Error lors de la soumission du clip:', error);
       throw error;
     }
   }
@@ -634,6 +651,45 @@ class CampaignService {
   private validateTikTokUrl(url: string): boolean {
     const tiktokUrlPattern = /^https?:\/\/(www\.)?tiktok\.com\/@[a-zA-Z0-9._]+\/video\/\d+$/;
     return tiktokUrlPattern.test(url);
+  }
+
+  // Calculer les gains basés sur les vues et le CPM
+  private calculateEarnings(views: number, cpm: number): number {
+    return (views / 1000) * cpm;
+  }
+
+  // Payer automatiquement un clipper
+  private async payClipper(clipperId: string, amount: number): Promise<void> {
+    try {
+      console.log('🔵 payClipper - Paiement de', amount, '€ pour clipper:', clipperId);
+      
+      // Récupérer le solde actuel du clipper
+      const { data: user, error: userError } = await supabase
+        .from('users')
+        .select('balance')
+        .eq('id', clipperId)
+        .single();
+
+      if (userError || !user) {
+        throw new Error('Utilisateur introuvable');
+      }
+
+      // Mettre à jour le solde
+      const newBalance = Number(user.balance || 0) + amount;
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ balance: newBalance })
+        .eq('id', clipperId);
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      console.log('✅ payClipper - Solde mis à jour:', newBalance, '€');
+    } catch (error) {
+      console.error('❌ payClipper - Erreur lors du paiement:', error);
+      throw error;
+    }
   }
 }
 

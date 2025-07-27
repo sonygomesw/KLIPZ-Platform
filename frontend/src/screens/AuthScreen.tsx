@@ -33,49 +33,73 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleStreamerAuth = async () => {
+    console.log('🔵 handleStreamerAuth appelé');
+    console.log('🔵 État actuel:', { isLogin, email, password, confirmPassword, twitchUrl });
+    
+    console.log('🔵 Vérification des champs...');
     if (!email || !password) {
+      console.log('❌ Champs manquants');
       Alert.alert('Error', 'Please fill in all fields');
       return;
     }
+    console.log('✅ Champs email/password OK');
 
     // For registration, also check Twitch URL
     if (!isLogin) {
+      console.log('🔵 Mode inscription - vérifications supplémentaires...');
+      
       if (!twitchUrl) {
+        console.log('❌ URL Twitch manquante');
         Alert.alert('Error', 'Please fill in all fields');
         return;
       }
+      console.log('✅ URL Twitch présente');
       
       // Validate Twitch URL
+      console.log('🔵 Validation URL Twitch...');
       if (!authService.validateTwitchUrl(twitchUrl)) {
+        console.log('❌ URL Twitch invalide');
         Alert.alert('Error', 'Invalid Twitch URL. Expected format: https://twitch.tv/your_channel');
         return;
       }
+      console.log('✅ URL Twitch valide');
       
       // Check password confirmation for registration
+      console.log('🔵 Vérification confirmation mot de passe...');
       if (password !== confirmPassword) {
+        console.log('❌ Mots de passe différents');
         Alert.alert('Error', 'Passwords do not match');
         return;
       }
+      console.log('✅ Mots de passe identiques');
     }
 
+    console.log('🔵 Début du processus d\'authentification...');
     setIsLoading(true);
     try {
       if (isLogin) {
+        console.log('🔵 Mode connexion...');
         // Streamer login - only email/password
         const user = await authService.signIn(email, password);
+        console.log('✅ Connexion réussie:', user);
         onAuthSuccess(user);
       } else {
+        console.log('🔵 Mode inscription...');
         // Streamer registration
+        console.log('🔵 Appel de signUpStreamer...');
         const user = await authService.signUpStreamer({
           email,
           password,
           twitchUrl,
         });
         
+        console.log('✅ Inscription réussie:', user);
         onAuthSuccess(user);
       }
     } catch (error: any) {
-      console.error('Error d\'authentification streamer:', error);
+      console.error('❌ Error d\'authentification streamer:', error);
+      console.error('❌ Message d\'erreur:', error.message);
+      console.error('❌ Stack:', error.stack);
       
       if (error.message?.includes('Invalid login credentials')) {
         Alert.alert('Error', 'Incorrect email or password');
@@ -87,6 +111,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
         Alert.alert('Error', 'Authentication failed. Please try again.');
       }
     } finally {
+      console.log('🔵 Fin du processus d\'authentification');
       setIsLoading(false);
     }
   };
@@ -359,7 +384,12 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
 
             <Button
               title={isLogin ? "Sign In" : "Sign Up"}
-              onPress={handleStreamerAuth}
+              onPress={() => {
+                console.log('🔵 Bouton cliqué !');
+                console.log('🔵 isLogin:', isLogin);
+                console.log('🔵 Titre du bouton:', isLogin ? "Sign In" : "Sign Up");
+                handleStreamerAuth();
+              }}
               loading={isLoading}
               style={styles.authButton}
             />

@@ -17,6 +17,8 @@ import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, SIZES, FONTS, SHADOWS } from '../constants';
 import Button from '../components/Button';
+import InsufficientBalanceModal from '../components/InsufficientBalanceModal';
+import ImageCropper from '../components/ImageCropper';
 import campaignService, { CreateCampaignData } from '../services/campaignService';
 import { AuthUser } from '../services/authService';
 
@@ -49,76 +51,89 @@ const CreateCampaignScreen: React.FC<CreateCampaignScreenProps> = ({
   const [fanPageCpm, setFanPageCpm] = useState('0.5');
   const [isLoading, setIsLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
+  const [showInsufficientBalanceModal, setShowInsufficientBalanceModal] = useState(false);
+  const [showImageCropper, setShowImageCropper] = useState(false);
+  const [tempImageUri, setTempImageUri] = useState<string | null>(null);
 
   const handleCreateCampaign = async () => {
+    console.log('🔵 Début création campagne...');
+    console.log('🔵 Données du formulaire:', { title, description, budget, cpm, minViews, twitchLink, selectedImage, imageUrl });
+    
     // Field validation
     if (!title.trim()) {
+      console.log('❌ Titre manquant');
       Alert.alert('Error', 'Title is required');
       return;
     }
     if (!description.trim()) {
-      Alert.alert('Error', 'Description is required');
-      return;
-    }
-    if (!hashtags.trim()) {
-      Alert.alert('Error', 'At least one hashtag is required');
-      return;
-    }
-    if (!description.trim()) {
+      console.log('❌ Description manquante');
       Alert.alert('Error', 'Description is required');
       return;
     }
     if (!budget.trim() || isNaN(Number(budget)) || Number(budget) <= 0) {
+      console.log('❌ Budget invalide');
       Alert.alert('Error', 'Budget must be a positive number');
       return;
     }
     if (!cpm.trim() || isNaN(Number(cpm)) || Number(cpm) <= 0) {
+      console.log('❌ CPM invalide');
       Alert.alert('Error', 'CPM must be a positive number');
       return;
     }
     if (!duration.trim() || isNaN(Number(duration)) || Number(duration) <= 0) {
+      console.log('❌ Durée invalide');
       Alert.alert('Error', 'Duration must be a positive number');
       return;
     }
     if (!minViews.trim() || isNaN(Number(minViews)) || Number(minViews) <= 0) {
+      console.log('❌ Vues minimum invalides');
       Alert.alert('Error', 'Minimum views per video must be a positive number');
       return;
     }
     if (enableFanPage && (!fanPageCpm.trim() || isNaN(Number(fanPageCpm)) || Number(fanPageCpm) <= 0)) {
+      console.log('❌ CPM fan page invalide');
       Alert.alert('Error', 'Pay per 1k view fan page must be a positive number');
       return;
     }
     if (!twitchLink.trim()) {
+      console.log('❌ Lien Twitch manquant');
       Alert.alert('Error', 'Twitch rediffusion link is required');
       return;
     }
     if (!selectedImage && !imageUrl.trim()) {
+      console.log('❌ Image manquante');
+      Alert.alert('Error', 'Campaign preview image is required');
+      return;
+    }
+    if (!selectedImage && !imageUrl.trim()) {
+      console.log('❌ Image manquante');
       Alert.alert('Error', 'Campaign preview image is required');
       return;
     }
 
+    console.log('✅ Toutes les validations passées');
+
     // Check available balance
+    console.log('🔍 Vérification du solde - user.balance:', user.balance, 'budget:', Number(budget));
     if (user.balance < Number(budget)) {
-      Alert.alert(
-        'Insufficient Balance',
-        `Your current balance is $${user.balance.toFixed(2)}. You need $${Number(budget).toFixed(2)} to create this campaign.`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Add Funds', onPress: () => onTabChange('Payment') },
-        ]
-      );
+      console.log('❌ Solde insuffisant:', user.balance, '<', Number(budget));
+      setShowInsufficientBalanceModal(true);
       return;
     }
 
+    console.log('✅ Solde suffisant');
+
     setIsLoading(true);
     try {
+      console.log('🔵 Préparation des données de campagne...');
+      
       const campaignData: CreateCampaignData = {
         title: title.trim(),
         description: description.trim(),
         imageUrl: selectedImage || imageUrl.trim() || undefined,
         criteria: {
-          hashtags: hashtags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0),
-          style: description.trim(),
+          hashtags: [], // On utilise les requirements TikTok à la place
+          style: tiktokRequirements.trim(),
           duration: Number(duration),
           minViews: Number(minViews),
         },
@@ -127,7 +142,12 @@ const CreateCampaignScreen: React.FC<CreateCampaignScreenProps> = ({
         fanPageCpm: enableFanPage ? Number(fanPageCpm) : null,
       };
 
+      console.log('🔵 Données de campagne préparées:', campaignData);
+      console.log('🔵 Appel du service de création...');
+
       const campaign = await campaignService.createCampaign(user.id, campaignData);
+      
+      console.log('✅ Campagne créée avec succès:', campaign);
       
       Alert.alert(
         'Success',
@@ -137,9 +157,11 @@ const CreateCampaignScreen: React.FC<CreateCampaignScreenProps> = ({
         ]
       );
     } catch (error: any) {
-      console.error('Error creating campaign:', error);
+      console.error('❌ Error creating campaign:', error);
+      console.error('❌ Message d\'erreur:', error.message);
       Alert.alert('Error', error.message || 'Failed to create campaign');
     } finally {
+      console.log('🔵 Fin de la création de campagne');
       setIsLoading(false);
     }
   };
@@ -157,26 +179,58 @@ const CreateCampaignScreen: React.FC<CreateCampaignScreenProps> = ({
   };
 
   const pickImage = async () => {
-    // Demander permission
-    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    console.log('🔍 pickImage - Début de la fonction');
     
-    if (permissionResult.granted === false) {
-      Alert.alert('Permission Required', 'Permission to access camera roll is required!');
-      return;
-    }
+    try {
+      // Test simple d'abord
+      console.log('🔍 pickImage - Test de base...');
+      
+      // Demander permission
+      console.log('🔍 pickImage - Demande de permission...');
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      console.log('🔍 pickImage - Permission result:', permissionResult);
+      
+      if (permissionResult.granted === false) {
+        console.log('❌ pickImage - Permission refusée');
+        Alert.alert('Permission Required', 'Permission to access camera roll is required!');
+        return;
+      }
 
-    // Lancer le sélecteur d'image
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [16, 9], // Format 16:9 pour les campagnes
-      quality: 0.8,
-    });
+      // Lancer le sélecteur d'image sans recadrage automatique
+      console.log('🔍 pickImage - Lancement du sélecteur d\'image...');
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images, // Retour à l'ancienne API
+        allowsEditing: false, // On désactive le recadrage automatique
+        quality: 0.8,
+      });
 
-    if (!result.canceled && result.assets[0]) {
-      setSelectedImage(result.assets[0].uri);
-      setImageUrl(''); // Clear URL si une image est sélectionnée
+      console.log('🔍 pickImage - Résultat du sélecteur:', result);
+
+      if (!result.canceled && result.assets && result.assets[0]) {
+        console.log('✅ pickImage - Image sélectionnée:', result.assets[0].uri);
+        // Pour le test, on met directement l'image sans recadrage
+        setSelectedImage(result.assets[0].uri);
+        setImageUrl('');
+        console.log('✅ pickImage - Image définie directement');
+      } else {
+        console.log('❌ pickImage - Aucune image sélectionnée ou annulé');
+      }
+    } catch (error) {
+      console.error('❌ pickImage - Erreur:', error);
+      Alert.alert('Error', 'Failed to pick image: ' + error.message);
     }
+  };
+
+  const handleImageCrop = (croppedImageUri: string) => {
+    setSelectedImage(croppedImageUri);
+    setImageUrl(''); // Clear URL si une image est sélectionnée
+    setShowImageCropper(false);
+    setTempImageUri(null);
+  };
+
+  const handleImageCropCancel = () => {
+    setShowImageCropper(false);
+    setTempImageUri(null);
   };
 
   const removeImage = () => {
@@ -367,10 +421,16 @@ const CreateCampaignScreen: React.FC<CreateCampaignScreenProps> = ({
                    </Text>
                    
                    {!selectedImage ? (
-                     <TouchableOpacity style={styles.imageUploadButton} onPress={pickImage}>
+                     <TouchableOpacity 
+                       style={styles.imageUploadButton} 
+                       onPress={() => {
+                         console.log('🔍 Bouton Upload Image cliqué');
+                         pickImage();
+                       }}
+                     >
                        <Ionicons name="cloud-upload-outline" size={32} color="#4F46E5" />
                        <Text style={styles.imageUploadText}>Upload Image</Text>
-                       <Text style={styles.imageUploadSubtext}>Click to select an image</Text>
+                       <Text style={styles.imageUploadSubtext}>Click to select and crop an image</Text>
                      </TouchableOpacity>
                    ) : (
                      <View style={styles.selectedImageContainer}>
@@ -381,6 +441,15 @@ const CreateCampaignScreen: React.FC<CreateCampaignScreenProps> = ({
                        />
                        <TouchableOpacity style={styles.removeImageButton} onPress={removeImage}>
                          <Ionicons name="close" size={20} color={COLORS.error} />
+                       </TouchableOpacity>
+                       <TouchableOpacity 
+                         style={styles.cropImageButton} 
+                         onPress={() => {
+                           setTempImageUri(selectedImage);
+                           setShowImageCropper(true);
+                         }}
+                       >
+                         <Ionicons name="crop" size={16} color={COLORS.white} />
                        </TouchableOpacity>
                      </View>
                    )}
@@ -404,13 +473,40 @@ const CreateCampaignScreen: React.FC<CreateCampaignScreenProps> = ({
            
            {/* Create Button - Inside scroll, after content */}
            <View style={styles.createButtonContainer}>
-             <TouchableOpacity style={styles.createButton} onPress={handleCreateCampaign}>
+             <TouchableOpacity 
+               style={styles.createButton} 
+               onPress={() => {
+                 console.log('🔵 Bouton Create Campaign cliqué');
+                 handleCreateCampaign();
+               }}
+             >
                <Text style={styles.createButtonText}>Create Campaign</Text>
              </TouchableOpacity>
            </View>
         </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
+
+      {/* Insufficient Balance Modal */}
+      <InsufficientBalanceModal
+        visible={showInsufficientBalanceModal}
+        currentBalance={user.balance}
+        requiredAmount={Number(budget) || 0}
+        onClose={() => setShowInsufficientBalanceModal(false)}
+        onAddFunds={() => {
+          setShowInsufficientBalanceModal(false);
+          onTabChange('Payment');
+        }}
+      />
+
+      {/* Image Cropper Modal */}
+      <ImageCropper
+        visible={showImageCropper}
+        imageUri={tempImageUri || ''}
+        onCrop={handleImageCrop}
+        onCancel={handleImageCropCancel}
+        aspectRatio={16/9}
+      />
     </View>
   );
 };
@@ -803,6 +899,17 @@ const styles = StyleSheet.create({
     top: 8,
     right: 8,
     backgroundColor: '#1A1A1E',
+    borderRadius: 20,
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cropImageButton: {
+    position: 'absolute',
+    top: 8,
+    right: 48,
+    backgroundColor: '#4F46E5',
     borderRadius: 20,
     width: 32,
     height: 32,

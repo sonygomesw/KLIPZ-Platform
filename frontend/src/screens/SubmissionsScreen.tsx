@@ -22,6 +22,7 @@ import campaignService from '../services/campaignService';
 import Button from '../components/Button';
 import declarationsService, { Declaration } from '../services/viewsDeclarationService';
 import { supabase } from '../config/supabase';
+import { scrapingService } from '../services/scrapingService';
 
 const { width } = Dimensions.get('window');
 
@@ -78,6 +79,38 @@ const SubmissionsScreen: React.FC<SubmissionsScreenProps> = ({ user, navigation 
     Linking.openURL(url).catch(() => {
       Alert.alert('Error', 'Impossible d\'ouvrir le lien TikTok');
     });
+  };
+
+  const handleTestScraping = async (submission: Submission) => {
+    // Vérification de sécurité - seuls les admins peuvent tester le scraping
+    if (user.role !== 'admin') {
+      Alert.alert('❌ Access Denied', 'Only administrators can test scraping functionality.');
+      return;
+    }
+
+    try {
+      Alert.alert(
+        '🔍 Test Scraping (Admin Only)',
+        `Voulez-vous tester le scraping pour cette soumission ?\n\nURL: ${submission.tiktokUrl}`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Test', onPress: async () => {
+            try {
+              console.log('🔍 Admin testing scraping for submission:', submission.id);
+              const result = await scrapingService.scrapeSingleUrl(submission.tiktokUrl);
+              Alert.alert(
+                '✅ Scraping Result',
+                `Views scraped: ${result.views.toLocaleString()}\n\nThis is a test value for development.`
+              );
+            } catch (error: any) {
+              Alert.alert('❌ Error', error.message || 'Failed to scrape views');
+            }
+          }}
+        ]
+      );
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to test scraping');
+    }
   };
 
   const formatCurrency = (amount: number | undefined) => {
@@ -247,9 +280,19 @@ const SubmissionsScreen: React.FC<SubmissionsScreenProps> = ({ user, navigation 
                 </View>
               </View>
               <View style={styles.actionsCell}>
-                <TouchableOpacity style={styles.actionButton}>
-                  <Ionicons name="ellipsis-horizontal" size={16} color="#6B7280" />
-                </TouchableOpacity>
+                {user.role === 'admin' && (
+                  <TouchableOpacity 
+                    style={styles.actionButton}
+                    onPress={() => handleTestScraping(submission)}
+                  >
+                    <Ionicons name="refresh" size={16} color="#4a5cf9" />
+                  </TouchableOpacity>
+                )}
+                {user.role !== 'admin' && (
+                  <TouchableOpacity style={styles.actionButton}>
+                    <Ionicons name="ellipsis-horizontal" size={16} color="#6B7280" />
+                  </TouchableOpacity>
+                )}
               </View>
             </View>
           ))

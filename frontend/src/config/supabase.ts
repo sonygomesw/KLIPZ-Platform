@@ -18,10 +18,9 @@ console.log('Key:', supabaseAnonKey ? '✅ Définie' : '❌ Manquante');
 
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
-    // Désactiver la persistance automatique qui peut causer des problèmes
-    storage: undefined,
-    autoRefreshToken: true,
-    persistSession: true,
+    // Configuration pour la persistance de session
+    autoRefreshToken: true,  // Activer le refresh automatique
+    persistSession: true,    // Activer la persistance de session
     detectSessionInUrl: false,
   },
 });

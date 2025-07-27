@@ -5,743 +5,645 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Alert,
   Image,
-  TextInput,
-  Modal,
+  Alert,
+  RefreshControl,
   SafeAreaView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS, SIZES, FONTS, SHADOWS } from '../constants';
+import { COLORS, SIZES, FONTS } from '../constants';
 import { Campaign, Submission, User } from '../types';
 import campaignService from '../services/campaignService';
-import Button from '../components/Button';
-import ResponsiveLayout from '../components/ResponsiveLayout';
 
 interface CampaignDetailScreenProps {
   user: User;
-  activeTab?: string;
+  campaign: Campaign;
+  onBack: () => void;
   onTabChange?: (tab: string) => void;
-  onSignOut?: () => void;
 }
 
 const CampaignDetailScreen: React.FC<CampaignDetailScreenProps> = ({
   user,
-  activeTab = 'Dashboard',
+  campaign,
+  onBack,
   onTabChange = () => {},
-  onSignOut = () => {}
 }) => {
-  const [campaign, setCampaign] = useState<Campaign>({} as Campaign);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [showSubmitModal, setShowSubmitModal] = useState(false);
-  const [tiktokUrl, setTiktokUrl] = useState('');
-  const [submitting, setSubmitting] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [activeTab, setActiveTab] = useState<'overview' | 'submissions' | 'settings'>('overview');
 
   useEffect(() => {
-    // For My Clips, we load the streamer's campaigns
-    if (user.role === 'streamer') {
-      loadStreamerCampaigns();
-    }
-  }, []);
-
-  const loadStreamerCampaigns = async () => {
-    try {
-      const campaigns = await campaignService.getStreamerCampaigns(user.id);
-      if (campaigns.length > 0) {
-        setCampaign(campaigns[0]); // Take the first campaign as an example
-        loadSubmissions();
-      }
-    } catch (error) {
-      console.error('❌ Error loading streamer campaigns:', error);
-    }
-  };
+    loadSubmissions();
+  }, [campaign.id]);
 
   const loadSubmissions = async () => {
     try {
-      if (campaign.id) {
+      setLoading(true);
       const submissionsData = await campaignService.getCampaignSubmissions(campaign.id);
       setSubmissions(submissionsData);
-      }
     } catch (error) {
-      console.error('Error loading des soumissions:', error);
+      console.error('Error loading submissions:', error);
+      Alert.alert('Error', 'Unable to load submissions');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleSubmitClip = async () => {
-    if (!tiktokUrl.trim()) {
-      Alert.alert('Error', 'Veuillez entrer une URL TikTok valide');
-      return;
-    }
-
-    setSubmitting(true);
-    try {
-      // Submit participation directly to the campaign
-      await campaignService.submitClip(user.id, {
-        campaignId: campaign.id,
-        tiktokUrl: tiktokUrl.trim(),
-        views: 0, // Les vues seront déclarées plus tard
-        earnings: 0 // Les gains seront calculés plus tard
-      });
-
-      setShowSubmitModal(false);
-      setTiktokUrl('');
-      
-      Alert.alert(
-        'Participation soumise !',
-        'Votre clip a été soumis avec succès. Vous pourrez déclarer vos vues plus tard dans "Mes Déclarations".',
-        [{ text: 'OK' }]
-      );
-    } catch (error: any) {
-      Alert.alert('Error', error.message || 'Submission failed');
-    } finally {
-      setSubmitting(false);
-    }
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadSubmissions();
+    setRefreshing(false);
   };
 
   const handleApproveSubmission = async (submissionId: string) => {
     try {
       await campaignService.approveSubmission(submissionId);
-      loadSubmissions();
-      Alert.alert('Success', 'Soumission approuvée !');
-    } catch (error: any) {
-      Alert.alert('Error', error.message || 'Échec de l\'approbation');
+      Alert.alert('Success', 'Submission approved!');
+      loadSubmissions(); // Reload to update status
+    } catch (error) {
+      console.error('Error approving submission:', error);
+      Alert.alert('Error', 'Failed to approve submission');
     }
   };
 
   const handleRejectSubmission = async (submissionId: string) => {
     try {
       await campaignService.rejectSubmission(submissionId);
-      loadSubmissions();
-      Alert.alert('Success', 'Soumission rejetée');
-    } catch (error: any) {
-      Alert.alert('Error', error.message || 'Rejection failed');
+      Alert.alert('Success', 'Submission rejected!');
+      loadSubmissions(); // Reload to update status
+    } catch (error) {
+      console.error('Error rejecting submission:', error);
+      Alert.alert('Error', 'Failed to reject submission');
     }
   };
 
-  const formatCurrency = (amount: number | undefined) => {
-    if (amount === undefined || amount === null) return '€0.00';
-    return `€${amount.toFixed(2)}`;
+  const formatCurrency = (amount: number) => {
+    return `$${amount.toFixed(2)}`;
   };
 
-  const formatFollowers = (followers: number | undefined) => {
-    if (followers === undefined || followers === null) return '0';
-    if (followers >= 1000000) {
-      return `${(followers / 1000000).toFixed(1)}M`;
-    } else if (followers >= 1000) {
-      return `${(followers / 1000).toFixed(1)}K`;
-    }
-    return followers.toString();
+  const formatViews = (views: number) => {
+    if (views >= 1000000) return `${(views / 1000000).toFixed(1)}M`;
+    if (views >= 1000) return `${(views / 1000).toFixed(1)}K`;
+    return views.toString();
   };
-
-  const getProgressPercentage = () => {
-    if (campaign.budget === 0) return 0;
-    return Math.min((campaign.totalSpent / campaign.budget) * 100, 100);
-  };
-
-  const getProgressColor = () => {
-    const percentage = getProgressPercentage();
-    if (percentage < 50) return '#FF6B35';
-    if (percentage < 80) return '#FFB84D';
-    return '#4CAF50';
-  };
-
-  const renderSubmitModal = () => (
-    <Modal
-      visible={showSubmitModal}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={() => setShowSubmitModal(false)}
-    >
-      <SafeAreaView style={styles.modalContainer}>
-        <View style={styles.modalHeader}>
-          <TouchableOpacity onPress={() => setShowSubmitModal(false)}>
-            <Text style={styles.modalCancel}>Cancel</Text>
-          </TouchableOpacity>
-          <Text style={styles.modalTitle}>Soumettre votre clip</Text>
-          <View style={styles.placeholder} />
-        </View>
-
-        <ScrollView style={styles.modalContent}>
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>URL TikTok *</Text>
-            <TextInput
-              style={styles.input}
-              value={tiktokUrl}
-              onChangeText={setTiktokUrl}
-              placeholder="https://tiktok.com/@username/video/123456789"
-              placeholderTextColor={COLORS.textLight}
-              autoCapitalize="none"
-              keyboardType="url"
-            />
-            <Text style={styles.helperText}>
-              Copy the full URL of your TikTok video for this campaign
-            </Text>
-          </View>
-
-          <View style={styles.criteriaCard}>
-            <Text style={styles.criteriaTitle}>Critères à respecter :</Text>
-            <View style={styles.criteriaList}>
-              <View style={styles.criteriaItem}>
-                <Ionicons name="checkmark-circle" size={20} color={COLORS.teal} />
-                <Text style={styles.criteriaText}>
-                  Durée max: {campaign.criteria?.duration || 'No spécifiée'} secondes
-                </Text>
-              </View>
-              <View style={styles.criteriaItem}>
-                <Ionicons name="checkmark-circle" size={20} color={COLORS.teal} />
-                <Text style={styles.criteriaText}>
-                  Style: {campaign.criteria?.style || 'No spécifié'}
-                </Text>
-              </View>
-              <View style={styles.criteriaItem}>
-                <Ionicons name="checkmark-circle" size={20} color={COLORS.teal} />
-                <Text style={styles.criteriaText}>
-                  Hashtags: {campaign.criteria?.hashtags?.join(', ') || 'No spécifiés'}
-                </Text>
-              </View>
-            </View>
-          </View>
-
-          <Button
-            title="Soumettre le clip"
-            onPress={handleSubmitClip}
-            loading={submitting}
-            style={[styles.submitButton, { backgroundColor: '#000000' }]}
-            textStyle={{ color: '#FFFFFF' }}
-          />
-        </ScrollView>
-      </SafeAreaView>
-    </Modal>
-  );
-
-  const renderSubmissionItem = (submission: Submission) => (
-    <View key={submission.id} style={styles.submissionCard}>
-      <View style={styles.submissionHeader}>
-        <Text style={styles.submissionUrl} numberOfLines={1}>
-          {submission.tiktokUrl}
-        </Text>
-        <View style={[
-          styles.statusBadge,
-          { backgroundColor: getStatusColor(submission.status) }
-        ]}>
-          <Text style={styles.statusText}>{submission.status}</Text>
-        </View>
-      </View>
-      
-      <View style={styles.submissionStats}>
-        <Text style={styles.submissionStat}>
-          {submission.views.toLocaleString()} vues
-        </Text>
-        <Text style={styles.submissionStat}>
-          {formatCurrency(submission.earnings)} gagnés
-        </Text>
-      </View>
-
-      {user.role === 'streamer' && submission.status === 'pending' && (
-        <View style={styles.submissionActions}>
-          <TouchableOpacity
-            style={[styles.actionButton, styles.approveButton]}
-            onPress={() => handleApproveSubmission(submission.id)}
-          >
-            <Text style={styles.actionButtonText}>Approuver</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.actionButton, styles.rejectButton]}
-            onPress={() => handleRejectSubmission(submission.id)}
-          >
-            <Text style={styles.actionButtonText}>Rejeter</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-    </View>
-  );
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'approved':
-        return COLORS.teal;
-      case 'pending':
-        return COLORS.purple;
-      case 'rejected':
-        return COLORS.primarySolid;
-      default:
-        return COLORS.textSecondary;
+      case 'approved': return '#10B981';
+      case 'rejected': return '#EF4444';
+      case 'pending': return '#F59E0B';
+      default: return '#6B7280';
     }
   };
 
-  const campaignContent = (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {campaign.id ? (
-        <>
-      <View style={styles.header}>
-            <Text style={styles.title}>Campaign: {campaign.title || 'Untitled'}</Text>
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'approved': return 'Approved';
+      case 'rejected': return 'Rejected';
+      case 'pending': return 'Pending';
+      default: return 'Unknown';
+    }
+  };
+
+  const renderHeader = () => (
+    <View style={styles.header}>
+      <TouchableOpacity onPress={onBack} style={styles.backButton}>
+        <Ionicons name="arrow-back" size={24} color={COLORS.white} />
+        <Text style={styles.backText}>Back to Campaigns</Text>
+      </TouchableOpacity>
+      
+      <View style={styles.campaignInfo}>
+        <Text style={styles.campaignTitle}>{campaign.title}</Text>
+        <Text style={styles.campaignStatus}>
+          {campaign.status === 'active' ? 'Active Campaign' : 'Completed'}
+        </Text>
       </View>
+    </View>
+  );
 
-        {/* Campaign Card */}
-        <LinearGradient
-          colors={['#FF6B35', '#9146FF']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.gradientBorder}
+  const renderTabs = () => (
+    <View style={styles.tabsContainer}>
+              <TouchableOpacity
+          style={[styles.tab, activeTab === 'overview' && styles.activeTab]}
+          onPress={() => setActiveTab('overview')}
         >
-        <View style={styles.campaignCard}>
-          <View style={styles.campaignHeader}>
-            <View style={styles.streamerInfo}>
-              <Image
-                source={{
-                  uri: campaign.streamerAvatar || 'https://via.placeholder.com/40x40/6366F1/FFFFFF?text=S'
-                }}
-                style={styles.avatar}
-              />
-              <View style={styles.streamerDetails}>
-                <Text style={styles.streamerName}>{campaign.streamerName}</Text>
-              </View>
-            </View>
-          </View>
+          <Ionicons 
+            name="stats-chart" 
+            size={20} 
+            color={activeTab === 'overview' ? '#FFFFFF' : '#8B8B8D'} 
+          />
+          <Text style={[styles.tabText, activeTab === 'overview' && styles.activeTabText]}>
+            Overview
+          </Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'submissions' && styles.activeTab]}
+          onPress={() => setActiveTab('submissions')}
+        >
+          <Ionicons 
+            name="videocam" 
+            size={20} 
+            color={activeTab === 'submissions' ? '#FFFFFF' : '#8B8B8D'} 
+          />
+          <Text style={[styles.tabText, activeTab === 'submissions' && styles.activeTabText]}>
+            Submissions ({submissions.length})
+          </Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'settings' && styles.activeTab]}
+          onPress={() => setActiveTab('settings')}
+        >
+          <Ionicons 
+            name="settings" 
+            size={20} 
+            color={activeTab === 'settings' ? '#FFFFFF' : '#8B8B8D'} 
+          />
+          <Text style={[styles.tabText, activeTab === 'settings' && styles.activeTabText]}>
+            Settings
+          </Text>
+        </TouchableOpacity>
+    </View>
+  );
 
-          <View style={styles.campaignContent}>
-            <View style={styles.leftSection}>
-              <View style={styles.tiktokIcon}>
-                <Ionicons name="logo-tiktok" size={32} color="#000000" />
-              </View>
-            </View>
-
-            <View style={styles.centerSection}>
-              <View style={styles.cpmBadge}>
-                  <Text style={styles.cpmText}>{campaign.cpm?.toFixed(2) || '0.00'}$US / 1K</Text>
-              </View>
-            </View>
-
-            <View style={styles.rightSection}>
-              <View style={styles.twitchIcon}>
-                <Ionicons name="logo-twitch" size={32} color="#9146FF" />
-              </View>
-            </View>
-          </View>
-
-          <View style={styles.progressSection}>
-            <View style={styles.progressBar}>
-              <View 
-                style={[
-                  styles.progressFill, 
-                  { 
-                    width: `${getProgressPercentage()}%`,
-                    backgroundColor: getProgressColor()
-                  }
-                ]} 
-              />
-            </View>
-            <Text style={styles.progressText}>
-              {formatCurrency(campaign.totalSpent)} / {formatCurrency(campaign.budget)} versés
-            </Text>
-          </View>
-        </View>
-        </LinearGradient>
-
-        {/* Campaign Details */}
-        <View style={styles.detailsCard}>
-          <Text style={styles.sectionTitle}>Description</Text>
-          <Text style={styles.description}>{campaign.description}</Text>
-
-          <Text style={styles.sectionTitle}>Critères</Text>
-          <View style={styles.criteriaList}>
-            <View style={styles.criteriaItem}>
-              <Ionicons name="time-outline" size={20} color={COLORS.primarySolid} />
-              <Text style={styles.criteriaText}>
-                Durée maximale: {campaign.criteria?.duration || 'No spécifiée'} secondes
-              </Text>
-            </View>
-            <View style={styles.criteriaItem}>
-              <Ionicons name="brush-outline" size={20} color={COLORS.lightPurple} />
-              <Text style={styles.criteriaText}>
-                Style: {campaign.criteria?.style || 'No spécifié'}
-              </Text>
-            </View>
-            <View style={styles.criteriaItem}>
-              <Ionicons name="pricetag-outline" size={20} color={COLORS.accent} />
-              <Text style={styles.criteriaText}>
-                Hashtags: {campaign.criteria?.hashtags?.join(', ') || 'No spécifiés'}
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Submissions (for streamers) */}
-          {user.role === 'streamer' && (
-          <View style={styles.submissionsSection}>
-            <Text style={styles.sectionTitle}>
-              Soumissions ({submissions.length})
-            </Text>
-            {submissions.length > 0 ? (
-              submissions.map(renderSubmissionItem)
-            ) : (
-              <Text style={styles.emptyText}>No submissions yet</Text>
-            )}
+  const renderOverview = () => (
+    <View style={styles.overviewContainer}>
+      {/* Campaign Image */}
+      <View style={styles.campaignImageContainer}>
+        {campaign.imageUrl ? (
+          <Image source={{ uri: campaign.imageUrl }} style={styles.campaignImage} />
+        ) : (
+          <View style={styles.imagePlaceholder}>
+            <Ionicons name="image" size={40} color="#999" />
+            <Text style={styles.imagePlaceholderText}>No Image</Text>
           </View>
         )}
-        </>
-      ) : (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyTitle}>No campaigns</Text>
-          <Text style={styles.emptyText}>
-                            No campaign found to display clips
+      </View>
+
+      {/* Campaign Stats */}
+      <View style={styles.statsContainer}>
+        <View style={styles.statCard}>
+          <Text style={styles.statLabel}>Total Budget</Text>
+          <Text style={styles.statValue}>{formatCurrency(campaign.budget)}</Text>
+        </View>
+        
+        <View style={styles.statCard}>
+          <Text style={styles.statLabel}>Spent</Text>
+          <Text style={styles.statValue}>{formatCurrency(campaign.totalSpent || 0)}</Text>
+        </View>
+        
+        <View style={styles.statCard}>
+          <Text style={styles.statLabel}>Remaining</Text>
+          <Text style={styles.statValue}>
+            {formatCurrency(campaign.budget - (campaign.totalSpent || 0))}
           </Text>
         </View>
-      )}
+      </View>
 
-      {renderSubmitModal()}
-    </ScrollView>
+      {/* Progress Bar */}
+      <View style={styles.progressSection}>
+        <View style={styles.progressHeader}>
+          <Text style={styles.progressLabel}>Budget Usage</Text>
+          <Text style={styles.progressPercentage}>
+            {Math.round(((campaign.totalSpent || 0) / campaign.budget) * 100)}%
+          </Text>
+        </View>
+        <View style={styles.progressBar}>
+          <View 
+            style={[
+              styles.progressFill, 
+              { width: `${Math.min(((campaign.totalSpent || 0) / campaign.budget) * 100, 100)}%` }
+            ]} 
+          />
+        </View>
+      </View>
+
+      {/* Campaign Details */}
+      <View style={styles.detailsContainer}>
+        <Text style={styles.detailsTitle}>Campaign Details</Text>
+        <View style={styles.detailRow}>
+          <Text style={styles.detailLabel}>CPM Rate:</Text>
+          <Text style={styles.detailValue}>${(campaign.cpm / 10).toFixed(2)} / 1K views</Text>
+        </View>
+        <View style={styles.detailRow}>
+          <Text style={styles.detailLabel}>Min Views:</Text>
+          <Text style={styles.detailValue}>{formatViews(campaign.minViewsPerVideo || 10000)}</Text>
+        </View>
+        <View style={styles.detailRow}>
+          <Text style={styles.detailLabel}>Total Views:</Text>
+          <Text style={styles.detailValue}>{formatViews(campaign.totalViews || 0)}</Text>
+        </View>
+        <View style={styles.detailRow}>
+          <Text style={styles.detailLabel}>Description:</Text>
+          <Text style={styles.detailValue}>{campaign.description}</Text>
+        </View>
+      </View>
+    </View>
+  );
+
+  const renderSubmissions = () => (
+    <View style={styles.submissionsContainer}>
+      {submissions.length === 0 ? (
+        <View style={styles.emptySubmissions}>
+          <Ionicons name="videocam-outline" size={64} color="#9ca3af" />
+          <Text style={styles.emptyTitle}>No submissions yet</Text>
+          <Text style={styles.emptyText}>
+            Clippers haven't submitted any clips for this campaign yet.
+          </Text>
+        </View>
+      ) : (
+        submissions.map((submission) => (
+          <View key={submission.id} style={styles.submissionCard}>
+            <View style={styles.submissionHeader}>
+              <View style={styles.submissionInfo}>
+                <Text style={styles.submissionTitle}>Clip by {submission.clipperName}</Text>
+                <Text style={styles.submissionDate}>
+                  {new Date(submission.createdAt).toLocaleDateString()}
+                </Text>
+              </View>
+              <View style={[
+                styles.statusBadge, 
+                { backgroundColor: getStatusColor(submission.status) }
+              ]}>
+                <Text style={styles.statusText}>{getStatusText(submission.status)}</Text>
+              </View>
+            </View>
+            
+            <View style={styles.submissionContent}>
+              <Text style={styles.submissionUrl}>{submission.tiktokUrl}</Text>
+              <Text style={styles.submissionViews}>
+                Views: {formatViews(submission.views || 0)}
+              </Text>
+            </View>
+            
+            {submission.status === 'pending' && (
+              <View style={styles.submissionActions}>
+                <TouchableOpacity
+                  style={[styles.actionButton, styles.approveButton]}
+                  onPress={() => handleApproveSubmission(submission.id)}
+                >
+                  <Ionicons name="checkmark" size={20} color="#FFFFFF" />
+                  <Text style={styles.actionButtonText}>Approve</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity
+                  style={[styles.actionButton, styles.rejectButton]}
+                  onPress={() => handleRejectSubmission(submission.id)}
+                >
+                  <Ionicons name="close" size={20} color="#FFFFFF" />
+                  <Text style={styles.actionButtonText}>Reject</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        ))
+      )}
+    </View>
+  );
+
+  const renderSettings = () => (
+    <View style={styles.settingsContainer}>
+      <Text style={styles.settingsTitle}>Campaign Settings</Text>
+      
+      <TouchableOpacity style={styles.settingItem}>
+        <Ionicons name="edit" size={24} color={COLORS.primary} />
+        <Text style={styles.settingText}>Edit Campaign</Text>
+        <Ionicons name="chevron-forward" size={20} color={COLORS.textLight} />
+      </TouchableOpacity>
+      
+      <TouchableOpacity style={styles.settingItem}>
+        <Ionicons name="pause" size={24} color="#F59E0B" />
+        <Text style={styles.settingText}>Pause Campaign</Text>
+        <Ionicons name="chevron-forward" size={20} color={COLORS.textLight} />
+      </TouchableOpacity>
+      
+      <TouchableOpacity style={styles.settingItem}>
+        <Ionicons name="trash" size={24} color="#EF4444" />
+        <Text style={styles.settingText}>Delete Campaign</Text>
+        <Ionicons name="chevron-forward" size={20} color={COLORS.textLight} />
+      </TouchableOpacity>
+    </View>
   );
 
   return (
-    <View style={styles.container}>
-      {campaignContent}
-    </View>
+    <SafeAreaView style={styles.container}>
+      <ScrollView
+        style={styles.scrollView}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
+        {renderHeader()}
+        {renderTabs()}
+        
+        {activeTab === 'overview' && renderOverview()}
+        {activeTab === 'submissions' && renderSubmissions()}
+        {activeTab === 'settings' && renderSettings()}
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  safeArea: {
+  container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: '#0A0A0B',
+  },
+  scrollView: {
+    flex: 1,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: SIZES.spacing.lg,
+    padding: 20,
+    backgroundColor: '#1A1A1E',
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    borderBottomColor: '#2A2A2E',
   },
   backButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.primarySolid,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 10,
-    shadowColor: COLORS.primarySolid,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 5,
-    minWidth: 50,
-    justifyContent: 'center',
+    marginRight: 20,
   },
-  title: {
-    fontSize: SIZES.lg,
-    fontFamily: FONTS.bold,
-    color: COLORS.text,
-  },
-  placeholder: {
-    width: 40,
-  },
-  container: {
-    flex: 1,
-    padding: SIZES.spacing.lg,
-  },
-  gradientBorder: {
-    borderRadius: 18,
-    padding: 3,
-    marginBottom: 24,
-    shadowColor: '#FF6B35',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  campaignCard: {
-    backgroundColor: COLORS.white,
-    borderRadius: 15,
-    padding: 16,
-    ...SHADOWS.base,
-  },
-  campaignHeader: {
-    marginBottom: 16,
-  },
-  streamerInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 12,
-  },
-  streamerDetails: {
-    flex: 1,
-  },
-  streamerName: {
+  backText: {
+    color: '#FFFFFF',
     fontSize: 16,
+    marginLeft: 8,
+    fontFamily: FONTS.medium,
+  },
+  campaignInfo: {
+    flex: 1,
+  },
+  campaignTitle: {
+    color: '#FFFFFF',
+    fontSize: 24,
     fontFamily: FONTS.bold,
-    color: COLORS.text,
-    marginBottom: 2,
   },
-  followersText: {
+  campaignStatus: {
+    color: '#8B8B8D',
     fontSize: 14,
-    color: COLORS.textSecondary,
     fontFamily: FONTS.regular,
+    marginTop: 4,
   },
-  campaignContent: {
+  tabsContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#1A1A1E',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+  tab: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-    paddingHorizontal: 8,
-  },
-  leftSection: {
-    flex: 1,
-    alignItems: 'flex-start',
-  },
-  centerSection: {
-    flex: 2,
-    alignItems: 'center',
-  },
-  rightSection: {
-    flex: 1,
-    alignItems: 'flex-end',
-  },
-  tiktokIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: COLORS.white,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#000000',
-  },
-  twitchIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: COLORS.white,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#9146FF',
-  },
-  cpmBadge: {
-    backgroundColor: '#6366F1',
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
+    paddingVertical: 12,
+    marginRight: 20,
+    borderRadius: 8,
   },
-  cpmText: {
-    color: COLORS.white,
+  activeTab: {
+    backgroundColor: '#4F46E5',
+  },
+  tabText: {
+    color: '#8B8B8D',
     fontSize: 14,
+    fontFamily: FONTS.medium,
+    marginLeft: 8,
+  },
+  activeTabText: {
+    color: '#FFFFFF',
+  },
+  overviewContainer: {
+    padding: 20,
+  },
+  campaignImageContainer: {
+    marginBottom: 20,
+  },
+  campaignImage: {
+    width: '100%',
+    height: 200,
+    borderRadius: 12,
+  },
+  imagePlaceholder: {
+    width: '100%',
+    height: 200,
+    borderRadius: 12,
+    backgroundColor: '#2A2A2E',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  imagePlaceholderText: {
+    color: '#8B8B8D',
+    fontSize: 16,
+    marginTop: 8,
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: '#2A2A2E',
+    padding: 16,
+    borderRadius: 12,
+    marginHorizontal: 4,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#3A3A3E',
+  },
+  statLabel: {
+    color: '#8B8B8D',
+    fontSize: 12,
+    fontFamily: FONTS.regular,
+    marginBottom: 4,
+  },
+  statValue: {
+    color: '#FFFFFF',
+    fontSize: 18,
     fontFamily: FONTS.bold,
   },
   progressSection: {
-    marginTop: 8,
+    marginBottom: 20,
+  },
+  progressHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  progressLabel: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontFamily: FONTS.medium,
+  },
+  progressPercentage: {
+    color: '#4F46E5',
+    fontSize: 16,
+    fontFamily: FONTS.bold,
   },
   progressBar: {
-    height: 6,
-    backgroundColor: '#E5E7EB',
-    borderRadius: 3,
+    height: 8,
+    backgroundColor: '#2A2A2E',
+    borderRadius: 4,
     overflow: 'hidden',
-    marginBottom: 8,
   },
   progressFill: {
     height: '100%',
-    borderRadius: 3,
+    backgroundColor: '#4F46E5',
   },
-  progressText: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
-    textAlign: 'center',
-    fontFamily: FONTS.medium,
+  detailsContainer: {
+    backgroundColor: '#2A2A2E',
+    padding: 20,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#3A3A3E',
   },
-  detailsCard: {
-    backgroundColor: COLORS.card,
-    borderRadius: SIZES.radius.lg,
-    padding: SIZES.spacing.lg,
-    marginBottom: SIZES.spacing.lg,
-    ...SHADOWS.sm,
-  },
-  sectionTitle: {
-    fontSize: SIZES.lg,
+  detailsTitle: {
+    color: '#FFFFFF',
+    fontSize: 18,
     fontFamily: FONTS.bold,
-    color: COLORS.text,
-    marginBottom: SIZES.spacing.base,
+    marginBottom: 16,
   },
-  description: {
-    fontSize: SIZES.base,
-    color: COLORS.textSecondary,
-    fontFamily: FONTS.regular,
-    lineHeight: 22,
-    marginBottom: SIZES.spacing.lg,
-  },
-  criteriaList: {
-    gap: SIZES.spacing.base,
-  },
-  criteriaItem: {
+  detailRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
   },
-  criteriaText: {
-    fontSize: SIZES.base,
-    color: COLORS.text,
+  detailLabel: {
+    color: '#8B8B8D',
+    fontSize: 14,
     fontFamily: FONTS.regular,
-    marginLeft: SIZES.spacing.sm,
+  },
+  detailValue: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontFamily: FONTS.medium,
     flex: 1,
+    textAlign: 'right',
   },
-  actionButton: {
-    marginBottom: SIZES.spacing.lg,
+  submissionsContainer: {
+    padding: 20,
   },
-  submissionsSection: {
-    marginTop: SIZES.spacing.lg,
+  emptySubmissions: {
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  emptyTitle: {
+    color: '#FFFFFF',
+    fontSize: 20,
+    fontFamily: FONTS.bold,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptyText: {
+    color: '#8B8B8D',
+    fontSize: 16,
+    textAlign: 'center',
+    lineHeight: 24,
   },
   submissionCard: {
-    backgroundColor: COLORS.card,
-    borderRadius: SIZES.radius.base,
-    padding: SIZES.spacing.base,
-    marginBottom: SIZES.spacing.sm,
-    ...SHADOWS.sm,
+    backgroundColor: '#2A2A2E',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#3A3A3E',
   },
   submissionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: SIZES.spacing.sm,
+    marginBottom: 12,
   },
-  submissionUrl: {
-    fontSize: SIZES.sm,
-    color: COLORS.primarySolid,
-    fontFamily: FONTS.medium,
+  submissionInfo: {
     flex: 1,
-    marginRight: SIZES.spacing.sm,
+  },
+  submissionTitle: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontFamily: FONTS.bold,
+  },
+  submissionDate: {
+    color: '#8B8B8D',
+    fontSize: 12,
+    fontFamily: FONTS.regular,
+    marginTop: 2,
   },
   statusBadge: {
-    paddingHorizontal: SIZES.spacing.sm,
-    paddingVertical: SIZES.spacing.xs,
-    borderRadius: SIZES.radius.sm,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
   },
   statusText: {
-    fontSize: SIZES.xs,
     color: COLORS.white,
+    fontSize: 12,
     fontFamily: FONTS.medium,
-    textTransform: 'uppercase',
   },
-  submissionStats: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: SIZES.spacing.sm,
+  submissionContent: {
+    marginBottom: 12,
   },
-  submissionStat: {
-    fontSize: SIZES.sm,
-    color: COLORS.textSecondary,
+  submissionUrl: {
+    color: '#4F46E5',
+    fontSize: 14,
+    fontFamily: FONTS.regular,
+    marginBottom: 4,
+  },
+  submissionViews: {
+    color: '#8B8B8D',
+    fontSize: 14,
     fontFamily: FONTS.regular,
   },
   submissionActions: {
     flexDirection: 'row',
-    gap: SIZES.spacing.sm,
+    gap: 12,
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    flex: 1,
+    justifyContent: 'center',
   },
   approveButton: {
-    backgroundColor: COLORS.teal,
-    flex: 1,
-    paddingVertical: SIZES.spacing.sm,
-    borderRadius: SIZES.radius.sm,
-    alignItems: 'center',
+    backgroundColor: '#10B981',
   },
   rejectButton: {
-    backgroundColor: COLORS.error,
-    flex: 1,
-    paddingVertical: SIZES.spacing.sm,
-    borderRadius: SIZES.radius.sm,
-    alignItems: 'center',
+    backgroundColor: '#EF4444',
   },
   actionButtonText: {
     color: COLORS.white,
-    fontSize: SIZES.sm,
+    fontSize: 14,
     fontFamily: FONTS.medium,
+    marginLeft: 4,
   },
-  emptyText: {
-    fontSize: SIZES.base,
-    color: COLORS.textSecondary,
-    fontFamily: FONTS.regular,
-    textAlign: 'center',
-    padding: SIZES.spacing.xl,
+  settingsContainer: {
+    padding: 20,
   },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: SIZES.spacing.xl,
-  },
-  emptyTitle: {
-    fontSize: SIZES.lg,
+  settingsTitle: {
+    color: '#FFFFFF',
+    fontSize: 20,
     fontFamily: FONTS.bold,
-    color: COLORS.text,
-    marginBottom: SIZES.spacing.sm,
+    marginBottom: 20,
   },
-  modalContainer: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  modalHeader: {
+  settingItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: SIZES.spacing.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  modalCancel: {
-    fontSize: SIZES.base,
-    color: COLORS.textSecondary,
-    fontFamily: FONTS.regular,
-  },
-  modalTitle: {
-    fontSize: SIZES.lg,
-    fontFamily: FONTS.bold,
-    color: COLORS.text,
-  },
-  modalContent: {
-    flex: 1,
-    padding: SIZES.spacing.lg,
-  },
-  inputGroup: {
-    marginBottom: SIZES.spacing.lg,
-  },
-  label: {
-    fontSize: SIZES.base,
-    fontFamily: FONTS.medium,
-    color: COLORS.text,
-    marginBottom: SIZES.spacing.sm,
-  },
-  input: {
+    backgroundColor: '#2A2A2E',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: SIZES.radius.base,
-    padding: SIZES.spacing.base,
-    fontSize: SIZES.base,
-    fontFamily: FONTS.regular,
-    color: COLORS.text,
-    backgroundColor: COLORS.background,
+    borderColor: '#3A3A3E',
   },
-  helperText: {
-    fontSize: SIZES.sm,
-    color: COLORS.textSecondary,
-    marginTop: SIZES.spacing.xs,
-  },
-  criteriaCard: {
-    backgroundColor: COLORS.surface,
-    borderRadius: SIZES.radius.base,
-    padding: SIZES.spacing.base,
-    marginBottom: SIZES.spacing.lg,
-  },
-  criteriaTitle: {
-    fontSize: SIZES.base,
-    fontFamily: FONTS.bold,
-    color: COLORS.text,
-    marginBottom: SIZES.spacing.sm,
-  },
-  submitButton: {
-    marginTop: SIZES.spacing.base,
+  settingText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontFamily: FONTS.medium,
+    flex: 1,
+    marginLeft: 12,
   },
 });
 

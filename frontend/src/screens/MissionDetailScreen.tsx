@@ -14,6 +14,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SIZES, SHADOWS, FONTS } from '../constants';
 import { User, Campaign } from '../types';
+import { campaignService } from '../services/campaignService';
 
 const { width, height } = Dimensions.get('window');
 
@@ -34,25 +35,65 @@ const MissionDetailScreen: React.FC<MissionDetailScreenProps> = ({
 }) => {
   const [isAccepted, setIsAccepted] = useState(false);
   const [clipUrl, setClipUrl] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
-  const handleSubmitClip = () => {
+  const handleSubmitClip = async () => {
+    console.log('🔵 handleSubmitClip called!');
+    console.log('🔵 clipUrl:', clipUrl);
+    console.log('🔵 clipUrl.trim():', clipUrl.trim());
+    console.log('🔵 selectedMission:', selectedMission);
+    
     if (!clipUrl.trim()) {
+      console.log('❌ No clip URL provided');
       Alert.alert('Error', 'Please enter your clip URL');
       return;
     }
+
+    if (!selectedMission) {
+      console.log('❌ No mission selected');
+      Alert.alert('Error', 'No mission selected');
+      return;
+    }
     
-    Alert.alert(
-      '🎬 Submit a clip',
-      `Do you want to submit this clip?\n\nURL: ${clipUrl}`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Submit', onPress: () => {
-          console.log('Clip submitted:', clipUrl);
-          setClipUrl('');
-          Alert.alert('✅ Success', 'Your clip has been submitted successfully!');
-        }}
-      ]
-    );
+    console.log('🔵 About to show confirmation modal...');
+    setShowConfirmModal(true);
+  };
+
+  const handleConfirmSubmission = async () => {
+    console.log('🔵 User confirmed submission, starting...');
+    setShowConfirmModal(false);
+    
+    try {
+      setIsSubmitting(true);
+      console.log('🔵 Submitting clip for campaign:', selectedMission?.id);
+      console.log('🔵 Clip URL:', clipUrl);
+      console.log('🔵 Clipper ID:', user.id);
+      
+      console.log('🔵 Calling campaignService.submitClip...');
+      await campaignService.submitClip(user.id, {
+        campaignId: selectedMission!.id,
+        tiktokUrl: clipUrl.trim()
+      });
+      
+      console.log('✅ Clip submitted successfully!');
+      setClipUrl('');
+      Alert.alert(
+        '✅ Clip soumis avec succès !', 
+        'Votre clip a été soumis et les vues TikTok ont été automatiquement vérifiées. Si le seuil de vues est atteint, vous serez automatiquement payé !'
+      );
+    } catch (error: any) {
+      console.error('❌ Error submitting clip:', error);
+      Alert.alert('Error', error.message || 'Failed to submit clip');
+    } finally {
+      console.log('🔵 Setting isSubmitting to false');
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleCancelSubmission = () => {
+    console.log('🔵 User cancelled submission');
+    setShowConfirmModal(false);
   };
 
   const handleAcceptMission = () => {
@@ -217,14 +258,29 @@ const MissionDetailScreen: React.FC<MissionDetailScreenProps> = ({
           <TouchableOpacity 
             style={[
               styles.submitButton,
-              !clipUrl.trim() && styles.submitButtonDisabled,
-              clipUrl.trim() && styles.submitButtonActive
+              (!clipUrl.trim() || isSubmitting) && styles.submitButtonDisabled,
+              clipUrl.trim() && !isSubmitting && styles.submitButtonActive
             ]}
-            onPress={handleSubmitClip}
-            disabled={!clipUrl.trim()}
+            onPress={() => {
+              console.log('🔵 Submit button clicked!');
+              console.log('🔵 Button disabled:', !clipUrl.trim() || isSubmitting);
+              console.log('🔵 clipUrl:', clipUrl);
+              console.log('🔵 isSubmitting:', isSubmitting);
+              handleSubmitClip();
+            }}
+            disabled={!clipUrl.trim() || isSubmitting}
           >
-            <Ionicons name="send" size={20} color="#fff" />
-            <Text style={styles.submitButtonText}>Submit a clip</Text>
+            {isSubmitting ? (
+              <>
+                <Ionicons name="hourglass" size={20} color="#fff" />
+                <Text style={styles.submitButtonText}>Submitting...</Text>
+              </>
+            ) : (
+              <>
+                <Ionicons name="send" size={20} color="#fff" />
+                <Text style={styles.submitButtonText}>Submit a clip</Text>
+              </>
+            )}
           </TouchableOpacity>
         </View>
       </View>
@@ -311,6 +367,42 @@ const MissionDetailScreen: React.FC<MissionDetailScreenProps> = ({
       {/* Bottom padding */}
       <View style={styles.bottomPadding} />
       </ScrollView>
+
+      {/* Confirmation Modal */}
+      {showConfirmModal && (
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Ionicons name="videocam" size={24} color="#4F46E5" />
+              <Text style={styles.modalTitle}>🎬 Submit a clip</Text>
+            </View>
+            
+            <Text style={styles.modalMessage}>
+              Do you want to submit this clip?
+            </Text>
+            
+            <Text style={styles.modalUrl}>
+              {clipUrl}
+            </Text>
+            
+            <View style={styles.modalButtons}>
+              <TouchableOpacity 
+                style={styles.modalButtonCancel}
+                onPress={handleCancelSubmission}
+              >
+                <Text style={styles.modalButtonCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.modalButtonConfirm}
+                onPress={handleConfirmSubmission}
+              >
+                <Text style={styles.modalButtonConfirmText}>Submit</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
     </View>
   );
 };
@@ -862,6 +954,88 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.semiBold,
     color: '#fff',
     marginLeft: 8,
+  },
+  // Modal styles
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 24,
+    margin: 20,
+    maxWidth: 400,
+    width: '100%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontFamily: FONTS.bold,
+    color: '#000000',
+    marginLeft: 8,
+  },
+  modalMessage: {
+    fontSize: 16,
+    color: '#374151',
+    marginBottom: 12,
+    lineHeight: 24,
+  },
+  modalUrl: {
+    fontSize: 14,
+    color: '#6B7280',
+    backgroundColor: '#F3F4F6',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 24,
+    fontFamily: 'monospace',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  modalButtonCancel: {
+    flex: 1,
+    backgroundColor: '#F3F4F6',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  modalButtonCancelText: {
+    fontSize: 16,
+    fontFamily: FONTS.medium,
+    color: '#374151',
+  },
+  modalButtonConfirm: {
+    flex: 1,
+    backgroundColor: '#4F46E5',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  modalButtonConfirmText: {
+    fontSize: 16,
+    fontFamily: FONTS.medium,
+    color: '#FFFFFF',
   },
 });
 

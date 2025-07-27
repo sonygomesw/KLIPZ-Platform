@@ -96,7 +96,7 @@ const MainApp: React.FC<{ user: User; onLogout: () => void }> = ({ user, onLogou
       case 'Profile':
         return <ProfileScreen user={user} activeTab={activeTab} onTabChange={setActiveTab} onSignOut={onLogout} />;
       case 'AdminDeclarations':
-        return <AdminDeclarationsScreen />;
+        return <AdminDeclarationsScreen user={user} activeTab={activeTab} onTabChange={setActiveTab} onSignOut={onLogout} />;
       default:
         return <DashboardScreen user={user} activeTab={activeTab} onTabChange={setActiveTab} onSignOut={onLogout} />;
     }

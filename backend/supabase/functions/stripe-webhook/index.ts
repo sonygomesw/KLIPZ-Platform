@@ -182,7 +182,7 @@ Deno.serve(async (request) => {
     return new Response('ok', { 
       headers: {
         'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'stripe-signature, content-type',
+        'Access-Control-Allow-Headers': 'stripe-signature, content-type, authorization',
         'Access-Control-Allow-Methods': 'POST, OPTIONS',
       }
     });
@@ -193,24 +193,41 @@ Deno.serve(async (request) => {
     return new Response('Method Not Allowed', { status: 405 });
   }
 
+  // For Stripe webhooks, we bypass Supabase JWT verification
+  // Stripe sends its own signature verification which is more secure
+  const stripeSignature = request.headers.get('stripe-signature');
+  if (!stripeSignature) {
+    console.error('❌ Missing Stripe signature');
+    return new Response('Missing Stripe signature', { status: 400 });
+  }
+  
+  console.log('✅ Stripe webhook detected, bypassing Supabase JWT auth');
+  
+  // Continue processing without JWT verification
+
   try {
     const signature = request.headers.get('stripe-signature');
-    
+    const body = await request.text();
+    let event: Stripe.Event;
+
     // Check for Stripe signature
     if (!signature) {
       console.error('❌ Missing Stripe signature');
       return new Response('Missing Stripe signature', { status: 400 });
     }
-    
-    // Get the raw body for signature verification
-    const body = await request.text();
-    let event: Stripe.Event;
+
+    // Check if we have the webhook secret
+    const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
+    if (!webhookSecret) {
+      console.error('❌ Missing STRIPE_WEBHOOK_SECRET');
+      return new Response('Missing webhook secret', { status: 500 });
+    }
 
     try {
       event = await stripe.webhooks.constructEventAsync(
         body,
         signature,
-        Deno.env.get('STRIPE_WEBHOOK_SECRET')!,
+        webhookSecret,
         undefined,
         cryptoProvider
       );

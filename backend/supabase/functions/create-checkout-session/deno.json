@@ -1,5 +1,10 @@
 {
   "imports": {
     "stripe": "https://esm.sh/stripe@14.21.0?target=deno"
+  },
+  "functions": {
+    "create-checkout-session": {
+      "verify_jwt": false
+    }
   }
 } 

@@ -1,5 +1,11 @@
 {
   "imports": {
     "stripe": "https://esm.sh/stripe@14?target=denonext"
+  },
+  "functions": {
+    "stripe-webhook": {
+      "verify_jwt": false,
+      "no_auth": true
+    }
   }
 } 

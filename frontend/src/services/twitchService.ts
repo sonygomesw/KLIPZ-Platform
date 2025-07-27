@@ -72,7 +72,8 @@ export const getFollowersFromTwitchUrl = async (twitchUrl: string): Promise<numb
 
 // Fonction de validation pour compatibilité avec authService
 export const validateTwitchUrl = (url: string): boolean => {
-  const twitchUrlPattern = /^https?:\/\/(www\.)?twitch\.tv\/[a-zA-Z0-9_]{4,25}$/;
+  // Pattern plus flexible pour accepter m.twitch.tv et les URLs avec / à la fin
+  const twitchUrlPattern = /^https?:\/\/(www\.|m\.)?twitch\.tv\/[a-zA-Z0-9_]{4,25}\/?$/;
   return twitchUrlPattern.test(url);
 };
 

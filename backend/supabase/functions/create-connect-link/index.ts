@@ -1,5 +1,4 @@
 import Stripe from 'stripe';
-import { createClient } from "https://esm.sh/@supabase/supabase-js";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -10,11 +9,6 @@ const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, {
   apiVersion: "2023-10-16",
 });
 
-const supabase = createClient(
-  Deno.env.get("SUPABASE_URL")!,
-  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-);
-
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -22,7 +16,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { userId } = await req.json();
+    const { userId, email } = await req.json();
 
     if (!userId) {
       return new Response(JSON.stringify({ error: "userId is required" }), {
@@ -31,58 +25,34 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Vérifier si l'utilisateur a déjà un compte Stripe Connect
-    const { data: user, error: userError } = await supabase
-      .from('users')
-      .select('stripe_account_id, email')
-      .eq('id', userId)
-      .single();
+    console.log('Creating Stripe Connect account for:', { userId, email });
 
-    if (userError) {
-      console.error('Erreur récupération utilisateur:', userError);
-      return new Response(JSON.stringify({ error: "Utilisateur non trouvé" }), {
-        status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
-      });
-    }
+    // Créer directement un compte Stripe Connect
+    const account = await stripe.accounts.create({
+      type: "standard",
+      country: "FR", // Pays par défaut
+      email: email || 'clipper@klipz.app',
+      capabilities: {
+        card_payments: { requested: true },
+        transfers: { requested: true },
+      },
+    });
 
-    let accountId = user.stripe_account_id;
-
-    // Si pas de compte Stripe, en créer un
-    if (!accountId) {
-      const account = await stripe.accounts.create({
-        type: "standard",
-        country: "FR", // Pays par défaut
-        email: user.email || 'clipper@klipz.app',
-        capabilities: {
-          transfers: { requested: true },
-        },
-      });
-
-      accountId = account.id;
-
-      // Sauvegarder l'ID du compte dans la base de données
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({ stripe_account_id: accountId })
-        .eq('id', userId);
-
-      if (updateError) {
-        console.error('Erreur sauvegarde stripe_account_id:', updateError);
-      }
-    }
+    console.log('Stripe account created:', account.id);
 
     // Créer le lien d'onboarding
     const link = await stripe.accountLinks.create({
-      account: accountId,
+      account: account.id,
       refresh_url: `${req.headers.get('origin') || 'https://klipz.app'}/connect/retry`,
       return_url: `${req.headers.get('origin') || 'https://klipz.app'}/connect/success`,
       type: 'account_onboarding',
     });
 
+    console.log('Stripe onboarding link created');
+
     return new Response(JSON.stringify({ 
       url: link.url,
-      accountId: accountId 
+      accountId: account.id 
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
@@ -90,7 +60,10 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('Erreur création lien connect:', error);
-    return new Response(JSON.stringify({ error: "Erreur serveur" }), {
+    return new Response(JSON.stringify({ 
+      error: "Erreur serveur",
+      details: error.message 
+    }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" }
     });

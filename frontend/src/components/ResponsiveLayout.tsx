@@ -188,6 +188,26 @@ const Sidebar: React.FC<{
             </TouchableOpacity>
           )}
           
+          {isStreamer && (
+            <TouchableOpacity 
+              style={[
+                styles.navItem, 
+                activeTab === 'Payment' && styles.navItemActive
+              ]} 
+              onPress={() => onTabChange('Payment')}
+            >
+              <Ionicons 
+                name="wallet-outline" 
+                size={40} 
+                color={activeTab === 'Payment' ? '#000000' : '#6a6a6a'} 
+              />
+              <Text style={[
+                styles.navText, 
+                activeTab === 'Payment' && styles.navTextActive
+              ]}>Payment</Text>
+            </TouchableOpacity>
+          )}
+          
 
           
           <TouchableOpacity 
@@ -251,7 +271,7 @@ const ResponsiveLayout: React.FC<ResponsiveLayoutProps> = ({
   onTabChange, 
   onSignOut 
 }) => {
-  const isDesktop = Platform.OS === 'web' && width >= 800; // Réduit le seuil pour garder la sidebar plus longtemps
+  const isDesktop = Platform.OS === 'web' && width >= 600; // Seuil réduit pour que la navbar apparaisse plus facilement
 
   return (
     <View style={styles.container}>

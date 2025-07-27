@@ -1,0 +1,11 @@
+{
+  "tasks": {
+    "start": "deno run --allow-net --allow-env --allow-read index.ts"
+  },
+  "functions": {
+    "scrape-views": {
+      "verify_jwt": false,
+      "no_auth": true
+    }
+  }
+} 

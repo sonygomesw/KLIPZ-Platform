@@ -46,25 +46,46 @@ class AuthService {
       
       // 2. Récupérer les données Twitch complètes
       console.log('🔵 Récupération des données Twitch...');
-      const twitchData = await getTwitchDataFromUrl(data.twitchUrl);
-      console.log('🔵 Données Twitch récupérées:', twitchData);
+      let twitchData = null;
+      try {
+        twitchData = await getTwitchDataFromUrl(data.twitchUrl);
+        console.log('🔵 Données Twitch récupérées:', twitchData);
+      } catch (twitchError) {
+        console.warn('⚠️ Erreur récupération Twitch, continuation sans données:', twitchError);
+        // On continue sans les données Twitch
+      }
       
       // 3. Créer le compte Supabase Auth
+      console.log('🔵 Création du compte Supabase Auth...');
       const authResult = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
+        options: {
+          // Désactiver la confirmation email pour les tests
+          emailConfirm: false,
+        }
       });
 
       console.log('🔵 Réponse Supabase Auth:', authResult);
 
       if (authResult.error) {
         console.error('❌ Error Supabase Auth:', authResult.error);
-        throw new Error(authResult.error.message || 'Error lors de la création du compte');
+        
+        // Gestion spécifique des erreurs
+        if (authResult.error.message?.includes('User already registered')) {
+          throw new Error('Un compte avec cet email existe déjà');
+        } else if (authResult.error.message?.includes('Invalid email')) {
+          throw new Error('Email invalide');
+        } else if (authResult.error.message?.includes('Password should be at least')) {
+          throw new Error('Le mot de passe doit contenir au moins 6 caractères');
+        } else {
+          throw new Error(authResult.error.message || 'Erreur lors de la création du compte');
+        }
       }
       
       if (!authResult.data.user) {
         console.error('❌ Pas d\'utilisateur retourné');
-        throw new Error('Error lors de la création du compte');
+        throw new Error('Erreur lors de la création du compte');
       }
 
       console.log('🔵 Utilisateur créé:', authResult.data.user.id);
@@ -93,12 +114,20 @@ class AuthService {
 
       if (profileResult.error) {
         console.error('❌ Error insertion profil:', profileResult.error);
-        throw new Error(profileResult.error.message || 'Error lors de la création du profil');
+        
+        // Si l'insertion échoue, on supprime le compte auth créé
+        try {
+          await supabase.auth.admin.deleteUser(authResult.data.user.id);
+        } catch (deleteError) {
+          console.warn('⚠️ Impossible de supprimer le compte auth:', deleteError);
+        }
+        
+        throw new Error(profileResult.error.message || 'Erreur lors de la création du profil');
       }
 
       console.log('🔵 Profil créé avec succès');
 
-      // 5. Backner l'utilisateur formaté
+      // 5. Retourner l'utilisateur formaté
       return {
         id: profileResult.data.id,
         email: profileResult.data.email,
@@ -118,7 +147,7 @@ class AuthService {
         console.error('❌ Message d\'erreur:', error.message);
         throw new Error(error.message);
       }
-      throw new Error('Error inconnue lors de l\'inscription');
+      throw new Error('Erreur inconnue lors de l\'inscription');
     }
   }
 
@@ -279,14 +308,22 @@ class AuthService {
   // Obtenir l'utilisateur actuel
   async getCurrentUser(): Promise<AuthUser | null> {
     try {
+      console.log('🔵 Vérification de l\'utilisateur actuel...');
       const user = await supabaseUtils.getCurrentUser();
-      if (!user) return null;
+      console.log('🔵 Utilisateur Supabase Auth:', user);
+      if (!user) {
+        console.log('❌ Pas d\'utilisateur Supabase Auth');
+        return null;
+      }
 
+      console.log('🔵 Récupération du profil utilisateur...');
       const profileResult = await supabase
         .from('users')
         .select('*')
         .eq('id', user.id)
         .maybeSingle();
+
+      console.log('🔵 Résultat profil:', profileResult);
 
       if (profileResult.error) {
         console.error('❌ Error profil utilisateur:', profileResult.error);
@@ -298,6 +335,8 @@ class AuthService {
         console.log('⚠️ Profil utilisateur pas encore disponible');
         return null;
       }
+
+      console.log('✅ Profil utilisateur récupéré:', profileResult.data);
 
       return {
         id: profileResult.data.id,
@@ -324,7 +363,9 @@ class AuthService {
 
   // Valider l'URL Twitch
   validateTwitchUrl(url: string): boolean {
-    return validateTwitchUrl(url);
+    // Pattern plus flexible pour accepter m.twitch.tv et les URLs avec / à la fin
+    const twitchUrlPattern = /^https?:\/\/(www\.|m\.)?twitch\.tv\/[a-zA-Z0-9_]{4,25}\/?$/;
+    return twitchUrlPattern.test(url);
   }
 
   // Valider le nom d'utilisateur TikTok
