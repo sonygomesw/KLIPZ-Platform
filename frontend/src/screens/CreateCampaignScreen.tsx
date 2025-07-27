@@ -468,7 +468,6 @@ const CreateCampaignScreen: React.FC<CreateCampaignScreenProps> = ({
            
            {/* Create Button - Inside scroll, after content */}
            <View style={styles.createButtonContainer}>
-<<<<<<< HEAD
              <TouchableOpacity 
                style={styles.createButton} 
                onPress={() => {
@@ -478,11 +477,6 @@ const CreateCampaignScreen: React.FC<CreateCampaignScreenProps> = ({
              >
                <Text style={styles.createButtonText}>Create Campaign</Text>
              </TouchableOpacity>
-=======
-                     <TouchableOpacity style={styles.createButton} onPress={handleCreateCampaign}>
-          <Text style={styles.createButtonText}>Create Mission</Text>
-        </TouchableOpacity>
->>>>>>> feature/frontend-design
            </View>
         </ScrollView>
         </KeyboardAvoidingView>
