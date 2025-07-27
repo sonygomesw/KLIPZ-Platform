@@ -34,7 +34,7 @@ const Button: React.FC<ButtonProps> = ({
 }) => {
   const getButtonStyle = (): ViewStyle => {
     const baseStyle: ViewStyle = {
-      borderRadius: SIZES.radius.base,
+      borderRadius: 16,
       alignItems: 'center',
       justifyContent: 'center',
       flexDirection: 'row',
@@ -61,7 +61,7 @@ const Button: React.FC<ButtonProps> = ({
 
     const variantStyles = {
       primary: {
-        backgroundColor: disabled ? COLORS.textLight : COLORS.primarySolid,
+        backgroundColor: disabled ? COLORS.textLight : '#4a5cf9',
       },
       secondary: {
         backgroundColor: disabled ? COLORS.textLight : COLORS.lightPurple,
@@ -87,11 +87,12 @@ const Button: React.FC<ButtonProps> = ({
     const baseTextStyle: TextStyle = {
       fontFamily: FONTS.medium,
       textAlign: 'center',
+      fontWeight: '700',
     };
 
     const sizeTextStyles = {
       sm: { fontSize: SIZES.sm },
-      md: { fontSize: SIZES.base },
+      md: { fontSize: 24 },
       lg: { fontSize: SIZES.lg },
     };
 

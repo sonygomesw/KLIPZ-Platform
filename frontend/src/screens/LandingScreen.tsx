@@ -247,7 +247,7 @@ const DashboardContent: React.FC<{ userType: string }> = ({ userType }) => {
           
           <View style={styles.dashboardCard}>
             <Ionicons name="people-outline" size={32} color="#8B5CF6" />
-            <Text style={styles.dashboardCardTitle}>Campaigns</Text>
+            <Text style={styles.dashboardCardTitle}>Missions</Text>
             <Text style={styles.dashboardCardValue}>12</Text>
             <Text style={styles.dashboardCardSubtitle}>Active</Text>
           </View>
@@ -295,7 +295,7 @@ const DashboardContent: React.FC<{ userType: string }> = ({ userType }) => {
           
           <View style={styles.dashboardCard}>
             <Ionicons name="megaphone-outline" size={32} color="#8B5CF6" />
-            <Text style={styles.dashboardCardTitle}>Campaigns</Text>
+            <Text style={styles.dashboardCardTitle}>Missions</Text>
             <Text style={styles.dashboardCardValue}>5</Text>
             <Text style={styles.dashboardCardSubtitle}>Active</Text>
           </View>
@@ -471,7 +471,7 @@ const Sidebar: React.FC<{ onTabChange: (tab: string) => void; activeTab: string;
             <Text style={[
               styles.navText, 
               activeTab === 'campaigns' && styles.navTextActive
-            ]}>Campaigns</Text>
+                            ]}>Missions</Text>
           </TouchableOpacity>
           
           <TouchableOpacity 
@@ -972,7 +972,7 @@ const styles = StyleSheet.create({
   },
   signInText: {
     color: COLORS.secondary,
-    fontSize: 16,
+    fontSize: 24,
     fontWeight: '600',
     fontFamily: FONTS.bold,
   },
@@ -986,7 +986,7 @@ const styles = StyleSheet.create({
   },
   signUpText: {
     color: COLORS.primarySolid,
-    fontSize: 14,
+    fontSize: 24,
     fontWeight: '600',
     fontFamily: FONTS.semiBold,
   },

@@ -49,7 +49,11 @@
   
   <!-- Preload critical resources -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="preconnect" href="https://js.stripe.com" />
+  
+  <!-- Google Fonts - Inter with cache busting -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap&v=2" rel="stylesheet" />
   
   <style>
     /* Critical CSS for immediate render */
@@ -57,6 +61,19 @@
       height: 100vh;
       display: flex;
       flex-direction: column;
+    }
+    
+    /* Inter font family for web - Force loading */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap');
+    
+    *, *::before, *::after {
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, system-ui, sans-serif !important;
+      font-optical-sizing: auto;
+      font-style: normal;
+    }
+    
+    html, body, #root, div, span, p, h1, h2, h3, h4, h5, h6, text {
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, system-ui, sans-serif !important;
     }
     
     /* Loading screen */

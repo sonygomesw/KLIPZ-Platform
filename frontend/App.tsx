@@ -1,17 +1,34 @@
 // Importer les polyfills nécessaires pour React Native
 import './src/polyfills';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { View, StyleSheet, Alert, Platform } from 'react-native';
 // import { StripeProvider } from '@stripe/stripe-react-native';
 import * as Linking from 'expo-linking';
+import * as Font from 'expo-font';
 import AppNavigator from './src/navigation/AppNavigator';
 import { COLORS } from './src/constants';
 
 export default function App() {
   const publishableKey = process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY || '';
+  const [fontsLoaded, setFontsLoaded] = useState(false);
+
+  useEffect(() => {
+    // Load Inter fonts
+    const loadFonts = async () => {
+      await Font.loadAsync({
+        'Inter_18pt-Regular': require('./Inter/static/Inter_18pt-Regular.ttf'),
+        'Inter_18pt-Medium': require('./Inter/static/Inter_18pt-Medium.ttf'),
+        'Inter_18pt-SemiBold': require('./Inter/static/Inter_18pt-SemiBold.ttf'),
+        'Inter_18pt-Light': require('./Inter/static/Inter_18pt-Light.ttf'),
+      });
+      setFontsLoaded(true);
+    };
+
+    loadFonts();
+  }, []);
 
   useEffect(() => {
     // Handle deep link redirects from Stripe onboarding (mobile only)
@@ -28,6 +45,18 @@ export default function App() {
       return () => subscription?.remove();
     }
   }, []);
+
+  // Wait for fonts to load
+  if (!fontsLoaded) {
+    return (
+      <View style={styles.container}>
+        <SafeAreaProvider>
+          <StatusBar style="dark" />
+          {/* Loading screen */}
+        </SafeAreaProvider>
+      </View>
+    );
+  }
 
   // On web, don't wrap with StripeProvider as we handle Stripe differently
   if (Platform.OS === 'web') {
