@@ -93,7 +93,7 @@ const CreateCampaignScreen: React.FC<CreateCampaignScreenProps> = ({
       return;
     }
     if (!selectedImage && !imageUrl.trim()) {
-      Alert.alert('Error', 'Campaign preview image is required');
+      Alert.alert('Error', 'Mission preview image is required');
       return;
     }
 
@@ -101,7 +101,7 @@ const CreateCampaignScreen: React.FC<CreateCampaignScreenProps> = ({
     if (user.balance < Number(budget)) {
       Alert.alert(
         'Insufficient Balance',
-        `Your current balance is $${user.balance.toFixed(2)}. You need $${Number(budget).toFixed(2)} to create this campaign.`,
+        `Your current balance is $${user.balance.toFixed(2)}. You need $${Number(budget).toFixed(2)} to create this mission.`,
         [
           { text: 'Cancel', style: 'cancel' },
           { text: 'Add Funds', onPress: () => onTabChange('Payment') },
@@ -131,14 +131,14 @@ const CreateCampaignScreen: React.FC<CreateCampaignScreenProps> = ({
       
       Alert.alert(
         'Success',
-        'Your campaign has been created successfully!',
+        'Your mission has been created successfully!',
         [
           { text: 'OK', onPress: () => onTabChange('Dashboard') },
         ]
       );
     } catch (error: any) {
       console.error('Error creating campaign:', error);
-      Alert.alert('Error', error.message || 'Failed to create campaign');
+      Alert.alert('Error', error.message || 'Failed to create mission');
     } finally {
       setIsLoading(false);
     }
@@ -195,8 +195,8 @@ const CreateCampaignScreen: React.FC<CreateCampaignScreenProps> = ({
           {/* Page Title Header */}
           <View style={styles.pageTitleContainer}>
             <View style={styles.pageTitleContent}>
-              <Text style={styles.pageTitle}>Create Campaign</Text>
-              <Text style={styles.pageSubtitle}>Set up your campaign and start attracting talented clippers</Text>
+                      <Text style={styles.pageTitle}>Create Mission</Text>
+        <Text style={styles.pageSubtitle}>Set up your mission and start attracting talented clippers</Text>
             </View>
           </View>
 
@@ -205,7 +205,7 @@ const CreateCampaignScreen: React.FC<CreateCampaignScreenProps> = ({
             <View style={styles.leftSide}>
               <View style={styles.setupCard}>
                 <View style={styles.setupHeader}>
-                  <Text style={styles.setupTitle}>New campaign setup</Text>
+                  <Text style={styles.setupTitle}>New mission setup</Text>
                   <View style={styles.helpIcon}>
                     <Ionicons name="help-circle-outline" size={24} color={COLORS.textSecondary} />
                   </View>
@@ -218,7 +218,7 @@ const CreateCampaignScreen: React.FC<CreateCampaignScreenProps> = ({
                     style={styles.modernInput}
                     value={title}
                     onChangeText={setTitle}
-                    placeholder="KLIPZ Campaign"
+                    placeholder="KLIPZ Mission"
                     placeholderTextColor={COLORS.textLight}
                     maxLength={100}
                   />
@@ -342,7 +342,7 @@ const CreateCampaignScreen: React.FC<CreateCampaignScreenProps> = ({
                          {/* Right Side - Twitch Link & Image Upload */}
              <View style={styles.rightSide}>
                <View style={styles.previewCard}>
-                 <Text style={styles.previewTitle}>Campaign Setup</Text>
+                 <Text style={styles.previewTitle}>Mission Setup</Text>
                  
                  {/* Twitch Rediffusion Link */}
                  <View style={styles.modernInputGroup}>
@@ -359,11 +359,11 @@ const CreateCampaignScreen: React.FC<CreateCampaignScreenProps> = ({
                    />
                  </View>
 
-                 {/* Campaign Image Upload */}
+                 {/* Mission Image Upload */}
                  <View style={styles.modernInputGroup}>
-                   <Text style={styles.modernLabel}>Campaign Preview Image *</Text>
+                   <Text style={styles.modernLabel}>Mission Preview Image *</Text>
                    <Text style={styles.uploadDescription}>
-                     Upload an image that will be displayed as the campaign preview
+                     Upload an image that will be displayed as the mission preview
                    </Text>
                    
                    {!selectedImage ? (
@@ -404,9 +404,9 @@ const CreateCampaignScreen: React.FC<CreateCampaignScreenProps> = ({
            
            {/* Create Button - Inside scroll, after content */}
            <View style={styles.createButtonContainer}>
-             <TouchableOpacity style={styles.createButton} onPress={handleCreateCampaign}>
-               <Text style={styles.createButtonText}>Create Campaign</Text>
-             </TouchableOpacity>
+                     <TouchableOpacity style={styles.createButton} onPress={handleCreateCampaign}>
+          <Text style={styles.createButtonText}>Create Mission</Text>
+        </TouchableOpacity>
            </View>
         </ScrollView>
         </KeyboardAvoidingView>

@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   TouchableOpacity,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -193,14 +194,20 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
     }
   };
 
+  const handleContinue = () => {
+    // Cette fonction sera appelée quand l'utilisateur clique sur Continue
+  };
+
   const renderUserTypeSelection = () => (
     <View style={styles.container}>
       <View style={styles.centeredContent}>
         <View style={styles.headerContainer}>
-          <View style={styles.logoContainer}>
-            <Text style={styles.logoText}>KLIPZ</Text>
-          </View>
-          <Text style={styles.title}>Welcome to KLIPZ</Text>
+          <Image 
+            source={require('../../assets/klipz-logo.png')}
+            style={styles.logoImage}
+            resizeMode="contain"
+          />
+          <Text style={styles.title}>Welcome</Text>
           <Text style={styles.subtitle}>
             Log in to start creating or participating in campaigns
                   </Text>
@@ -215,10 +222,10 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
           onPress={() => setUserType('streamer')}
         >
           <View style={[styles.iconContainer, userType === 'streamer' && styles.selectedIconContainer]}>
-            <Ionicons 
-              name="game-controller" 
-              size={32} 
-              color={userType === 'streamer' ? '#FFFFFF' : COLORS.textSecondary} 
+              <Image 
+                source={require('../../assets/twitch-logo.jpg')}
+                style={styles.platformLogo}
+                resizeMode="contain"
             />
           </View>
           <Text style={[
@@ -240,10 +247,10 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
           onPress={() => setUserType('clipper')}
         >
           <View style={[styles.iconContainer, userType === 'clipper' && styles.selectedIconContainer]}>
-            <Ionicons 
-              name="videocam" 
-              size={32} 
-              color={userType === 'clipper' ? '#FFFFFF' : COLORS.textSecondary} 
+              <Image 
+                source={require('../../assets/tiktok-logo.png')}
+                style={styles.platformLogo}
+                resizeMode="contain"
             />
           </View>
           <Text style={[
@@ -276,8 +283,16 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
     >
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
+          <Image 
+            source={require('../../assets/klipz-logo.png')}
+            style={styles.authLogoImage}
+            resizeMode="contain"
+          />
           <Text style={styles.title}>
-            {userType === 'streamer' ? 'Streamer Login' : 'Clipper Login'}
+            {userType === 'streamer' 
+              ? (isLogin ? 'Streamer Login' : 'Streamer Sign Up')
+              : (isLogin ? 'Clipper Login' : 'Clipper Sign Up')
+            }
           </Text>
           <Text style={styles.subtitle}>
             {userType === 'streamer' 
@@ -428,7 +443,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
                   style={styles.input}
                   value={tiktokUsername}
                   onChangeText={setTiktokUsername}
-                  placeholder="your_tiktok_username"
+                  placeholder="Your TikTok username"
                   autoCapitalize="none"
                 />
                 <Text style={styles.helperText}>
@@ -472,7 +487,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
                   }}
                   disabled={isLoading}
                 >
-                  <Ionicons name="logo-tiktok" size={20} color="#FFFFFF" />
+                  <Ionicons name="logo-tiktok" size={30} color="#000000" />
                   <Text style={styles.tiktokButtonText}>Connect with TikTok</Text>
                 </TouchableOpacity>
               </View>
@@ -511,111 +526,128 @@ const styles = StyleSheet.create({
   },
   centeredContent: {
     width: '100%',
-    maxWidth: 500,
+    maxWidth: 1000,
     alignItems: 'center',
-    paddingHorizontal: SIZES.spacing.lg,
+    paddingHorizontal: SIZES.spacing.xl * 1.5,
   },
   scrollContent: {
     flexGrow: 1,
-    padding: SIZES.spacing.lg,
+    padding: SIZES.spacing.xl * 2,
+    justifyContent: 'space-between',
   },
   header: {
     alignItems: 'center',
-    marginBottom: SIZES.spacing.xl,
+    marginBottom: SIZES.spacing.xl * 4,
+    marginTop: SIZES.spacing.xl * 4,
+    paddingHorizontal: SIZES.spacing.xl,
   },
   headerContainer: {
     alignItems: 'center',
-    marginBottom: SIZES.spacing.xl * 2,
+    marginBottom: SIZES.spacing.xl * 4,
+    marginTop: SIZES.spacing.xl * 2,
   },
   logoContainer: {
     backgroundColor: COLORS.primarySolid,
-    width: 80,
-    height: 80,
-    borderRadius: 20,
+    width: 120,
+    height: 120,
+    borderRadius: 30,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: SIZES.spacing.lg,
+    marginBottom: SIZES.spacing.xl,
     shadowColor: COLORS.primarySolid,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.4,
+    shadowRadius: 24,
+    elevation: 12,
   },
-  logoText: {
-    fontSize: 24,
-    fontFamily: FONTS.bold,
-    color: '#FFFFFF',
-    fontWeight: '700',
+  logoImage: {
+    width: 200,
+    height: 200,
+    marginBottom: SIZES.spacing.xl,
+  },
+  authLogoImage: {
+    width: 150,
+    height: 150,
+    marginBottom: SIZES.spacing.xl,
   },
   title: {
-    fontSize: SIZES['3xl'],
+    fontSize: 56,
     fontFamily: FONTS.bold,
     color: COLORS.text,
     textAlign: 'center',
-    marginBottom: SIZES.spacing.sm,
+    marginBottom: SIZES.spacing.lg,
+    fontWeight: '700',
   },
   subtitle: {
-    fontSize: SIZES.base,
+    fontSize: 24,
     color: COLORS.textSecondary,
     textAlign: 'center',
-    lineHeight: 22,
+    lineHeight: 32,
+    maxWidth: 600,
   },
   userTypeContainer: {
     width: '100%',
-    marginBottom: SIZES.spacing.xl,
+    marginBottom: SIZES.spacing.xl * 3,
+    flexDirection: 'column',
+    gap: SIZES.spacing.xl * 2,
   },
   userTypeCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: SIZES.spacing.xl * 1.5,
-    marginBottom: SIZES.spacing.lg,
+    backgroundColor: COLORS.surface,
+    borderRadius: 28,
+    padding: SIZES.spacing.xl * 3,
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#E5E7EB',
+    borderColor: COLORS.border,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 6,
-    minHeight: 200,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.3,
+    shadowRadius: 24,
+    elevation: 12,
+    minHeight: 400,
     justifyContent: 'center',
+    width: '100%',
   },
   selectedCard: {
     borderColor: COLORS.primarySolid,
     borderWidth: 3,
-    backgroundColor: '#F8FAFF',
+    backgroundColor: COLORS.cardLight,
     shadowColor: COLORS.primarySolid,
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.3,
   },
   iconContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: 16,
-    backgroundColor: '#F3F4F6',
+    width: 140,
+    height: 140,
+    borderRadius: 35,
+    backgroundColor: COLORS.cardLight,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: SIZES.spacing.base,
+    marginBottom: SIZES.spacing.xl * 1.5,
+  },
+  platformLogo: {
+    width: 110,
+    height: 110,
+    borderRadius: 22,
   },
   selectedIconContainer: {
     backgroundColor: COLORS.primarySolid,
   },
   userTypeTitle: {
-    fontSize: 24,
+    fontSize: 36,
     fontFamily: FONTS.bold,
     color: COLORS.text,
     marginTop: SIZES.spacing.base,
-    marginBottom: SIZES.spacing.sm,
+    marginBottom: SIZES.spacing.base,
     fontWeight: '600',
   },
   selectedText: {
     color: COLORS.primarySolid,
   },
   userTypeDescription: {
-    fontSize: 16,
+    fontSize: 20,
     color: COLORS.textSecondary,
     textAlign: 'center',
-    lineHeight: 22,
-    maxWidth: 220,
+    lineHeight: 28,
+    maxWidth: 300,
   },
   continueButton: {
     marginTop: SIZES.spacing.xl,
@@ -627,26 +659,29 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   inputContainer: {
-    marginBottom: SIZES.spacing.lg,
+    marginBottom: SIZES.spacing.xl * 1.5,
   },
   inputLabel: {
-    fontSize: SIZES.base,
+    fontSize: 24,
     fontFamily: FONTS.medium,
     color: COLORS.text,
-    marginBottom: SIZES.spacing.xs,
+    marginBottom: SIZES.spacing.base,
+    fontWeight: '700',
   },
   input: {
-    borderWidth: 1,
+    borderWidth: 3,
     borderColor: COLORS.border,
-    borderRadius: SIZES.radius.base,
-    padding: SIZES.spacing.base,
-    fontSize: SIZES.base,
+    borderRadius: SIZES.radius.xl,
+    padding: SIZES.spacing.xl,
+    fontSize: 24,
     fontFamily: FONTS.regular,
     color: COLORS.text,
-    backgroundColor: COLORS.surface, // Gris clair
+    backgroundColor: COLORS.surface,
+    minHeight: 72,
   },
   authButton: {
-    marginTop: SIZES.spacing.xl,
+    marginTop: SIZES.spacing.xl * 3,
+    minHeight: 80,
   },
   tiktokAuthContainer: {
     alignItems: 'center',
@@ -667,61 +702,71 @@ const styles = StyleSheet.create({
     marginBottom: SIZES.spacing.xl,
   },
   tiktokButton: {
-    minWidth: 200,
+    width: '100%',
+    minHeight: 80,
+    backgroundColor: '#FFFFFF',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: SIZES.spacing.lg,
+    paddingHorizontal: SIZES.spacing.xl,
+    borderRadius: SIZES.radius.xl,
+    borderWidth: 3,
+    borderColor: '#E5E5E5',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 8,
   },
   backButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.primarySolid,
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    marginTop: SIZES.spacing.xl,
-    marginBottom: SIZES.spacing.lg,
-    shadowColor: COLORS.primarySolid,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
-    minWidth: 120,
+    backgroundColor: '#ffffff',
+    paddingVertical: 24,
+    paddingHorizontal: 32,
+    borderRadius: 16,
+    marginTop: SIZES.spacing.xl * 3,
+    marginBottom: SIZES.spacing.xl * 2,
+    minWidth: 160,
   },
   backButtonText: {
-    fontSize: 18,
+    fontSize: 26,
     fontFamily: FONTS.medium,
     fontWeight: '600',
-    color: '#FFFFFF',
-    marginLeft: 8,
+    color: '#000000',
   },
   toggleContainer: {
     flexDirection: 'row',
     backgroundColor: COLORS.surface,
-    borderRadius: SIZES.radius.base,
-    padding: 4,
-    marginBottom: SIZES.spacing.lg,
-    borderWidth: 1,
+    borderRadius: SIZES.radius.xl,
+    padding: 8,
+    marginBottom: SIZES.spacing.xl * 1.5,
+    borderWidth: 3,
     borderColor: COLORS.border,
   },
   toggleButton: {
     flex: 1,
-    paddingVertical: SIZES.spacing.base,
-    paddingHorizontal: SIZES.spacing.lg,
-    borderRadius: SIZES.radius.sm,
+    paddingVertical: SIZES.spacing.xl,
+    paddingHorizontal: SIZES.spacing.xl * 1.5,
+    borderRadius: SIZES.radius.lg,
     alignItems: 'center',
   },
   activeToggle: {
-    backgroundColor: COLORS.primarySolid,
+    backgroundColor: '#4a5cf9',
   },
   toggleText: {
-    fontSize: SIZES.base,
+    fontSize: 24,
     fontFamily: FONTS.medium,
     color: COLORS.textSecondary,
+    fontWeight: '700',
   },
   activeToggleText: {
     color: COLORS.white,
   },
   helperText: {
-    fontSize: SIZES.sm,
+    fontSize: 24,
     color: COLORS.textSecondary,
     fontFamily: FONTS.regular,
     marginTop: SIZES.spacing.xs,
@@ -736,21 +781,12 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.regular,
     marginBottom: SIZES.spacing.base,
   },
-  tiktokButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#000000',
-    paddingVertical: SIZES.spacing.base,
-    paddingHorizontal: SIZES.spacing.lg,
-    borderRadius: SIZES.radius.base,
-    minWidth: 250,
-    justifyContent: 'center',
-    gap: SIZES.spacing.sm,
-  },
   tiktokButtonText: {
-    fontSize: SIZES.base,
+    fontSize: 24,
     fontFamily: FONTS.medium,
-    color: '#FFFFFF',
+    fontWeight: '700',
+    color: '#000000',
+    marginLeft: SIZES.spacing.sm,
   },
 });
 

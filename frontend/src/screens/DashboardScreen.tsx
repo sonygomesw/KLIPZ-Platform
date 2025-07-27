@@ -425,7 +425,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
       {/* Section Solde */}
       <View style={styles.balanceTitleContainer}>
         <LinearGradient
-          colors={['#ffffff', '#ffffff']}
+          colors={['#1A1A1E', '#1A1A1E']}
           start={{ x: 0, y: 0 }}
           end={{ x: 0, y: 1 }}
           style={styles.balanceTitleGradient}
@@ -437,15 +437,8 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
                 <Text style={styles.balanceAmount}>{formatCurrency(walletBalance)}</Text>
               </View>
               <View style={styles.balanceRight}>
-                <TouchableOpacity 
-                  style={styles.simpleActionButton}
-                  onPress={() => setShowAddFundsModal(true)}
-                >
-                  <Ionicons name="add" size={36} color={COLORS.primarySolid} />
-                  <Text style={styles.simpleActionText}>Add</Text>
-                </TouchableOpacity>
                 <TouchableOpacity style={styles.simpleActionButton}>
-                  <Ionicons name="time" size={36} color={COLORS.primarySolid} />
+                  <Ionicons name="time" size={40} color={'#FFFFFF'} />
                   <Text style={styles.simpleActionText}>History</Text>
                 </TouchableOpacity>
               </View>
@@ -454,49 +447,39 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
         </LinearGradient>
       </View>
 
-      {/* Button Create Mission */}
+      {/* Button Add Money */}
       <TouchableOpacity 
         style={styles.simpleCreateButton}
-        onPress={() => onTabChange('CreateCampaign')}
+        onPress={() => setShowAddFundsModal(true)}
       >
-        <Text style={styles.simpleCreateText}>Create Campaign +</Text>
+        <Text style={styles.simpleCreateText}>Add Money</Text>
       </TouchableOpacity>
 
       {/* Grid de statistiques simplifiée */}
       <View style={styles.simpleStatsGrid}>
         <View style={[styles.simpleStatCard, styles.cardTopLeft]}>
-          <Ionicons name="film" size={48} color={COLORS.primarySolid} />
+          <Ionicons name="film" size={60} color={COLORS.primarySolid} />
           <Text style={styles.simpleStatValue}>{streamerCampaigns?.reduce((total, campaign) => total + (campaign.submissions?.length || 0), 0) || 0}</Text>
           <Text style={styles.simpleStatText}>Total Clips</Text>
         </View>
         <View style={[styles.simpleStatCard, styles.cardTopRight]}>
-          <Ionicons name="eye" size={48} color="#00D4AA" />
+          <Ionicons name="eye" size={60} color="#00D4AA" />
           <Text style={styles.simpleStatValue}>{formatViews(streamerCampaigns?.reduce((total, campaign) => total + (campaign.totalViews || 0), 0) || 0)}</Text>
           <Text style={styles.simpleStatText}>Total Views</Text>
         </View>
         <View style={[styles.simpleStatCard, styles.cardBottomLeft]}>
-          <Ionicons name="videocam" size={48} color="#FF6B6B" />
+          <Ionicons name="videocam" size={60} color="#FF6B6B" />
           <Text style={styles.simpleStatValue}>{streamerCampaigns?.filter(c => c.status === 'active').length || 0}</Text>
-          <Text style={styles.simpleStatText}>Active Campaigns</Text>
+          <Text style={styles.simpleStatText}>Active Missions</Text>
         </View>
         <View style={[styles.simpleStatCard, styles.cardBottomRight]}>
-          <Ionicons name="checkmark-circle" size={48} color="#FFA726" />
+          <Ionicons name="checkmark-circle" size={60} color="#FFA726" />
           <Text style={styles.simpleStatValue}>{streamerCampaigns?.filter(c => c.status === 'completed').length || 0}</Text>
-          <Text style={styles.simpleStatText}>Completed Campaigns</Text>
+          <Text style={styles.simpleStatText}>Completed Missions</Text>
         </View>
       </View>
 
-      {/* Section Mes Missions */}
-      {streamerCampaigns && streamerCampaigns.length > 0 && (
-        <View style={styles.missionsSection}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>My Missions</Text>
-          </View>
-          <View style={styles.missionsList}>
-            {streamerCampaigns.map((campaign) => renderMissionCard(campaign))}
-          </View>
-        </View>
-      )}
+
 
       {actualUserRole === 'admin' && renderDeclarationsToVerify()}
     </ScrollView>
@@ -513,7 +496,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
       {/* Section Solde */}
       <View style={styles.balanceTitleContainer}>
         <LinearGradient
-          colors={['#ffffff', '#ffffff']}
+          colors={['#1A1A1E', '#1A1A1E']}
           start={{ x: 0, y: 0 }}
           end={{ x: 0, y: 1 }}
           style={styles.balanceTitleGradient}
@@ -554,7 +537,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
         <View style={[styles.simpleStatCard, styles.cardBottomLeft]}>
           <Ionicons name="videocam" size={48} color="#FF6B6B" />
           <Text style={styles.simpleStatValue}>1</Text>
-          <Text style={styles.simpleStatText}>Available Campaigns</Text>
+          <Text style={styles.simpleStatText}>Available Missions</Text>
         </View>
         <View style={[styles.simpleStatCard, styles.cardBottomRight]}>
           <Ionicons name="time" size={48} color="#FFA726" />
@@ -583,7 +566,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     width: '100%',
-    backgroundColor: COLORS.background, // Blanc
+    backgroundColor: COLORS.card, // Mode sombre comme Create Campaign
   },
   scrollView: {
     flex: 1,
@@ -1279,13 +1262,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1A1A1E',
     padding: SIZES.spacing.xl,
     marginBottom: SIZES.spacing.lg,
     borderRadius: SIZES.radius.lg,
     width: '100%',
     borderWidth: 1,
-    borderColor: '#e9ecef',
+    borderColor: '#333',
     ...SHADOWS.md,
     minWidth: 300,
     flexWrap: 'nowrap',
@@ -1309,7 +1292,7 @@ const styles = StyleSheet.create({
   },
   balanceLabel: {
     fontSize: 40,
-    color: COLORS.textSecondary,
+    color: '#B5B5B5',
     fontFamily: FONTS.bold,
     marginLeft: SIZES.spacing.sm,
     flexShrink: 0,
@@ -1320,7 +1303,7 @@ const styles = StyleSheet.create({
   },
   balanceAmount: {
     fontSize: 44,
-    color: COLORS.text,
+    color: '#FFFFFF',
     fontFamily: FONTS.bold,
     fontWeight: 'semibold',
     marginTop: SIZES.spacing.sm,
@@ -1330,10 +1313,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: SIZES.spacing.xl,
     paddingVertical: SIZES.spacing.lg,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#2A2A2E',
     borderRadius: SIZES.radius.lg,
     borderWidth: 1,
-    borderColor: '#e9ecef',
+    borderColor: '#444',
     marginLeft: SIZES.spacing.sm,
     gap: SIZES.spacing.base,
     minWidth: 120,
@@ -1341,24 +1324,26 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   simpleActionText: {
-    fontSize: 20,
-    color: COLORS.text,
+    fontSize: 30,
+    color: '#FFFFFF',
     fontFamily: FONTS.medium,
     whiteSpace: 'nowrap',
     textAlign: 'center',
   },
   simpleCreateButton: {
-    backgroundColor: COLORS.primarySolid,
+    backgroundColor: '#4b5ef2',
     paddingVertical: SIZES.spacing.lg,
-    paddingHorizontal: SIZES.spacing.xl,
-    borderRadius: SIZES.radius.lg,
-    marginBottom: SIZES.spacing.lg,
+    paddingHorizontal: SIZES.spacing.lg,
+    borderRadius: 26,
+    marginTop: 15,
+    marginBottom: 5,
     alignItems: 'center',
-    width: '100%',
+    alignSelf: 'stretch',
+    marginHorizontal: 20,
     ...SHADOWS.md,
   },
   simpleCreateText: {
-    fontSize: 24,
+    fontSize: 30,
     color: '#FFFFFF',
     fontFamily: FONTS.bold,
   },
@@ -1366,44 +1351,44 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     flex: 1,
-    marginTop: SIZES.spacing.xl,
+    marginTop: 24,
     position: 'relative',
     minHeight: 500,
   },
   simpleStatCard: {
     width: '48%',
     height: '48%',
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1A1A1E',
     padding: SIZES.spacing.xl,
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: '#e0e0e0',
-    borderTopColor: '#f0f0f0',
-    borderLeftColor: '#f0f0f0',
-    borderRightColor: '#d0d0d0',
-    borderBottomColor: '#d0d0d0',
+    borderColor: '#333',
+    borderTopColor: '#444',
+    borderLeftColor: '#444',
+    borderRightColor: '#222',
+    borderBottomColor: '#222',
     ...SHADOWS.lg,
     position: 'absolute',
   },
   simpleStatValue: {
     fontSize: 48,
-    color: '#000000',
+    color: '#FFFFFF',
     fontFamily: FONTS.bold,
     textAlign: 'center',
     marginVertical: SIZES.spacing.lg,
-    textShadowColor: 'rgba(0, 0, 0, 0.1)',
+    textShadowColor: 'rgba(255, 255, 255, 0.1)',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,
   },
   simpleStatText: {
-    fontSize: 24,
-    color: '#666666',
+    fontSize: 30,
+    color: '#B5B5B5',
     fontFamily: FONTS.medium,
     textAlign: 'center',
     lineHeight: 22,
-    textShadowColor: 'rgba(0, 0, 0, 0.05)',
+    textShadowColor: 'rgba(255, 255, 255, 0.05)',
     textShadowOffset: { width: 0.5, height: 0.5 },
     textShadowRadius: 1,
   },
@@ -1451,11 +1436,11 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   missionCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#1A1A1E',
     borderRadius: 30,
     padding: 28,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: '#333',
     minHeight: 450,
     marginBottom: 24,
     shadowColor: '#000',
@@ -1515,7 +1500,7 @@ const styles = StyleSheet.create({
   },
   streamerName: {
     fontSize: 30,
-    color: '#000',
+    color: '#FFFFFF',
     fontFamily: FONTS.bold,
     maxWidth: 300,
     overflow: 'hidden',
@@ -1523,7 +1508,7 @@ const styles = StyleSheet.create({
   },
   streamerFollowersRefactored: {
     fontSize: 24,
-    color: '#6b7280',
+    color: '#B5B5B5',
     fontFamily: FONTS.regular,
     alignSelf: 'flex-start',
   },
@@ -1679,16 +1664,17 @@ const styles = StyleSheet.create({
     elevation: 6,
     borderRadius: 30,
     overflow: 'hidden',
-    marginBottom: SIZES.spacing.xl,
+    marginBottom: 24,
   },
   balanceTitleGradient: {
     paddingHorizontal: 40,
     paddingVertical: 30,
     borderRadius: 30,
     borderWidth: 1,
-    borderColor: '#e5e5e5',
+    borderColor: '#333',
     borderBottomWidth: 3,
-    borderBottomColor: '#d0d0d0',
+    borderBottomColor: '#222',
+    backgroundColor: '#1A1A1E',
   },
   balanceTitleContent: {
     flexDirection: 'column',
@@ -1699,14 +1685,14 @@ const styles = StyleSheet.create({
     fontSize: 40,
     fontFamily: FONTS.bold,
     fontWeight: '600',
-    color: '#363636',
+    color: '#FFFFFF',
     textAlign: 'center',
     lineHeight: 36,
   },
   balanceTitleDescription: {
     fontSize: 24,
     fontFamily: FONTS.regular,
-    color: '#6b7280',
+    color: '#B5B5B5',
     textAlign: 'center',
     lineHeight: 22,
     marginTop: 20,

@@ -226,7 +226,7 @@ const BoostsScreen: React.FC<BoostsScreenProps> = ({ user, navigation }) => {
       <View style={styles.modernStatsContainer}>
         <TouchableOpacity style={styles.modernStatCard} activeOpacity={0.8}>
           <LinearGradient
-            colors={['#FF6B6B', '#FF8E8E', '#FFA8A8']}
+            colors={['#4070d3', '#3864c8', '#3057be']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.statGradient}
@@ -304,7 +304,7 @@ const BoostsScreen: React.FC<BoostsScreenProps> = ({ user, navigation }) => {
     <View style={styles.quickActionsContainer}>
       <Text style={styles.quickActionsTitle}>Actions rapides</Text>
       <View style={styles.quickActionsGrid}>
-        <TouchableOpacity style={styles.quickActionCard} activeOpacity={0.8}>
+        <TouchableOpacity style={styles.quickActionCardWide} activeOpacity={0.8}>
           <LinearGradient
             colors={COLORS.primary}
             start={{ x: 0, y: 0 }}
@@ -316,7 +316,7 @@ const BoostsScreen: React.FC<BoostsScreenProps> = ({ user, navigation }) => {
           </LinearGradient>
         </TouchableOpacity>
         
-        <TouchableOpacity style={styles.quickActionCard} activeOpacity={0.8}>
+        <TouchableOpacity style={styles.quickActionCardNarrow} activeOpacity={0.8}>
           <View style={styles.quickActionOutline}>
             <Ionicons name="stats-chart" size={28} color={COLORS.primarySolid} />
             <Text style={styles.quickActionTextOutline}>Mes statistiques</Text>
@@ -779,6 +779,22 @@ const styles = StyleSheet.create({
   },
   quickActionCard: {
     width: '48%', // Two columns
+    height: 120,
+    borderRadius: SIZES.radius.lg,
+    overflow: 'hidden',
+    marginBottom: SIZES.spacing.sm,
+    ...SHADOWS.sm,
+  },
+  quickActionCardWide: {
+    width: '65%', // Bloc d'offre plus large (environ le double de l'autre)
+    height: 120,
+    borderRadius: SIZES.radius.lg,
+    overflow: 'hidden',
+    marginBottom: SIZES.spacing.sm,
+    ...SHADOWS.sm,
+  },
+  quickActionCardNarrow: {
+    width: '32%', // Bloc boost permanent plus petit
     height: 120,
     borderRadius: SIZES.radius.lg,
     overflow: 'hidden',

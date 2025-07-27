@@ -229,7 +229,7 @@ const CampaignsListScreen: React.FC<CampaignsListScreenProps> = ({
         >
           <View style={styles.headerTitleContent}>
             <Text style={styles.headerTitle}>
-              {user.role === 'streamer' ? 'My Campaigns' : 'Available Missions'}
+              {user.role === 'streamer' ? 'My missions' : 'Available Missions'}
             </Text>
             <Text style={styles.headerDescription}>
               {campaigns.length} mission{campaigns.length > 1 ? 's' : ''} found

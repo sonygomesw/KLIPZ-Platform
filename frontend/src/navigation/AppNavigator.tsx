@@ -55,10 +55,11 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   loadingText: {
-    marginTop: SIZES.spacing.lg,
-    fontSize: SIZES.base,
-    color: COLORS.textSecondary,
-    fontFamily: FONTS.medium,
+    marginTop: SIZES.spacing.xl,
+    fontSize: 32,
+    color: COLORS.text,
+    fontFamily: FONTS.bold,
+    fontWeight: '600',
   },
 });
 
@@ -125,6 +126,19 @@ const AppNavigator: React.FC = () => {
   const checkAuthState = async () => {
     try {
       setIsLoading(true);
+      
+      // Vérifier si Supabase est configuré
+      const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+      const supabaseKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+      
+      if (!supabaseUrl || !supabaseKey || 
+          supabaseUrl === 'your_supabase_url_here' || 
+          supabaseKey === 'your_supabase_anon_key_here') {
+        console.log('⚠️ Supabase non configuré - Mode développement');
+        setIsLoading(false);
+        return; // Afficher l'écran d'authentification
+      }
+      
       const currentUser = await authService.getCurrentUser();
       if (currentUser) {
       setUser(currentUser);
@@ -152,7 +166,7 @@ const AppNavigator: React.FC = () => {
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.primarySolid} />
+        <ActivityIndicator size={80} color={COLORS.primarySolid} />
         <Text style={styles.loadingText}>Loading...</Text>
       </View>
     );

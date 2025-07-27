@@ -1,49 +1,49 @@
-import { Dimensions } from 'react-native';
+import { Dimensions, Platform } from 'react-native';
 
 const { width, height } = Dimensions.get('window');
 
 export const COLORS = {
-  // Palette de couleurs moderne (style crypto)
-  primary: ['#0052FF', '#FFFFFF', '#0A0B0D'], // Bleu, Blanc, Noir
+  // Palette de couleurs moderne (mode sombre)
+  primary: ['#0052FF', '#FFFFFF', '#0A0A0B'], // Bleu, Blanc, Noir très sombre
   primarySolid: '#0052FF', // Bleu principal
   secondary: '#FFFFFF', // Blanc
-  accent: '#0A0B0D', // Noir
+  accent: '#0A0A0B', // Noir très sombre
   purple: '#0052FF', // Bleu
-  lightPurple: '#F8F9FA', // Gris très clair
+  lightPurple: '#1A1A1E', // Gris sombre pour les cartes
   primaryLight: '#4A90E2', // Bleu clair pour les badges
-  lightYellow: '#FFF9E6', // Jaune clair pour les banners
-  lightGray: '#F5F5F5', // Gris clair pour les placeholders
+  lightYellow: '#2A2A2E', // Gris sombre pour les placeholders
+  lightGray: '#2A2A2E', // Gris sombre pour les inputs
   teal: '#0052FF', // Bleu
   success: '#00D4AA', // Vert pour succès
   error: '#FF6B6B', // Rouge pour erreur
   warning: '#FFA726', // Orange pour warning
   
-  // Light theme backgrounds (style crypto)
-  background: '#FFFFFF', // Blanc
-  surface: '#F8F9FA', // Gris très clair
-  card: '#FFFFFF', // Blanc
-  cardLight: '#F8F9FA', // Gris très clair
+  // Dark theme backgrounds
+  background: '#0A0A0B', // Noir très sombre
+  surface: '#1A1A1E', // Gris sombre pour les cartes
+  card: '#1A1A1E', // Gris sombre
+  cardLight: '#2A2A2E', // Gris plus clair pour les inputs
   white: '#FFFFFF',
   
-  // Text colors for light theme
-  text: '#0A0B0D', // Noir
-  textSecondary: '#6C757D', // Gris
-  textLight: '#ADB5BD', // Gris clair
-  textDark: '#0A0B0D', // Noir
+  // Text colors for dark theme
+  text: '#FFFFFF', // Blanc
+  textSecondary: '#8B8B8D', // Gris clair
+  textLight: '#ADB5BD', // Gris plus clair
+  textDark: '#FFFFFF', // Blanc
   textWhite: '#FFFFFF', // Blanc
   
-  // Borders for light theme
-  border: '#E9ECEF', // Gris très clair
-  borderLight: '#F8F9FA', // Gris très clair
+  // Borders for dark theme
+  border: '#2A2A2E', // Gris sombre
+  borderLight: '#3A3A3E', // Gris plus clair
   
-  // Gradients avec nouvelle palette
+  // Gradients avec nouvelle palette sombre
   gradientStart: '#0052FF', // Bleu start
-  gradientMiddle: '#FFFFFF', // Blanc middle
-  gradientEnd: '#0A0B0D', // Noir end
+  gradientMiddle: '#1A1A1E', // Gris sombre middle
+  gradientEnd: '#0A0A0B', // Noir très sombre end
   purpleGradientStart: '#0052FF',
-  purpleGradientEnd: '#FFFFFF',
-  tealGradientStart: '#FFFFFF',
-  tealGradientEnd: '#0A0B0D',
+  purpleGradientEnd: '#1A1A1E',
+  tealGradientStart: '#1A1A1E',
+  tealGradientEnd: '#0A0A0B',
 };
 
 export const SIZES = {
@@ -82,10 +82,10 @@ export const SIZES = {
 };
 
 export const FONTS = {
-  regular: 'System',
-  medium: 'System',
-  bold: 'System',
-  light: 'System',
+  regular: Platform.OS === 'web' ? '"Inter", -apple-system, BlinkMacSystemFont, system-ui, sans-serif' : 'Inter_18pt-Regular',
+  medium: Platform.OS === 'web' ? '"Inter", -apple-system, BlinkMacSystemFont, system-ui, sans-serif' : 'Inter_18pt-Medium',
+  bold: Platform.OS === 'web' ? '"Inter", -apple-system, BlinkMacSystemFont, system-ui, sans-serif' : 'Inter_18pt-SemiBold',
+  light: Platform.OS === 'web' ? '"Inter", -apple-system, BlinkMacSystemFont, system-ui, sans-serif' : 'Inter_18pt-Light',
 };
 
 export const SHADOWS = {

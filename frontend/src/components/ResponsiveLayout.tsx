@@ -9,10 +9,190 @@ import {
   Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import Svg, { Path, Polygon, Circle, Line } from 'react-native-svg';
 import { COLORS, SIZES, SHADOWS, FONTS } from '../constants';
 import { User } from '../types';
 
 const { width, height } = Dimensions.get('window');
+
+// Composant pour l'icône Home Instagram (nouvelle version)
+const HomeIcon: React.FC<{ isActive: boolean; size: number }> = ({ isActive, size }) => {
+  const color = isActive ? '#f1f1f1' : '#b5b5b5';
+  
+  return (
+    <Svg width={size} height={size} viewBox="0 0 26 26" fill="none">
+      {isActive ? (
+        // Version active (remplie) - Instagram filled home
+        <Path
+          d="M2.25 12.8855V20.7497C2.25 21.8543 3.14543 22.7497 4.25 22.7497H8.25C8.52614 22.7497 8.75 22.5259 8.75 22.2497V17.6822V17.4997C8.75 15.1525 10.6528 13.2497 13 13.2497C15.3472 13.2497 17.25 15.1525 17.25 17.4997V17.6822V22.2497C17.25 22.5259 17.4739 22.7497 17.75 22.7497H21.75C22.8546 22.7497 23.75 21.8543 23.75 20.7497V12.8855C23.75 11.3765 23.0685 9.94815 21.8954 8.99883L16.1454 4.3454C14.3112 2.86095 11.6888 2.86095 9.85455 4.3454L4.10455 8.99883C2.93153 9.94815 2.25 11.3765 2.25 12.8855Z"
+          fill={color}
+          stroke={color}
+          strokeLinecap="round"
+          strokeWidth="2.5"
+        />
+      ) : (
+        // Version inactive (outline) - Instagram outline home
+        <Path
+          d="M2.25 12.8855V20.7497C2.25 21.8543 3.14543 22.7497 4.25 22.7497H9.25C9.52614 22.7497 9.75 22.5258 9.75 22.2497V17.6822V16.4997C9.75 14.7048 11.2051 13.2497 13 13.2497C14.7949 13.2497 16.25 14.7048 16.25 16.4997V17.6822V22.2497C16.25 22.5258 16.4739 22.7497 16.75 22.7497H21.75C22.8546 22.7497 23.75 21.8543 23.75 20.7497V12.8855C23.75 11.3765 23.0685 9.94814 21.8954 8.99882L16.1454 4.34539C14.3112 2.86094 11.6888 2.86094 9.85455 4.34539L4.10455 8.99882C2.93153 9.94814 2.25 11.3765 2.25 12.8855Z"
+          fill="none"
+          stroke={color}
+          strokeLinecap="round"
+          strokeWidth="2.5"
+        />
+      )}
+    </Svg>
+  );
+};
+
+// Composant pour l'icône My Missions (Reels Instagram)
+const CampaignsIcon: React.FC<{ isActive: boolean; size: number }> = ({ isActive, size }) => {
+  const color = isActive ? '#f1f1f1' : '#b5b5b5';
+  
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      {isActive ? (
+        // Version active (remplie) - Reels Instagram rempli
+        <>
+          <Path
+            d="M8 2A6 6 0 002 8v8a6 6 0 006 6h8a6 6 0 006-6V8a6 6 0 00-6-6H8z"
+            fill={color}
+          />
+          <Path
+            d="M10 8.5v7l5.5-3.5L10 8.5z"
+            fill="#000000"
+          />
+        </>
+      ) : (
+        // Version inactive (outline) - Reels Instagram outline
+        <>
+          <Path
+            d="M8 2A6 6 0 002 8v8a6 6 0 006 6h8a6 6 0 006-6V8a6 6 0 00-6-6H8z"
+            fill="none"
+            stroke={color}
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <Path
+            d="M10 8.5v7l5.5-3.5L10 8.5z"
+            fill="none"
+            stroke={color}
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </>
+      )}
+    </Svg>
+  );
+};
+
+// Composant pour l'icône Create Campaign (New Post) Instagram
+const CreateCampaignIcon: React.FC<{ isActive: boolean; size: number }> = ({ isActive, size }) => {
+  const color = isActive ? '#f1f1f1' : '#b5b5b5';
+  
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      {isActive ? (
+        // Version active (remplie) - Instagram filled new post avec croix intégrée
+        <>
+          <Path
+            d="M2 12v3.45c0 2.849.698 4.005 1.606 4.944.94.909 2.098 1.608 4.946 1.608h6.896c2.848 0 4.006-.7 4.946-1.608C21.302 19.455 22 18.3 22 15.45V8.552c0-2.849-.698-4.006-1.606-4.945C19.454 2.7 18.296 2 15.448 2H8.552c-2.848 0-4.006.699-4.946 1.607C2.698 4.547 2 5.703 2 8.552Z"
+            fill={color}
+          />
+          <Line
+            x1="6.545"
+            y1="12.001"
+            x2="17.455"
+            y2="12.001"
+            stroke="#000000"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+          />
+          <Line
+            x1="12.003"
+            y1="6.545"
+            x2="12.003"
+            y2="17.455"
+            stroke="#000000"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+          />
+        </>
+      ) : (
+        // Version inactive (outline) - Instagram outline new post
+        <>
+          <Path
+            d="M2 12v3.45c0 2.849.698 4.005 1.606 4.944.94.909 2.098 1.608 4.946 1.608h6.896c2.848 0 4.006-.7 4.946-1.608C21.302 19.455 22 18.3 22 15.45V8.552c0-2.849-.698-4.006-1.606-4.945C19.454 2.7 18.296 2 15.448 2H8.552c-2.848 0-4.006.699-4.946 1.607C2.698 4.547 2 5.703 2 8.552Z"
+            fill="none"
+            stroke={color}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+          />
+          <Line
+            x1="6.545"
+            y1="12.001"
+            x2="17.455"
+            y2="12.001"
+            stroke={color}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+          />
+          <Line
+            x1="12.003"
+            y1="6.545"
+            x2="12.003"
+            y2="17.455"
+            stroke={color}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+          />
+        </>
+      )}
+    </Svg>
+  );
+};
+
+// Composant pour l'icône Profile
+const ProfileIcon: React.FC<{ isActive: boolean; size: number }> = ({ isActive, size }) => {
+  const color = isActive ? '#f1f1f1' : '#b5b5b5';
+  
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      {isActive ? (
+        // Version active (remplie)
+        <Path
+          d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"
+          fill={color}
+        />
+      ) : (
+        // Version inactive (outline)
+        <>
+          <Circle
+            cx="12"
+            cy="8"
+            r="4"
+            stroke={color}
+            strokeWidth="2"
+            fill="none"
+          />
+          <Path
+            d="M20 20c0-3.33-5.33-6-8-6s-8 2.67-8 6"
+            stroke={color}
+            strokeWidth="2"
+            fill="none"
+            strokeLinecap="round"
+          />
+        </>
+      )}
+    </Svg>
+  );
+};
 
 interface ResponsiveLayoutProps {
   children: React.ReactNode;
@@ -34,9 +214,11 @@ const Sidebar: React.FC<{
   return (
     <View style={styles.sidebar}>
       <View style={styles.logoContainer}>
-        <View style={styles.logo}>
-          <Text style={styles.logoText}>KLIPZ</Text>
-        </View>
+        <Image 
+          source={require('../../assets/klipz-logo-sidebar.png')}
+          style={styles.logoImage}
+          resizeMode="contain"
+        />
         <View style={styles.welcomeContainer}>
           <View style={styles.welcomeContent}>
             <Text style={styles.welcomeText}>
@@ -69,10 +251,9 @@ const Sidebar: React.FC<{
             ]} 
             onPress={() => onTabChange('Dashboard')}
           >
-            <Ionicons 
-              name="home-outline" 
-              size={40} 
-              color={activeTab === 'Dashboard' ? '#000000' : '#6a6a6a'} 
+            <HomeIcon 
+              isActive={activeTab === 'Dashboard'}
+              size={45}
             />
             <Text style={[
               styles.navText, 
@@ -90,8 +271,8 @@ const Sidebar: React.FC<{
             >
               <Ionicons 
                 name="megaphone-outline" 
-                size={40} 
-                color={activeTab === 'AvailableMissions' ? '#000000' : '#6a6a6a'} 
+                size={45} 
+                color={activeTab === 'AvailableMissions' ? '#f1f1f1' : '#b5b5b5'} 
               />
               <Text style={[
                 styles.navText, 
@@ -108,15 +289,33 @@ const Sidebar: React.FC<{
               ]} 
               onPress={() => onTabChange('Campaigns')}
             >
-              <Ionicons 
-                name="megaphone-outline" 
-                size={40} 
-                color={activeTab === 'Campaigns' ? '#000000' : '#6a6a6a'} 
+              <CampaignsIcon 
+                isActive={activeTab === 'Campaigns'}
+                size={45}
               />
               <Text style={[
                 styles.navText, 
                 activeTab === 'Campaigns' && styles.navTextActive
-              ]}>My Campaigns</Text>
+              ]}>My Missions</Text>
+            </TouchableOpacity>
+          )}
+          
+          {isClipper && (
+            <TouchableOpacity 
+              style={[
+                styles.navItem, 
+                activeTab === 'Campaigns' && styles.navItemActive
+              ]} 
+              onPress={() => onTabChange('Campaigns')}
+            >
+              <CampaignsIcon 
+                isActive={activeTab === 'Campaigns'}
+                size={45}
+              />
+              <Text style={[
+                styles.navText, 
+                activeTab === 'Campaigns' && styles.navTextActive
+              ]}>Missions</Text>
             </TouchableOpacity>
           )}
           
@@ -132,8 +331,8 @@ const Sidebar: React.FC<{
             >
               <Ionicons 
                 name="wallet-outline" 
-                size={40} 
-                color={activeTab === 'Earnings' ? '#000000' : '#6a6a6a'} 
+                size={45} 
+                color={activeTab === 'Earnings' ? '#f1f1f1' : '#b5b5b5'} 
               />
               <Text style={[
                 styles.navText, 
@@ -152,8 +351,8 @@ const Sidebar: React.FC<{
             >
               <Ionicons 
                 name="videocam-outline" 
-                size={40} 
-                color={activeTab === 'Submissions' ? '#000000' : '#6a6a6a'} 
+                size={45} 
+                color={activeTab === 'Submissions' ? '#f1f1f1' : '#b5b5b5'} 
               />
               <Text style={[
                 styles.navText, 
@@ -176,15 +375,14 @@ const Sidebar: React.FC<{
       ]}
               onPress={() => onTabChange('CreateCampaign')}
     >
-      <Ionicons
-                name="add-circle-outline" 
-                size={40} 
-                color={activeTab === 'CreateCampaign' ? '#000000' : '#6a6a6a'} 
+      <CreateCampaignIcon
+                isActive={activeTab === 'CreateCampaign'}
+                size={45}
               />
               <Text style={[
                 styles.navText, 
                 activeTab === 'CreateCampaign' && styles.navTextActive
-              ]}>Create Campaign</Text>
+                                ]}>Create Mission</Text>
             </TouchableOpacity>
           )}
           
@@ -197,10 +395,9 @@ const Sidebar: React.FC<{
             ]} 
             onPress={() => onTabChange('Profile')}
           >
-            <Ionicons 
-              name="person-outline" 
-              size={40} 
-              color={activeTab === 'Profile' ? '#000000' : '#6a6a6a'} 
+            <ProfileIcon 
+              isActive={activeTab === 'Profile'}
+              size={45}
             />
             <Text style={[
               styles.navText, 
@@ -218,8 +415,8 @@ const Sidebar: React.FC<{
             >
               <Ionicons 
                 name="shield-checkmark-outline" 
-                size={40} 
-                color={activeTab === 'AdminDeclarations' ? '#000000' : '#6a6a6a'} 
+                size={45} 
+                color={activeTab === 'AdminDeclarations' ? '#f1f1f1' : '#b5b5b5'} 
               />
               <Text style={[
                 styles.navText, 
@@ -268,9 +465,11 @@ const ResponsiveLayout: React.FC<ResponsiveLayoutProps> = ({
         <View style={styles.header}>
           {!isDesktop && (
     <View style={styles.mobileHeader}>
-              <View style={styles.mobileLogo}>
-                <Text style={styles.mobileLogoText}>KLIPZ</Text>
-              </View>
+              <Image 
+                source={require('../../assets/klipz-logo-sidebar.png')}
+                style={styles.mobileLogoImage}
+                resizeMode="contain"
+              />
             </View>
       )}
     </View>
@@ -295,7 +494,7 @@ const styles = StyleSheet.create({
   sidebar: {
     width: 500, // Augmente la largeur de la sidebar
     minWidth: 450, // Largeur minimum de la sidebar
-    backgroundColor: COLORS.background,
+    backgroundColor: '#000000',
     borderRightWidth: 1,
     borderRightColor: COLORS.border,
     paddingVertical: 24,
@@ -309,20 +508,12 @@ const styles = StyleSheet.create({
     marginBottom: 40,
     flexDirection: 'row',
     alignItems: 'center',
+    borderRadius: 32,
   },
-  logo: {
-    width: 80,
-    height: 80,
-    backgroundColor: COLORS.accent,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: COLORS.secondary,
-  },
-  logoText: {
-    color: COLORS.secondary,
-    fontSize: 16,
-    fontWeight: 'bold',
+  logoImage: {
+    width: 150,
+    height: 150,
+    borderRadius: 32,
   },
   welcomeContainer: {
     flex: 1,
@@ -337,15 +528,15 @@ const styles = StyleSheet.create({
     paddingRight: SIZES.spacing.md,
   },
   welcomeText: {
-    fontSize: 30,
+    fontSize: 33,
     color: COLORS.text,
     fontFamily: FONTS.medium,
     fontWeight: '450',
   },
   twitchBadge: {
-    width: 16,
-    height: 16,
-    marginLeft: SIZES.spacing.md,
+    width: 33,
+    height: 33,
+    marginLeft: 10,
   },
   roleBadge: {
     flexDirection: 'row',
@@ -371,7 +562,7 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   navSectionTitle: {
-    fontSize: 11,
+    fontSize: 30,
     fontWeight: '600',
     color: COLORS.textSecondary,
     marginBottom: 12,
@@ -382,26 +573,25 @@ const styles = StyleSheet.create({
   navItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 16,
+    paddingVertical: 26,
     paddingHorizontal: 20,
     borderRadius: 12,
     marginBottom: 20,
     transition: 'all 0.3s ease',
   },
   navItemActive: {
-    backgroundColor: '#e0e0e0',
-    borderRadius: 16,
+    backgroundColor: '#363636',
+    borderRadius: 27,
   },
   navText: {
     marginLeft: 20,
-    fontSize: 37,
-    color: '#6a6a6a',
+    fontSize: 35,
+    color: '#b5b5b5',
     fontWeight: '350',
     fontFamily: FONTS.medium,
   },
   navTextActive: {
-    color: '#000000',
-    fontWeight: '500',
+    color: '#f1f1f1',
   },
   footer: {
     marginTop: 20,
@@ -456,19 +646,9 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'flex-start',
   },
-  mobileLogo: {
+  mobileLogoImage: {
     width: 32,
     height: 32,
-    backgroundColor: COLORS.accent,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: COLORS.secondary,
-  },
-  mobileLogoText: {
-    color: COLORS.secondary,
-    fontSize: 12,
-    fontWeight: 'bold',
   },
   header: {
     paddingHorizontal: Platform.OS === 'web' ? 32 : 16,
