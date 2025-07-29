@@ -9,10 +9,9 @@ import {
   Switch,
   Image,
   TextInput,
-  Modal,
-  FlatList,
   ActivityIndicator,
 } from 'react-native';
+import { Picker } from '@react-native-picker/picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -40,26 +39,20 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ user, onLogout }) => {
     phone: user.phone || '',
   });
   const [isSaving, setIsSaving] = useState(false);
-  const [showCountryPicker, setShowCountryPicker] = useState(false);
-  const [selectedCountry, setSelectedCountry] = useState({
-    code: 'US',
-    name: 'United States',
-    flag: '🇺🇸',
-    dialCode: '+1'
-  });
+  const [selectedCountry, setSelectedCountry] = useState('US');
 
   // Initialize country and phone number
   useEffect(() => {
     if (user.phone) {
       // Find country matching phone code
       const foundCountry = countries.find(country => 
-        user.phone.startsWith(country.dialCode)
+        user.phone!.startsWith(country.dialCode)
       );
       
       if (foundCountry) {
-        setSelectedCountry(foundCountry);
+        setSelectedCountry(foundCountry.code);
         // Extract number without country code
-        const phoneWithoutCode = user.phone.replace(foundCountry.dialCode, '');
+        const phoneWithoutCode = user.phone!.replace(foundCountry.dialCode, '');
         setProfileData(prev => ({ ...prev, phone: phoneWithoutCode }));
       }
     }
@@ -461,8 +454,9 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ user, onLogout }) => {
       setIsSaving(true);
       
       // Build complete number with country code
+      const selectedCountryData = countries.find(c => c.code === selectedCountry);
       const fullPhoneNumber = profileData.phone.trim() 
-        ? `${selectedCountry.dialCode}${profileData.phone.trim()}`
+        ? `${selectedCountryData?.dialCode || '+1'}${profileData.phone.trim()}`
         : '';
 
       const result = await authService.updateProfile(user.id, {
@@ -530,14 +524,21 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ user, onLogout }) => {
       <View style={styles.inputGroup}>
         <Text style={styles.inputLabel}>Phone Number</Text>
         <View style={styles.phoneInputContainer}>
-          <TouchableOpacity 
-            style={styles.countrySelector}
-            onPress={() => setShowCountryPicker(true)}
-          >
-            <Text style={styles.flag}>{selectedCountry.flag}</Text>
-            <Text style={styles.dialCode}>{selectedCountry.dialCode}</Text>
-            <Ionicons name="chevron-down" size={16} color="#6B7280" />
-          </TouchableOpacity>
+          <View style={styles.countryPickerContainer}>
+            <Picker
+              selectedValue={selectedCountry}
+              onValueChange={(itemValue) => setSelectedCountry(itemValue)}
+              style={styles.countryPicker}
+            >
+              {countries.map((country) => (
+                <Picker.Item
+                  key={country.code}
+                  label={`${country.flag} ${country.dialCode}`}
+                  value={country.code}
+                />
+              ))}
+            </Picker>
+          </View>
           <TextInput
             style={[styles.textInput, styles.phoneInput]}
             value={profileData.phone}
@@ -661,56 +662,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ user, onLogout }) => {
         <View style={styles.bottomSpacer} />
       </ScrollView>
 
-      {/* Modal de sélection de pays */}
-      <Modal
-        visible={showCountryPicker}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowCountryPicker(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <LinearGradient
-              colors={['#1a1a1a', '#000000']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.modalHeader}
-            >
-              <Text style={styles.modalTitle}>Select a country</Text>
-              <TouchableOpacity 
-                style={styles.modalCloseButton}
-                onPress={() => setShowCountryPicker(false)}
-              >
-                <Ionicons name="close" size={20} color="#faf9f0" />
-              </TouchableOpacity>
-            </LinearGradient>
-            
-            <FlatList
-              data={countries}
-              keyExtractor={(item) => item.code}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={styles.countryItem}
-                  onPress={() => {
-                    setSelectedCountry(item);
-                    setShowCountryPicker(false);
-                  }}
-                >
-                  <Text style={styles.countryFlag}>{item.flag}</Text>
-                  <View style={styles.countryInfo}>
-                    <Text style={styles.countryName}>{item.name}</Text>
-                    <Text style={styles.countryDialCode}>{item.dialCode}</Text>
-                  </View>
-                  {selectedCountry.code === item.code && (
-                    <Ionicons name="checkmark" size={20} color="#FF8C42" />
-                  )}
-                </TouchableOpacity>
-              )}
-              showsVerticalScrollIndicator={false}
-            />
-          </View>
-        </View>
-      </Modal>
+
     </View>
   );
 };
@@ -718,7 +670,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ user, onLogout }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.card,
   },
   scrollView: {
     flex: 1,
@@ -737,7 +689,7 @@ const styles = StyleSheet.create({
     fontSize: 40,
     fontFamily: FONTS.bold,
     fontWeight: '600',
-    color: '#363636',
+    color: '#FFFFFF',
     textAlign: 'center',
     lineHeight: 36,
   },
@@ -758,9 +710,10 @@ const styles = StyleSheet.create({
     paddingVertical: 30,
     borderRadius: 30,
     borderWidth: 1,
-    borderColor: '#e5e5e5',
+    borderColor: '#333',
     borderBottomWidth: 3,
-    borderBottomColor: '#d0d0d0',
+    borderBottomColor: '#222',
+    backgroundColor: '#1A1A1E',
   },
   headerTitleContent: {
     flexDirection: 'column',
@@ -770,18 +723,18 @@ const styles = StyleSheet.create({
   headerDescription: {
     fontSize: 24,
     fontFamily: FONTS.regular,
-    color: '#6b7280',
+    color: '#B5B5B5',
     textAlign: 'center',
     lineHeight: 22,
     marginTop: 20,
     flexShrink: 1,
   },
   mainCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#1A1A1E',
     marginBottom: 24,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#333',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
@@ -795,7 +748,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 24,
     marginBottom: 24,
-    backgroundColor: '#f9fafb',
+    backgroundColor: '#2A2A2E',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
   },
@@ -818,24 +771,20 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontFamily: FONTS.bold,
     fontWeight: '600',
-    color: '#6b7280',
+    color: '#FFFFFF',
   },
   sectionSpacer: {
     height: 24,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.card,
   },
   bottomSpacer: {
     height: 24,
   },
 
-  scrollView: {
-    flex: 1,
-  },
-
   sectionDescription: {
     fontSize: 14,
     fontFamily: FONTS.medium,
-    color: '#000000',
+    color: '#B5B5B5',
     marginBottom: 32,
     lineHeight: 22,
     opacity: 0.7,
@@ -843,14 +792,13 @@ const styles = StyleSheet.create({
     paddingTop: 8,
   },
 
-
   configureButton: {
-    backgroundColor: '#faf9f0',
+    backgroundColor: '#2A2A2E',
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#e8e6d9',
+    borderColor: '#333',
     minWidth: 90,
     marginLeft: 20,
     marginRight: 8,
@@ -858,27 +806,23 @@ const styles = StyleSheet.create({
   configureButtonText: {
     fontSize: 14,
     fontFamily: FONTS.medium,
-    color: '#000000',
+    color: '#FFFFFF',
   },
 
   mainContent: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
-  scrollView: {
-    flex: 1,
-    paddingHorizontal: 20,
+    backgroundColor: COLORS.card,
   },
   contentHeader: {
     padding: 32,
     paddingBottom: 24,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: '#333',
   },
   contentTitle: {
     fontSize: 32,
     fontFamily: FONTS.bold,
-    color: '#111827',
+    color: '#FFFFFF',
   },
   contentSection: {
     padding: 32,
@@ -892,20 +836,20 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontFamily: FONTS.bold,
     fontWeight: '600',
-    color: '#000000',
+    color: '#FFFFFF',
     marginBottom: 12,
   },
   textInput: {
     borderWidth: 2,
-    borderColor: '#d0d0d0',
+    borderColor: '#333',
     borderRadius: 12,
     paddingHorizontal: 20,
     paddingVertical: 16,
     fontSize: 20,
     fontFamily: FONTS.medium,
     fontWeight: '600',
-    color: '#000000',
-    backgroundColor: '#FFFFFF',
+    color: '#FFFFFF',
+    backgroundColor: '#1A1A1E',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -921,35 +865,27 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#d0d0d0',
+    borderColor: '#333',
     borderRadius: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#1A1A1E',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
   },
-  countrySelector: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+  countryPickerContainer: {
     borderRightWidth: 1,
-    borderRightColor: '#e8e6d9',
-    gap: 8,
+    borderRightColor: '#333',
+    minWidth: 120,
   },
-  flag: {
-    fontSize: 18,
+  countryPicker: {
+    color: '#FFFFFF',
+    backgroundColor: 'transparent',
   },
   phoneInput: {
     flex: 1,
-    borderWidth: 0,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 16,
-    fontFamily: FONTS.medium,
-    color: '#000000',
+    marginLeft: 0,
   },
   saveButtonContainer: {
     paddingHorizontal: 24,
@@ -984,112 +920,26 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   disabledInput: {
-    backgroundColor: '#faf9f0',
-    color: '#000000',
-    borderColor: '#e8e6d9',
+    backgroundColor: '#2A2A2E',
+    color: '#B5B5B5',
+    borderColor: '#333',
     opacity: 0.6,
   },
   disabledNote: {
     fontSize: 14,
     fontFamily: FONTS.medium,
-    color: '#000000',
+    color: '#B5B5B5',
     marginTop: 6,
     fontStyle: 'italic',
     paddingHorizontal: 4,
     opacity: 0.6,
   },
-  flag: {
-    fontSize: 20,
-    marginRight: 8,
-  },
-  dialCode: {
-    fontSize: 14,
-    fontFamily: FONTS.medium,
-    color: '#374151',
-    marginRight: 4,
-  },
-  phoneInput: {
-    flex: 1,
-    marginLeft: 0,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    maxHeight: '80%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontFamily: FONTS.bold,
-    color: '#faf9f0',
-  },
-  modalCloseButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(250, 249, 240, 0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(250, 249, 240, 0.3)',
-  },
-  countryItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e8e6d9',
-    backgroundColor: '#FFFFFF',
-  },
-  countryFlag: {
-    fontSize: 24,
-    marginRight: 12,
-  },
-  countryInfo: {
-    flex: 1,
-  },
-  countryName: {
-    fontSize: 16,
-    fontFamily: FONTS.medium,
-    color: '#000000',
-  },
-  countryDialCode: {
-    fontSize: 14,
-    fontFamily: FONTS.medium,
-    color: '#FF8C42',
-    marginTop: 2,
-  },
   sectionTitle: {
     fontSize: 24,
     fontFamily: FONTS.bold,
-    color: '#111827',
+    color: '#FFFFFF',
     marginBottom: 8,
     marginLeft: 20,
-  },
-  sectionDescription: {
-    fontSize: 16,
-    fontFamily: FONTS.regular,
-    color: '#6B7280',
-    marginBottom: 24,
-    lineHeight: 24,
   },
 
   securityItem: {
@@ -1099,7 +949,7 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
     paddingHorizontal: 24,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: '#333',
   },
   securityInfo: {
     flexDirection: 'row',
@@ -1114,13 +964,13 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontFamily: FONTS.medium,
     fontWeight: '600',
-    color: '#000000',
+    color: '#FFFFFF',
     marginBottom: 4,
   },
   securityDescription: {
     fontSize: 20,
     fontFamily: FONTS.regular,
-    color: '#6B7280',
+    color: '#B5B5B5',
   },
   actionButton: {
     backgroundColor: '#4a5cf9',
@@ -1148,7 +998,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: '#333',
   },
   paymentInfo: {
     flexDirection: 'row',
@@ -1161,13 +1011,13 @@ const styles = StyleSheet.create({
   paymentName: {
     fontSize: 16,
     fontFamily: FONTS.medium,
-    color: '#111827',
+    color: '#FFFFFF',
     marginBottom: 4,
   },
   paymentDescription: {
     fontSize: 14,
     fontFamily: FONTS.regular,
-    color: '#6B7280',
+    color: '#B5B5B5',
   },
   addButton: {
     backgroundColor: '#10B981',

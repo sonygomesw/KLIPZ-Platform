@@ -7,6 +7,7 @@ export interface AuthUser {
   email: string;
   role: 'streamer' | 'clipper';
   twitchUrl?: string;
+  youtubeUrl?: string;
   tiktokUsername?: string;
   balance: number;
   createdAt: Date;
@@ -24,7 +25,8 @@ export interface AuthUser {
 export interface StreamerSignUpData {
   email: string;
   password: string;
-  twitchUrl: string;
+  twitchUrl?: string;
+  youtubeUrl?: string;
 }
 
 export interface ClipperSignUpData {
@@ -34,25 +36,32 @@ export interface ClipperSignUpData {
 }
 
 class AuthService {
-  // Inscription d'un streamer - Version avec intégration Twitch simplifiée
+  // Inscription d'un streamer - Version avec intégration Twitch et YouTube
   async signUpStreamer(data: StreamerSignUpData): Promise<AuthUser> {
     try {
       console.log('🔵 Début inscription streamer:', data.email);
       
-      // 1. Valider l'URL Twitch
-      if (!validateTwitchUrl(data.twitchUrl)) {
-        throw new Error('URL Twitch invalide');
+      // 1. Vérifier qu'au moins une URL est fournie
+      if (!data.twitchUrl && !data.youtubeUrl) {
+        throw new Error('Au moins une chaîne (Twitch ou YouTube) est requise');
       }
       
-      // 2. Récupérer les données Twitch complètes
-      console.log('🔵 Récupération des données Twitch...');
+      // 2. Valider l'URL Twitch si fournie
       let twitchData = null;
-      try {
-        twitchData = await getTwitchDataFromUrl(data.twitchUrl);
-        console.log('🔵 Données Twitch récupérées:', twitchData);
-      } catch (twitchError) {
-        console.warn('⚠️ Erreur récupération Twitch, continuation sans données:', twitchError);
-        // On continue sans les données Twitch
+      if (data.twitchUrl) {
+        if (!validateTwitchUrl(data.twitchUrl)) {
+          throw new Error('URL Twitch invalide');
+        }
+        
+        // Récupérer les données Twitch complètes
+        console.log('🔵 Récupération des données Twitch...');
+        try {
+          twitchData = await getTwitchDataFromUrl(data.twitchUrl);
+          console.log('🔵 Données Twitch récupérées:', twitchData);
+        } catch (twitchError) {
+          console.warn('⚠️ Erreur récupération Twitch, continuation sans données:', twitchError);
+          // On continue sans les données Twitch
+        }
       }
       
       // 3. Créer le compte Supabase Auth
@@ -60,10 +69,6 @@ class AuthService {
       const authResult = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
-        options: {
-          // Désactiver la confirmation email pour les tests
-          emailConfirm: false,
-        }
       });
 
       console.log('🔵 Réponse Supabase Auth:', authResult);

@@ -13,6 +13,7 @@ import {
   Dimensions,
   Image,
 } from 'react-native';
+import { Picker } from '@react-native-picker/picker';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, SIZES, FONTS, SHADOWS } from '../constants';
@@ -45,6 +46,13 @@ const CampaignsListScreen: React.FC<CampaignsListScreenProps> = ({
   const [filters, setFilters] = useState<CampaignFilters>({
     sortBy: 'new',
   });
+  
+  // État pour la plateforme sélectionnée
+  const [selectedPlatform, setSelectedPlatform] = useState<'twitch' | 'youtube'>('twitch');
+  
+  // État pour le dropdown de tri
+
+
   
   // Calcul du nombre de colonnes basé sur la largeur de l'écran
   const [numColumns, setNumColumns] = useState(3);
@@ -122,6 +130,8 @@ const CampaignsListScreen: React.FC<CampaignsListScreenProps> = ({
     return views.toString();
   };
 
+
+
   // Fonctions pour calculer la largeur des cartes (comme dans AvailableMissionsScreen)
   const getCardWidth = () => {
     if (numColumns === 1) return '100%'; // 1 colonne : pleine largeur
@@ -155,7 +165,7 @@ const CampaignsListScreen: React.FC<CampaignsListScreenProps> = ({
           ...(typeof getCardMaxWidth() === 'number' ? { maxWidth: getCardMaxWidth() } : {}),
           paddingHorizontal: getCardPaddingHorizontal(),
           alignSelf: numColumns === 1 ? 'center' : 'stretch',
-          marginTop: index === 0 ? 0 : 24
+          marginTop: 12 // Toutes les cartes ont maintenant le même marginTop
         }
       ]}
       onPress={() => handleCampaignPress(item)}
@@ -171,7 +181,7 @@ const CampaignsListScreen: React.FC<CampaignsListScreenProps> = ({
           />
         ) : (
           <View style={styles.avatarPlaceholder}>
-            <Ionicons name="person" size={20} color={COLORS.primarySolid} />
+            <Ionicons name="person" size={10} color={COLORS.primarySolid} /> // Réduit de 20 à 10
           </View>
         )}
         {/* Block nom+badge+followers au centre */}
@@ -215,7 +225,7 @@ const CampaignsListScreen: React.FC<CampaignsListScreenProps> = ({
             />
           ) : (
             <View style={styles.thumbnailPlaceholder}>
-              <Ionicons name="videocam" size={40} color="#999" />
+              <Ionicons name="videocam" size={20} color="#999" /> // Réduit de 40 à 20
               <Text style={styles.thumbnailText}>Campaign Preview</Text>
             </View>
           )}
@@ -253,21 +263,16 @@ const CampaignsListScreen: React.FC<CampaignsListScreenProps> = ({
               handleCampaignPress(item);
             }}
           >
-            <LinearGradient
-              colors={['#8B5CF6', '#7C3AED']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 0, y: 1 }}
-              style={styles.participateGradient}
-            >
+            <View style={styles.participateGradient}>
               <View style={styles.participateButtonContent}>
                 <Image 
                   source={require('../../assets/twitch-logo.jpg')} 
                   style={styles.twitchLogoButton}
                 />
-                <Text style={[styles.participateText, { color: '#FFFFFF' }]}>Manage</Text>
-                <Ionicons name="add" size={45} color="#FFFFFF" style={{ marginLeft: 10 }} />
+                <Text style={[styles.participateText, { color: '#ffffff' }]}>Manage</Text>
+                <Ionicons name="pencil-outline" size={15} color="#ffffff" style={{ marginLeft: 10 }} />
               </View>
-            </LinearGradient>
+            </View>
           </TouchableOpacity>
         </View>
       </View>
@@ -276,30 +281,83 @@ const CampaignsListScreen: React.FC<CampaignsListScreenProps> = ({
 
   const renderHeader = () => (
     <View style={styles.header}>
-      <View style={styles.headerTitleContainer}>
-        <LinearGradient
-          colors={['#ffffff', '#ffffff']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 0, y: 1 }}
-          style={styles.headerTitleGradient}
-        >
-          <View style={styles.headerTitleContent}>
-            <Text style={styles.headerTitle}>
-              {user.role === 'streamer' ? 'My missions' : 'Available Missions'}
+      
+      {/* Platform buttons, sort picker and missions count on same line */}
+      <View style={styles.allButtonsContainer}>
+        {/* Platform buttons */}
+        <View style={styles.platformButtonsContainer}>
+          <TouchableOpacity
+            style={[
+              styles.platformButton,
+              selectedPlatform === 'twitch' && styles.platformButtonActive,
+            ]}
+            onPress={() => {
+              setSelectedPlatform('twitch');
+              console.log('Twitch selected');
+            }}
+          >
+            <Ionicons 
+              name="logo-twitch" 
+              size={24} 
+              color={selectedPlatform === 'twitch' ? "#FFFFFF" : "#8B8B8D"} 
+            />
+            <Text style={[
+              styles.platformButtonText,
+              { color: selectedPlatform === 'twitch' ? '#FFFFFF' : '#8B8B8D' }
+            ]}>
+              Twitch
             </Text>
-            <Text style={styles.headerDescription}>
-              {campaigns.length} mission{campaigns.length > 1 ? 's' : ''} found
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={[
+              styles.platformButton,
+              selectedPlatform === 'youtube' && styles.platformButtonActiveYoutube,
+            ]}
+            onPress={() => {
+              setSelectedPlatform('youtube');
+              console.log('Youtubeur selected');
+            }}
+          >
+            <Ionicons 
+              name="logo-youtube" 
+              size={24} 
+              color={selectedPlatform === 'youtube' ? "#FFFFFF" : "#8B8B8D"} 
+            />
+            <Text style={[
+              styles.platformButtonText,
+              { color: selectedPlatform === 'youtube' ? '#FFFFFF' : '#8B8B8D' }
+            ]}>
+              Youtube
             </Text>
-          </View>
-        </LinearGradient>
+          </TouchableOpacity>
+        </View>
+
+        {/* Sort picker */}
+        <View style={styles.sortPickerContainer}>
+          <Ionicons 
+            name="time-outline" 
+            size={15} 
+            color="#8B8B8D" 
+          />
+          <Picker
+            selectedValue={filters.sortBy}
+            onValueChange={(itemValue) => setFilters({ ...filters, sortBy: itemValue })}
+            style={styles.sortPicker}
+          >
+            <Picker.Item label="Most Recent" value="new" />
+            <Picker.Item label="Most Views" value="popular" />
+            <Picker.Item label="Most Budget" value="budget" />
+          </Picker>
+        </View>
+        
+        {/* Missions count - positioned at far right */}
+        <Text style={styles.missionsCountText}>
+          {campaigns.length} mission{campaigns.length > 1 ? 's' : ''} found
+        </Text>
       </View>
       
-      <TouchableOpacity
-        style={styles.filterButton}
-        onPress={() => setShowFilters(true)}
-      >
-        <Ionicons name="options-outline" size={24} color="#6b7280" />
-      </TouchableOpacity>
+
 
       {user.role === 'clipper' && (
         <View style={styles.quickStats}>
@@ -463,33 +521,39 @@ const CampaignsListScreen: React.FC<CampaignsListScreenProps> = ({
 
   const campaignsContent = (
     <View style={styles.container}>
-      {renderHeader()}
-      
-      {isLoading ? (
+      <Text style={styles.pageTitle}>My Missions</Text>
+      <View style={styles.mainContentContainer}>
+        {renderHeader()}
+        
+        {isLoading ? (
         <View style={styles.loadingContainer}>
           <View style={styles.loadingSpinner}>
-            <Ionicons name="refresh" size={32} color={COLORS.primary} />
+            <Ionicons name="refresh" size={32} color="#fff" />
           </View>
           <Text style={styles.loadingText}>Loading missions...</Text>
         </View>
       ) : campaigns.length > 0 ? (
-        <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-          }
-        >
-          <View style={[
-            styles.missionsList,
-            {
-              justifyContent: numColumns === 1 ? 'center' : 'space-between',
-              gap: numColumns === 1 ? 20 : 16,
+        <>
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
             }
-          ]}>
-            {campaigns.map((campaign, index) => renderModernCampaignCard({ item: campaign, index }))}
-          </View>
-        </ScrollView>
+          >
+
+            
+            <View style={[
+              styles.missionsList,
+              {
+                justifyContent: numColumns === 1 ? 'center' : 'space-between',
+                gap: numColumns === 1 ? 20 : 16,
+              }
+            ]}>
+              {campaigns.map((campaign, index) => renderModernCampaignCard({ item: campaign, index }))}
+            </View>
+          </ScrollView>
+        </>
       ) : (
         renderEmptyState()
       )}
@@ -506,6 +570,7 @@ const CampaignsListScreen: React.FC<CampaignsListScreenProps> = ({
       )}
 
       {renderFiltersModal()}
+      </View>
     </View>
   );
 
@@ -528,14 +593,40 @@ const CampaignsListScreen: React.FC<CampaignsListScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#0A0A0A',
+  },
+  pageTitle: {
+    fontSize: 14,
+    fontFamily: 'Inter_18pt-Medium',
+    color: '#e0e0e0',
+    textAlign: 'center',
+    marginTop: -28,
+    marginBottom: 8,
+  },
+  mainContentContainer: {
+    backgroundColor: '#181818',
+    borderRadius: 16,
+    margin: 12,
+    padding: 16,
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#2A2A2A',
   },
   header: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 40,
-    marginBottom: 32,
+    paddingVertical: 25,
+    marginBottom: 5,
+    marginTop: 5,
   },
+  allButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+    paddingHorizontal: 16,
+  },
+
   headerTitleContainer: {
     alignSelf: 'stretch',
     marginHorizontal: 20,
@@ -549,13 +640,14 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   headerTitleGradient: {
-    paddingHorizontal: 40,
-    paddingVertical: 30,
-    borderRadius: 30,
+    paddingHorizontal: 25,
+    paddingVertical: 20,
+    borderRadius: 26,
     borderWidth: 1,
-    borderColor: '#e5e5e5',
+    borderColor: '#2A2A2E',
     borderBottomWidth: 3,
-    borderBottomColor: '#d0d0d0',
+    borderBottomColor: '#1A1A1E',
+    backgroundColor: '#1A1A1E',
   },
   headerTitleContent: {
     flexDirection: 'column',
@@ -563,32 +655,169 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerTitle: {
-    fontSize: 40,
-    fontFamily: FONTS.bold,
+    fontSize: 22, // Réduit de 40 à 20
+    fontFamily: 'Inter_18pt-SemiBold',
     fontWeight: '600',
-    color: '#363636',
+    color: '#FFFFFF',
     textAlign: 'center',
-    lineHeight: 36,
+    lineHeight: 18, // Réduit de 36 à 18
   },
   headerDescription: {
-    fontSize: 24,
-    fontFamily: FONTS.regular,
-    color: '#6b7280',
+    fontSize: 14, // Réduit de 24 à 12
+    fontFamily: 'Inter_18pt-Regular',
+    color: '#8B8B8D',
     textAlign: 'center',
-    lineHeight: 22,
-    marginTop: 20,
+    lineHeight: 11, // Réduit de 22 à 11
+    marginTop: 14, // Réduit de 20 à 10
     flexShrink: 1,
   },
   filterButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#F1F5F9',
+    width: 22, // Réduit de 44 à 22
+    height: 22, // Réduit de 44 à 22
+    borderRadius: 11, // Réduit de 22 à 11
+    backgroundColor: '#2A2A2E',
     justifyContent: 'center',
     alignItems: 'center',
     alignSelf: 'center',
-    marginBottom: 20,
+    marginBottom: 10, // Réduit de 20 à 10
   },
+  filterButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 6, // Réduit de 12 à 6
+    marginBottom: 10, // Réduit de 20 à 10
+    paddingHorizontal: 8, // Réduit de 16 à 8
+  },
+  platformButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8, // Réduit de 16 à 8
+    position: 'absolute',
+    left: 0,
+    right: 0,
+  },
+  platformButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#2A2A2E',
+    paddingHorizontal: 20, // Réduit de 24 à 12
+    paddingVertical: 10, // Réduit de 12 à 6
+    borderRadius: 8, // Réduit de 16 à 8
+    borderWidth: 1,
+    borderColor: '#3A3A3E',
+    gap: 4, // Réduit de 8 à 4
+  },
+  platformButtonActive: {
+    backgroundColor: '#9146FF', // Couleur Twitch par défaut
+    borderColor: '#9146FF',
+  },
+  platformButtonActiveYoutube: {
+    backgroundColor: '#FF0000', // Couleur YouTube
+    borderColor: '#FF0000',
+  },
+  platformButtonText: {
+    fontSize: 14, // Réduit de 20 à 10
+    fontFamily: 'Inter_18pt-Medium',
+    color: '#FFFFFF',
+    fontWeight: '500',
+  },
+  filterOptionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 5, // Réduit de 10 à 5
+    paddingHorizontal: 8, // Réduit de 16 à 8
+    borderRadius: 8, // Réduit de 16 à 8
+    backgroundColor: '#2A2A2E',
+    borderWidth: 1,
+    borderColor: '#3A3A3E',
+    gap: 3, // Réduit de 6 à 3
+    marginLeft: 4,
+  },
+  filterOptionButtonActive: {
+    backgroundColor: '#4F46E5',
+    borderColor: '#4F46E5',
+  },
+  filterOptionButtonText: {
+    fontSize: 13, // Réduit de 26 à 13
+    fontFamily: 'Inter_18pt-Medium',
+    color: '#8B8B8D',
+    marginLeft: 4,
+  },
+  filterOptionButtonTextActive: {
+    color: '#FFFFFF',
+  },
+  platformAndSortContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12, // Réduit de 24 à 12
+    paddingHorizontal: 16, // Réduit de 32 à 16
+  },
+  sortButtonsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 8,
+    marginBottom: 16,
+    paddingHorizontal: 16,
+  },
+  sortButtonsScrollContent: {
+    paddingRight: 16, // Réduit de 32 à 16
+    gap: 8, // Réduit de 16 à 8
+  },
+  sortButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8, // Réduit de 12 à 8
+    paddingVertical: 6, // Réduit de 8 à 6
+    backgroundColor: '#0A0A0A',
+    borderRadius: 6, // Réduit de 8 à 6
+    borderWidth: 1,
+    borderColor: '#2A2A2E',
+    gap: 3, // Réduit de 4 à 3
+  },
+  sortButtonActive: {
+    backgroundColor: '#4F46E5',
+  },
+  sortButtonText: {
+    color: '#8B8B8D',
+    fontSize: 13, // Réduit de 14 à 12
+    fontFamily: 'Inter_18pt-Medium',
+  },
+  sortButtonTextActive: {
+    color: '#FFFFFF',
+  },
+  sortPickerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1C1C1E',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#38383A',
+    paddingHorizontal: 12,
+    paddingVertical: 2,
+    gap: 6,
+    minWidth: 140,
+    maxWidth: 200,
+    overflow: 'hidden',
+  },
+  sortPicker: {
+    color: '#FFFFFF',
+    backgroundColor: 'transparent',
+    flex: 1,
+    borderWidth: 0,
+    fontSize: 13,
+    fontFamily: 'Inter_18pt-Medium',
+    minHeight: 32,
+  },
+  missionsCountText: {
+    fontSize: 14,
+    color: '#8B8B8D',
+    fontFamily: 'Inter_18pt-Medium',
+  },
+
   quickStats: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -597,7 +826,7 @@ const styles = StyleSheet.create({
   quickStatItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#181818',
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderRadius: 12,
@@ -608,37 +837,37 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: COLORS.white,
+    backgroundColor: '#2A2A2E',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 8,
   },
   quickStatValue: {
-    fontSize: 24,
-    fontFamily: FONTS.bold,
-    color: COLORS.text,
+    fontSize: 12, // Réduit de 24 à 12
+    fontFamily: 'Inter_18pt-SemiBold',
+    color: '#FFFFFF',
   },
   quickStatLabel: {
-    fontSize: 18,
-    color: COLORS.textSecondary,
-    fontFamily: FONTS.regular,
+    fontSize: 9, // Réduit de 18 à 9
+    color: '#8B8B8D',
+    fontFamily: 'Inter_18pt-Regular',
   },
   listContainer: {
-    padding: 20,
+    padding: 10, // Réduit de 20 à 10
   },
   modernCard: {
-    backgroundColor: COLORS.white,
-    borderRadius: 16,
-    padding: 20,
+    backgroundColor: '#0A0A0A',
+    borderRadius: 8, // Réduit de 16 à 8
+    padding: 10, // Réduit de 20 à 10
     ...SHADOWS.lg,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#2A2A2E',
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 8, // Réduit de 16 à 8
   },
   streamerInfo: {
     flexDirection: 'row',
@@ -646,64 +875,64 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   avatarPlaceholder: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: COLORS.primary,
+    width: 24, // Réduit de 48 à 24
+    height: 24, // Réduit de 48 à 24
+    borderRadius: 12, // Réduit de 24 à 12
+    backgroundColor: '#0052FF',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 6, // Réduit de 12 à 6
   },
   streamerDetails: {
     flex: 1,
   },
   streamerName: {
-    fontSize: 24,
-    fontFamily: FONTS.bold,
-    color: COLORS.text,
-    marginBottom: 4,
+    fontSize: 12, // Réduit de 24 à 12
+    fontFamily: 'Inter_18pt-SemiBold',
+    color: '#FFFFFF',
+    marginBottom: 2, // Réduit de 4 à 2
   },
   platformBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F3F4F6',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    backgroundColor: '#2A2A2E',
+    paddingHorizontal: 4, // Réduit de 8 à 4
+    paddingVertical: 2, // Réduit de 4 à 2
+    borderRadius: 6, // Réduit de 12 à 6
     alignSelf: 'flex-start',
   },
   platformText: {
-    fontSize: 18,
+    fontSize: 9, // Réduit de 18 à 9
     color: '#9146FF',
-    fontFamily: FONTS.medium,
-    marginLeft: 4,
+    fontFamily: 'Inter_18pt-Medium',
+    marginLeft: 2, // Réduit de 4 à 2
   },
   budgetBadge: {
     backgroundColor: '#10B981',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
+    paddingHorizontal: 6, // Réduit de 12 à 6
+    paddingVertical: 3, // Réduit de 6 à 3
+    borderRadius: 10, // Réduit de 20 à 10
   },
   budgetText: {
-    fontSize: 22,
-    fontFamily: FONTS.bold,
-    color: COLORS.white,
+    fontSize: 11, // Réduit de 22 à 11
+    fontFamily: 'Inter_18pt-SemiBold',
+    color: '#FFFFFF',
   },
   cardContent: {
-    marginBottom: 16,
+    marginBottom: 8, // Réduit de 16 à 8
   },
   campaignTitle: {
-    fontSize: 26,
-    fontFamily: FONTS.bold,
-    color: COLORS.text,
-    marginBottom: 8,
-    lineHeight: 32,
+    fontSize: 13, // Réduit de 26 à 13
+    fontFamily: 'Inter_18pt-SemiBold',
+    color: '#FFFFFF',
+    marginBottom: 4, // Réduit de 8 à 4
+    lineHeight: 16, // Réduit de 32 à 16
   },
   campaignDescription: {
-    fontSize: 20,
-    color: COLORS.textSecondary,
-    lineHeight: 26,
-    fontFamily: FONTS.regular,
+    fontSize: 10, // Réduit de 20 à 10
+    color: '#8B8B8D',
+    lineHeight: 13, // Réduit de 26 à 13
+    fontFamily: 'Inter_18pt-Regular',
   },
   cardStats: {
     flexDirection: 'row',
@@ -711,17 +940,17 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
+    borderTopColor: '#2A2A2E',
   },
   statItem: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   statText: {
-    fontSize: 18,
-    color: COLORS.textSecondary,
-    marginLeft: 4,
-    fontFamily: FONTS.medium,
+    fontSize: 9, // Réduit de 18 à 9
+    color: '#8B8B8D',
+    marginLeft: 2, // Réduit de 4 à 2
+    fontFamily: 'Inter_18pt-Medium',
   },
   cardFooter: {
     flexDirection: 'row',
@@ -733,23 +962,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 6,
+    width: 4, // Réduit de 8 à 4
+    height: 4, // Réduit de 8 à 4
+    borderRadius: 2, // Réduit de 4 à 2
+    marginRight: 3, // Réduit de 6 à 3
   },
   statusText: {
-    fontSize: 20,
-    color: COLORS.textSecondary,
-    fontFamily: FONTS.medium,
+    fontSize: 10, // Réduit de 20 à 10
+    color: '#8B8B8D',
+    fontFamily: 'Inter_18pt-Medium',
   },
   actionButton: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: '#0052FF',
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
+    paddingHorizontal: 8, // Réduit de 16 à 8
+    paddingVertical: 5, // Réduit de 10 à 5
+    borderRadius: 10, // Réduit de 20 à 10
   },
   actionButtonText: {
     fontSize: 20,
@@ -768,7 +997,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 16,
-    color: COLORS.textSecondary,
+    color: '#8B8B8D',
     fontFamily: FONTS.regular,
   },
   emptyState: {
@@ -781,7 +1010,7 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: '#2A2A2E',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 24,
@@ -789,13 +1018,13 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 24,
     fontFamily: FONTS.bold,
-    color: COLORS.text,
+    color: '#FFFFFF',
     marginBottom: 12,
     textAlign: 'center',
   },
   emptyText: {
     fontSize: 16,
-    color: COLORS.textSecondary,
+    color: '#8B8B8D',
     textAlign: 'center',
     lineHeight: 24,
     marginBottom: 32,
@@ -820,7 +1049,7 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: '#0A0A0B',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -828,18 +1057,18 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-    backgroundColor: COLORS.white,
+    borderBottomColor: '#2A2A2E',
+    backgroundColor: '#1A1A1E',
   },
   modalCancel: {
     fontSize: 22,
-    color: COLORS.textSecondary,
+    color: '#8B8B8D',
     fontFamily: FONTS.regular,
   },
   modalTitle: {
     fontSize: 26,
     fontFamily: FONTS.bold,
-    color: COLORS.text,
+    color: '#FFFFFF',
   },
   modalApply: {
     fontSize: 22,
@@ -855,7 +1084,7 @@ const styles = StyleSheet.create({
   filterSectionTitle: {
     fontSize: 26,
     fontFamily: FONTS.bold,
-    color: COLORS.text,
+    color: '#FFFFFF',
     marginBottom: 16,
   },
   filterOptions: {
@@ -867,9 +1096,9 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 16,
     borderRadius: 12,
-    backgroundColor: COLORS.surface,
+    backgroundColor: '#1A1A1E',
     borderWidth: 2,
-    borderColor: '#E2E8F0',
+    borderColor: '#2A2A2E',
   },
   filterOptionActive: {
     backgroundColor: COLORS.primary,
@@ -878,7 +1107,7 @@ const styles = StyleSheet.create({
   filterOptionText: {
     fontSize: 22,
     fontFamily: FONTS.medium,
-    color: COLORS.text,
+    color: '#FFFFFF',
     marginLeft: 12,
   },
   filterOptionTextActive: {
@@ -887,34 +1116,34 @@ const styles = StyleSheet.create({
 
   // Mission Cards Styles (same as DashboardScreen)
   missionCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 30,
-    padding: 28,
+    backgroundColor: '#2A2A2E',
+    borderRadius: 15, // Réduit de 30 à 15
+    padding: 14, // Réduit de 28 à 14
     borderWidth: 1,
-    borderColor: '#e5e7eb',
-    minHeight: 450,
-    marginBottom: 24,
+    borderColor: '#3A3A3E',
+    minHeight: 225, // Réduit de 450 à 225
+    marginBottom: 12, // Réduit de 24 à 12
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    elevation: 12,
-    transform: [{ translateY: -2 }],
+    shadowOffset: { width: 0, height: 4 }, // Réduit de 8 à 4
+    shadowOpacity: 0.25,
+    shadowRadius: 10, // Réduit de 20 à 10
+    elevation: 6, // Réduit de 12 à 6
+    transform: [{ translateY: -1 }], // Réduit de -2 à -1
     overflow: 'hidden',
   },
   cardHeaderTwitchLike: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 8, // Réduit de 16 à 8
   },
   avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 100,
-    marginRight: 20,
+    width: 50, // Réduit de 100 à 50
+    height: 50, // Réduit de 100 à 50
+    borderRadius: 50, // Réduit de 100 à 50
+    marginRight: 10, // Réduit de 20 à 10
     flexShrink: 0,
-    elevation: 4,
-    borderWidth: 2,
+    elevation: 2, // Réduit de 4 à 2
+    borderWidth: 1, // Réduit de 2 à 1
     borderColor: '#ffffff',
     overflow: 'hidden',
   },
@@ -922,162 +1151,154 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'column',
     justifyContent: 'center',
-    marginLeft: 16,
+    marginLeft: 8, // Réduit de 16 à 8
     minWidth: 0,
   },
   nameAndBadgeContainerRefactored: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 2,
+    marginBottom: 1, // Réduit de 2 à 1
   },
   streamerFollowersRefactored: {
-    fontSize: 24,
-    color: '#6b7280',
-    fontFamily: FONTS.regular,
+    fontSize: 12, // Réduit de 24 à 12
+    color: '#8B8B8D',
+    fontFamily: 'Inter_18pt-Regular',
     alignSelf: 'flex-start',
   },
   priceContainerRefactored: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 10,
+    paddingHorizontal: 8, // Réduit de 16 à 8
+    paddingVertical: 5, // Réduit de 10 à 5
+    borderRadius: 5, // Réduit de 10 à 5
     alignSelf: 'center',
-    minWidth: 100,
+    minWidth: 50, // Réduit de 100 à 50
     flexShrink: 0,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#4a5cf9',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 }, // Réduit de 2 à 1
     shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
+    shadowRadius: 2, // Réduit de 4 à 2
+    elevation: 2, // Réduit de 4 à 2
   },
   priceText: {
     color: '#FFFFFF',
-    fontSize: 22,
-    fontFamily: FONTS.bold,
+    fontSize: 13, // Réduit de 26 à 13
+    fontFamily: 'Inter_18pt-SemiBold',
     fontWeight: 'semibold',
     textAlign: 'center',
     flexShrink: 0,
   },
   thumbnailContainer: {
-    marginBottom: 16,
+    marginBottom: 8, // Réduit de 16 à 8
   },
   thumbnail: {
     width: '100%',
-    height: 250,
-    backgroundColor: '#f9fafb',
-    borderRadius: 12,
+    height: 125, // Réduit de 250 à 125
+    backgroundColor: '#2A2A2E',
+    borderRadius: 6, // Réduit de 12 à 6
     overflow: 'hidden',
   },
   thumbnailImage: {
     width: '100%',
     height: '100%',
-    borderRadius: 8,
+    borderRadius: 4, // Réduit de 8 à 4
   },
   thumbnailPlaceholder: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f3f4f6',
+    backgroundColor: '#2A2A2E',
   },
   thumbnailText: {
-    fontSize: 18,
-    color: '#6b7280',
-    fontFamily: FONTS.regular,
-    marginTop: 4,
+    fontSize: 9, // Réduit de 18 à 9
+    color: '#8B8B8D',
+    fontFamily: 'Inter_18pt-Regular',
+    marginTop: 2, // Réduit de 4 à 2
   },
   progressSection: {
-    marginTop: 10,
-    marginBottom: 10,
+    marginTop: 5, // Réduit de 10 à 5
+    marginBottom: 5, // Réduit de 10 à 5
   },
   progressHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 6, // Réduit de 12 à 6
   },
   budgetText: {
-    fontSize: 26,
-    fontFamily: FONTS.medium,
+    fontSize: 13, // Réduit de 26 à 13
+    fontFamily: 'Inter_18pt-Medium',
     fontWeight: 'bold',
-    color: '#374151',
+    color: '#FFFFFF',
   },
   progressContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 6, // Réduit de 12 à 6
   },
   progressBackground: {
     flex: 1,
-    height: 20,
-    backgroundColor: '#E5E7EB',
-    borderRadius: 10,
+    height: 10, // Réduit de 20 à 10
+    backgroundColor: '#2A2A2E',
+    borderRadius: 5, // Réduit de 10 à 5
     overflow: 'hidden',
   },
   progressBar: {
     height: '100%',
     backgroundColor: '#3B82F6',
-    borderRadius: 10,
+    borderRadius: 5, // Réduit de 10 à 5
   },
   progressPercentage: {
-    fontSize: 26,
-    fontFamily: FONTS.bold,
+    fontSize: 13, // Réduit de 26 à 13
+    fontFamily: 'Inter_18pt-SemiBold',
     fontWeight: 'bold',
-    color: '#374151',
+    color: '#FFFFFF',
     textAlign: 'right',
   },
   statsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 16,
-    paddingTop: 16,
+    marginTop: 8, // Réduit de 16 à 8
+    paddingTop: 8, // Réduit de 16 à 8
   },
   statItem: {
     flex: 1,
   },
   statLabel: {
-    fontSize: 26,
-    fontFamily: FONTS.medium,
+    fontSize: 13, // Réduit de 26 à 13
+    fontFamily: 'Inter_18pt-Medium',
     fontWeight: 'semibold',
-    color: '#6B7280',
-    marginBottom: 4,
+    color: '#8B8B8D',
+    marginBottom: 2, // Réduit de 4 à 2
   },
   statValue: {
-    fontSize: 26,
-    fontFamily: FONTS.bold,
+    fontSize: 13, // Réduit de 26 à 13
+    fontFamily: 'Inter_18pt-SemiBold',
     fontWeight: 'bold',
-    color: '#374151',
+    color: '#FFFFFF',
   },
   participateButton: {
-    shadowColor: '#faf9f0',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
-    borderRadius: 8,
     overflow: 'hidden',
   },
   participateGradient: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 12,
+    paddingHorizontal: 8, // Réduit de 16 à 8
+    paddingVertical: 6, // Réduit de 12 à 6
+    borderRadius: 6, // Réduit de 12 à 6
     borderWidth: 1,
-    borderColor: '#e8e6d9',
-    borderBottomWidth: 3,
-    borderBottomColor: '#e8e6d9',
+    borderColor: '#4A4A4E',
+    backgroundColor: '#3A3A3E',
   },
   participateText: {
-    fontSize: 24,
-    fontFamily: FONTS.bold,
+    fontSize: 12, // Réduit de 24 à 12
+    fontFamily: 'Inter_18pt-SemiBold',
     fontWeight: 'bold',
-    color: '#374151',
     textAlign: 'center',
   },
   twitchBadge: {
-    width: 20,
-    height: 20,
-    marginLeft: 6,
+    width: 10, // Réduit de 20 à 10
+    height: 10, // Réduit de 20 à 10
+    marginLeft: 3, // Réduit de 6 à 3
   },
   participateButtonContent: {
     flexDirection: 'row',
@@ -1085,14 +1306,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   twitchLogoButton: {
-    width: 24,
-    height: 24,
-    marginRight: 8,
-    borderRadius: 4,
+    width: 25, // Réduit de 50 à 25
+    height: 25, // Réduit de 50 à 25
+    marginRight: 4, // Réduit de 8 à 4
+    borderRadius: 2, // Réduit de 4 à 2
   },
   scrollView: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: 'transparent',
+    borderRadius: 16,
+    paddingBottom: 10,
+    paddingLeft: 10,
+    paddingRight: 10,
   },
   scrollContent: {
     paddingBottom: 100,

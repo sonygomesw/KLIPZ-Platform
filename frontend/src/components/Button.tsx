@@ -87,12 +87,12 @@ const Button: React.FC<ButtonProps> = ({
     const baseTextStyle: TextStyle = {
       fontFamily: FONTS.medium,
       textAlign: 'center',
-      fontWeight: '700',
+      fontWeight: '600',
     };
 
     const sizeTextStyles = {
       sm: { fontSize: SIZES.sm },
-      md: { fontSize: 24 },
+      md: { fontSize: 13 },
       lg: { fontSize: SIZES.lg },
     };
 

@@ -425,7 +425,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
       {/* Section Solde */}
       <View style={styles.balanceTitleContainer}>
         <LinearGradient
-          colors={['#1A1A1E', '#1A1A1E']}
+          colors={['#0A0A0A', '#0A0A0A']}
           start={{ x: 0, y: 0 }}
           end={{ x: 0, y: 1 }}
           style={styles.balanceTitleGradient}
@@ -438,17 +438,23 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
               </View>
               <View style={styles.balanceRight}>
                 <TouchableOpacity 
-                  style={styles.simpleActionButton}
-                  onPress={() => onTabChange('Payment')}
+                  onPress={() => setShowAddFundsModal(true)}
                 >
-                  <Ionicons name="add" size={36} color={COLORS.primarySolid} />
-                  <Text style={styles.simpleActionText}>Add</Text>
+                  <LinearGradient
+                    colors={['#4a5cf9', '#3c82f6']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 0, y: 1 }}
+                    style={styles.addMoneyButton}
+                  >
+                    <Ionicons name="add" size={16} color="#FFFFFF" />
+                    <Text style={styles.addMoneyText}>Add Money</Text>
+                  </LinearGradient>
                 </TouchableOpacity>
                 <TouchableOpacity 
                   style={styles.simpleActionButton}
                   onPress={() => onTabChange('Payment')}
                 >
-                  <Ionicons name="time" size={36} color={COLORS.primarySolid} />
+                  <Ionicons name="time" size={24} color="#89888d" />
                   <Text style={styles.simpleActionText}>History</Text>
                 </TouchableOpacity>
               </View>
@@ -457,33 +463,21 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
         </LinearGradient>
       </View>
 
-      {/* Button Add Money */}
-      <TouchableOpacity 
-        style={styles.simpleCreateButton}
-        onPress={() => setShowAddFundsModal(true)}
-      >
-        <Text style={styles.simpleCreateText}>Add Money</Text>
-      </TouchableOpacity>
-
       {/* Grid de statistiques simplifiée */}
       <View style={styles.simpleStatsGrid}>
         <View style={[styles.simpleStatCard, styles.cardTopLeft]}>
-          <Ionicons name="film" size={60} color={COLORS.primarySolid} />
           <Text style={styles.simpleStatValue}>{streamerCampaigns?.reduce((total, campaign) => total + (campaign.submissions?.length || 0), 0) || 0}</Text>
           <Text style={styles.simpleStatText}>Total Clips</Text>
         </View>
         <View style={[styles.simpleStatCard, styles.cardTopRight]}>
-          <Ionicons name="eye" size={60} color="#00D4AA" />
           <Text style={styles.simpleStatValue}>{formatViews(streamerCampaigns?.reduce((total, campaign) => total + (campaign.totalViews || 0), 0) || 0)}</Text>
           <Text style={styles.simpleStatText}>Total Views</Text>
         </View>
         <View style={[styles.simpleStatCard, styles.cardBottomLeft]}>
-          <Ionicons name="videocam" size={60} color="#FF6B6B" />
           <Text style={styles.simpleStatValue}>{streamerCampaigns?.filter(c => c.status === 'active').length || 0}</Text>
           <Text style={styles.simpleStatText}>Active Missions</Text>
         </View>
         <View style={[styles.simpleStatCard, styles.cardBottomRight]}>
-          <Ionicons name="checkmark-circle" size={60} color="#FFA726" />
           <Text style={styles.simpleStatValue}>{streamerCampaigns?.filter(c => c.status === 'completed').length || 0}</Text>
           <Text style={styles.simpleStatText}>Completed Missions</Text>
         </View>
@@ -506,7 +500,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
       {/* Section Solde */}
       <View style={styles.balanceTitleContainer}>
         <LinearGradient
-          colors={['#1A1A1E', '#1A1A1E']}
+          colors={['#0A0A0A', '#0A0A0A']}
           start={{ x: 0, y: 0 }}
           end={{ x: 0, y: 1 }}
           style={styles.balanceTitleGradient}
@@ -565,8 +559,11 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
   );
 
   return (
-    <>
-      {actualUserRole === 'streamer' ? renderStreamerDashboard() : renderClipperDashboard()}
+    <View style={styles.container}>
+      <Text style={styles.pageTitle}>Dashboard</Text>
+      <View style={styles.mainContentContainer}>
+        {actualUserRole === 'streamer' ? renderStreamerDashboard() : renderClipperDashboard()}
+      </View>
       
       <AddFundsModal
         visible={showAddFundsModal}
@@ -574,7 +571,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
         userId={user.id}
         onSuccess={loadStats}
       />
-    </>
+    </View>
   );
 };
 
@@ -582,18 +579,36 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     width: '100%',
-    backgroundColor: COLORS.card, // Mode sombre comme Create Campaign
+    backgroundColor: '#0A0A0A', // Fond principal comme Threads
+  },
+  pageTitle: {
+    fontSize: 14,
+    fontFamily: 'Inter_18pt-Medium',
+    color: '#e0e0e0',
+    textAlign: 'center',
+    marginTop: -28,
+    marginBottom: 8,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: SIZES.spacing.xl,
-    paddingBottom: 50,
+    paddingHorizontal: 12, // Réduit de 24 à 12
+    paddingTop: 5, // Réduit de 10 à 5
+    paddingBottom: 25, // Réduit de 50 à 25
     flexGrow: 1,
   },
+  mainContentContainer: {
+    backgroundColor: '#181818', // Grand conteneur Threads
+    borderRadius: 16,
+    margin: 12,
+    padding: 16,
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#2A2A2A',
+  },
   header: {
-    marginBottom: SIZES.spacing.xl,
+    marginBottom: 12, // Réduit de 24 à 12
   },
   headerTop: {
     flexDirection: 'row',
@@ -605,56 +620,56 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   profileImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    marginRight: SIZES.spacing.base,
+    width: 30, // Réduit de 60 à 30
+    height: 30, // Réduit de 60 à 30
+    borderRadius: 15, // Réduit de 30 à 15
+    marginRight: 8, // Réduit de 16 à 8
   },
   userTextInfo: {
     flex: 1,
   },
   welcomeText: {
-    fontSize: SIZES['3xl'],
-    fontFamily: FONTS.bold,
-    color: COLORS.text,
-    marginBottom: SIZES.spacing.xs,
+    fontSize: 16, // Réduit de 32 à 16
+    fontFamily: 'Inter_18pt-SemiBold',
+    color: '#e0e0e0',
+    marginBottom: 4, // Réduit de 8 à 4
   },
   roleText: {
-    fontSize: SIZES.base,
-    color: COLORS.textSecondary,
-    fontFamily: FONTS.regular,
+    fontSize: 8, // Réduit de 16 à 8
+    color: '#8B8B8D',
+    fontFamily: 'Inter_18pt-Regular',
   },
   balanceSection: {
     alignItems: 'center',
-    marginBottom: SIZES.spacing.xl,
-    paddingVertical: SIZES.spacing.lg,
-    backgroundColor: COLORS.card,
-    borderRadius: SIZES.radius.lg,
-    marginHorizontal: SIZES.spacing.lg,
+    marginBottom: 12, // Réduit de 24 à 12
+    paddingVertical: 10, // Réduit de 20 à 10
+    backgroundColor: '#0A0A0A',
+    borderRadius: 8, // Réduit de 16 à 8
+    marginHorizontal: 10, // Réduit de 20 à 10
     ...SHADOWS.base,
   },
 
 
   addFundsButton: {
-    minWidth: 140,
+    minWidth: 70, // Réduit de 140 à 70
   },
   statsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    marginBottom: SIZES.spacing.base,
+    marginBottom: 8, // Réduit de 16 à 8
   },
   statCardGradient: {
-    borderRadius: SIZES.radius.xl,
+    borderRadius: 20,
     width: '100%',
     height: '100%',
     position: 'relative',
     overflow: 'hidden',
   },
   statCard: {
-    backgroundColor: COLORS.card,
-    borderRadius: SIZES.radius.xl - 2,
-    padding: SIZES.spacing.base,
+    backgroundColor: '#0A0A0A',
+    borderRadius: 9, // Réduit de 18 à 9
+    padding: 8, // Réduit de 16 à 8
     width: '100%',
     height: '100%',
     flexDirection: 'column',
@@ -663,41 +678,41 @@ const styles = StyleSheet.create({
   },
   statContent: {
     alignItems: 'center',
-    marginTop: SIZES.spacing.sm,
+    marginTop: 6, // Réduit de 12 à 6
   },
   statValue: {
-    fontSize: SIZES.lg,
-    fontFamily: FONTS.bold,
-    color: COLORS.text,
-    marginBottom: SIZES.spacing.xs,
+    fontSize: 10, // Réduit de 20 à 10
+    fontFamily: 'Inter_18pt-SemiBold',
+    color: '#e0e0e0',
+    marginBottom: 4, // Réduit de 8 à 4
     textAlign: 'center',
   },
   statLabel: {
-    fontSize: SIZES.xs,
-    color: COLORS.textSecondary,
-    fontFamily: FONTS.regular,
+    fontSize: 6, // Réduit de 12 à 6
+    color: '#8B8B8D',
+    fontFamily: 'Inter_18pt-Regular',
     textAlign: 'center',
-    lineHeight: 16,
+    lineHeight: 8, // Réduit de 16 à 8
   },
   section: {
-    marginBottom: SIZES.spacing.xl,
+    marginBottom: 32,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: SIZES.spacing.base,
+    marginBottom: 16,
   },
   sectionTitle: {
-    fontSize: 24,
-    fontFamily: FONTS.bold,
+    fontSize: 12,
+    fontFamily: 'Inter_18pt-Bold',
     fontWeight: '600',
-    color: COLORS.text,
+    color: '#e0e0e0',
   },
   seeAllText: {
-    fontSize: SIZES.sm,
-    color: COLORS.primarySolid,
-    fontFamily: FONTS.medium,
+    fontSize: 14,
+    color: '#0052FF',
+    fontFamily: 'Inter_18pt-Medium',
   },
   actionButtons: {
     flexDirection: 'row',
@@ -705,82 +720,98 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     flex: 1,
-    marginHorizontal: SIZES.spacing.xs,
+    marginHorizontal: 4,
   },
   campaignItem: {
-    backgroundColor: COLORS.card,
-    borderRadius: SIZES.radius.base,
-    padding: SIZES.spacing.base,
-    marginBottom: SIZES.spacing.sm,
+    backgroundColor: '#0A0A0A',
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 8,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    ...SHADOWS.sm,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   campaignInfo: {
     flex: 1,
   },
   campaignTitle: {
-    fontSize: SIZES.base,
-    fontFamily: FONTS.medium,
-    color: COLORS.text,
-    marginBottom: SIZES.spacing.xs,
+    fontSize: 16,
+    fontFamily: 'Inter_18pt-Medium',
+    color: '#e0e0e0',
+    marginBottom: 4,
   },
   campaignViews: {
-    fontSize: SIZES.sm,
-    color: COLORS.textSecondary,
-    fontFamily: FONTS.regular,
+    fontSize: 14,
+    color: '#6B7280',
+    fontFamily: 'Inter_18pt-Regular',
   },
   submissionItem: {
-    backgroundColor: COLORS.card,
-    borderRadius: SIZES.radius.base,
-    padding: SIZES.spacing.base,
-    marginBottom: SIZES.spacing.sm,
+    backgroundColor: '#0A0A0A',
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 8,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    ...SHADOWS.sm,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   submissionInfo: {
     flex: 1,
   },
   submissionStatus: {
-    fontSize: SIZES.base,
-    fontFamily: FONTS.medium,
-    color: COLORS.text,
-    marginBottom: SIZES.spacing.xs,
+    fontSize: 16,
+    fontFamily: 'Inter_18pt-Medium',
+    color: '#e0e0e0',
+    marginBottom: 4,
   },
   submissionViews: {
-    fontSize: SIZES.sm,
-    color: COLORS.textSecondary,
-    fontFamily: FONTS.regular,
+    fontSize: 14,
+    color: '#6B7280',
+    fontFamily: 'Inter_18pt-Regular',
   },
   emptyState: {
-    backgroundColor: COLORS.card,
-    borderRadius: SIZES.radius.base,
-    padding: SIZES.spacing.xl,
+    backgroundColor: '#0A0A0A',
+    borderRadius: 8,
+    padding: 32,
     alignItems: 'center',
     justifyContent: 'center',
-    ...SHADOWS.sm,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   emptyStateText: {
-    fontSize: SIZES.base,
-    color: COLORS.textSecondary,
-    fontFamily: FONTS.regular,
+    fontSize: 16,
+    color: '#6B7280',
+    fontFamily: 'Inter_18pt-Regular',
     textAlign: 'center',
   },
   modernStatCard: {
-    borderRadius: SIZES.radius.xl,
+    borderRadius: 20,
     padding: 2,
-    marginBottom: SIZES.spacing.base,
+    marginBottom: 16,
     width: '48%',
     aspectRatio: 1,
-    ...SHADOWS.base,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   modernStatContent: {
-    backgroundColor: COLORS.card,
-    borderRadius: SIZES.radius.xl - 2,
-    padding: SIZES.spacing.base,
+    backgroundColor: '#0A0A0A',
+    borderRadius: 18,
+    padding: 16,
     width: '100%',
     height: '100%',
     flexDirection: 'column',
@@ -788,43 +819,47 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   modernStatIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 25,
+    height: 25,
+    borderRadius: 12.5,
     backgroundColor: 'rgba(255,255,255,0.2)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: SIZES.spacing.sm,
+    marginBottom: 8,
   },
   modernStatInfo: {
     alignItems: 'center',
   },
   modernStatValue: {
-    fontSize: SIZES.lg,
-    fontFamily: FONTS.bold,
-    color: COLORS.text,
-    marginBottom: SIZES.spacing.xs,
+    fontSize: 18,
+    fontFamily: 'Inter_18pt-Bold',
+    color: '#e0e0e0',
+    marginBottom: 4,
     textAlign: 'center',
   },
   modernStatLabel: {
-    fontSize: SIZES.xs,
-    color: COLORS.textSecondary,
-    fontFamily: FONTS.regular,
+    fontSize: 12,
+    color: '#6B7280',
+    fontFamily: 'Inter_18pt-Regular',
     textAlign: 'center',
     lineHeight: 16,
   },
   glassStatCard: {
-    borderRadius: SIZES.radius.xl,
+    borderRadius: 20,
     padding: 3,
-    marginBottom: SIZES.spacing.base,
+    marginBottom: 16,
     width: '48%',
     aspectRatio: 1,
-    ...SHADOWS.lg,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 8,
   },
   glassStatContent: {
     backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderRadius: SIZES.radius.xl - 3,
-    padding: SIZES.spacing.base,
+    borderRadius: 17,
+    padding: 16,
     width: '100%',
     height: '100%',
     flexDirection: 'column',
@@ -839,145 +874,153 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   glassStatIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     backgroundColor: 'rgba(255, 255, 255, 0.12)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: SIZES.spacing.sm,
+    marginBottom: 8,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.2)',
     shadowColor: 'rgba(0, 0, 0, 0.1)',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowRadius: 4,
+    elevation: 2,
   },
   glassStatInfo: {
     alignItems: 'center',
   },
   glassStatValue: {
-    fontSize: SIZES.lg,
-    fontFamily: FONTS.bold,
+    fontSize: 18,
+    fontFamily: 'Inter_18pt-Bold',
     color: 'rgba(255, 255, 255, 0.95)',
-    marginBottom: SIZES.spacing.xs,
+    marginBottom: 4,
     textAlign: 'center',
     textShadowColor: 'rgba(0, 0, 0, 0.6)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
     fontWeight: 'bold',
   },
   glassStatLabel: {
-    fontSize: 14,
+    fontSize: 7,
     color: 'rgba(255, 255, 255, 0.8)',
-    fontFamily: FONTS.bold,
+    fontFamily: 'Inter_18pt-Bold',
     textAlign: 'center',
-    lineHeight: 16,
+    lineHeight: 8,
     textShadowColor: 'rgba(0, 0, 0, 0.5)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
+    textShadowOffset: { width: 0, height: 0.5 },
+    textShadowRadius: 1.5,
     fontWeight: 'bold',
-    marginTop: 4,
+    marginTop: 2,
   },
   modernHeader: {
-    backgroundColor: COLORS.primary,
-    borderRadius: SIZES.radius.xl,
-    padding: SIZES.spacing.lg,
-    paddingBottom: SIZES.spacing.xl,
-    marginTop: 25,
-    marginBottom: 50,
+    backgroundColor: '#0052FF',
+    borderRadius: 20,
+    padding: 24,
+    paddingBottom: 32,
+    marginTop: 5,
+    marginBottom: 25,
     alignSelf: 'center',
-    maxWidth: 500,
-    ...SHADOWS.lg,
+    maxWidth: 250,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 8,
   },
   profileImageContainer: {
     position: 'relative',
-    marginRight: SIZES.spacing.base,
+    marginRight: 16,
   },
   onlineIndicator: {
     position: 'absolute',
     bottom: 0,
     right: 0,
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: COLORS.teal,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#00D4AA',
   },
   roleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: SIZES.spacing.xs,
+    marginTop: 4,
   },
   roleBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.primarySolid,
-    borderRadius: SIZES.radius.sm,
-    paddingVertical: SIZES.spacing.sm,
-    paddingHorizontal: SIZES.spacing.base,
-    marginRight: SIZES.spacing.sm,
+    backgroundColor: '#0052FF',
+    borderRadius: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    marginRight: 8,
   },
   roleText: {
-    color: '#FFFFFF',
-    fontSize: SIZES.sm,
-    fontFamily: FONTS.bold,
-    marginLeft: SIZES.spacing.xs,
+    color: '#e0e0e0',
+    fontSize: 14,
+    fontFamily: 'Inter_18pt-Bold',
+    marginLeft: 4,
   },
   followersCount: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   followersText: {
-    fontSize: SIZES.xs,
-    color: COLORS.textSecondary,
-    fontFamily: FONTS.regular,
-    marginLeft: SIZES.spacing.xs,
+    fontSize: 12,
+    color: '#6B7280',
+    fontFamily: 'Inter_18pt-Regular',
+    marginLeft: 4,
   },
   notificationButton: {
     position: 'relative',
   },
   notificationBadge: {
     position: 'absolute',
-    top: -5,
-    right: -5,
-    backgroundColor: COLORS.primarySolid,
-    borderRadius: 10,
-    width: 20,
-    height: 20,
+    top: -2.5,
+    right: -2.5,
+    backgroundColor: '#0052FF',
+    borderRadius: 5,
+    width: 10,
+    height: 10,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: COLORS.background,
+    borderWidth: 1,
+    borderColor: '#000000',
   },
   notificationCount: {
-    color: '#FFFFFF',
-    fontSize: SIZES.xs,
-    fontFamily: FONTS.bold,
+    color: '#e0e0e0',
+    fontSize: 12,
+    fontFamily: 'Inter_18pt-Bold',
   },
   modernBalanceSection: {
-    backgroundColor: COLORS.surface,
-    borderRadius: SIZES.radius.lg,
-    padding: SIZES.spacing.lg,
-    marginBottom: SIZES.spacing.lg,
-    marginHorizontal: SIZES.spacing.lg,
-    ...SHADOWS.sm,
+    backgroundColor: '#2A2A2E',
+    borderRadius: 12,
+    padding: 24,
+    marginBottom: 24,
+    marginHorizontal: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: '#444',
   },
   balanceHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: SIZES.spacing.lg,
+    marginBottom: 24,
   },
   balanceIconContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 25,
+    height: 25,
+    borderRadius: 12.5,
     backgroundColor: 'rgba(255, 255, 255, 0.15)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: SIZES.spacing.base,
+    marginRight: 16,
   },
   balanceInfo: {
     flex: 1,
@@ -987,31 +1030,31 @@ const styles = StyleSheet.create({
   balanceChange: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: SIZES.spacing.xs,
+    marginTop: 4,
   },
   balanceChangeText: {
-    fontSize: SIZES.sm,
-    color: COLORS.error,
-    fontFamily: FONTS.medium,
-    marginLeft: SIZES.spacing.xs,
+    fontSize: 14,
+    color: '#EF4444',
+    fontFamily: 'Inter_18pt-Medium',
+    marginLeft: 4,
   },
   balanceGraph: {
-    width: 60,
-    height: 40,
+    width: 30,
+    height: 20,
     justifyContent: 'center',
     alignItems: 'center',
   },
   miniGraph: {
-    width: 50,
-    height: 30,
+    width: 25,
+    height: 15,
     justifyContent: 'center',
     alignItems: 'center',
   },
   graphLine: {
-    width: 40,
-    height: 2,
-    backgroundColor: COLORS.primarySolid,
-    borderRadius: 1,
+    width: 20,
+    height: 1,
+    backgroundColor: '#0052FF',
+    borderRadius: 0.5,
   },
   balanceActions: {
     flexDirection: 'row',
@@ -1019,53 +1062,61 @@ const styles = StyleSheet.create({
   },
   quickActionButton: {
     alignItems: 'center',
-    paddingVertical: SIZES.spacing.base,
-    paddingHorizontal: SIZES.spacing.xl,
-    borderRadius: SIZES.radius.lg,
-    backgroundColor: COLORS.card,
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    borderRadius: 12,
+    backgroundColor: '#1A1A1E',
     borderWidth: 1,
-    borderColor: COLORS.border,
-    ...SHADOWS.sm,
+    borderColor: '#444',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   quickActionText: {
-    fontSize: SIZES.sm,
-    color: COLORS.text,
-    fontFamily: FONTS.medium,
-    marginTop: SIZES.spacing.xs,
+    fontSize: 14,
+    color: '#e0e0e0',
+    fontFamily: 'Inter_18pt-Medium',
+    marginTop: 4,
   },
   modernSection: {
-    marginBottom: SIZES.spacing.base,
-    backgroundColor: COLORS.card,
-    borderRadius: SIZES.radius.lg,
-    padding: SIZES.spacing.base,
-    ...SHADOWS.lg,
+    marginBottom: 16, // SIZES.spacing.base
+    backgroundColor: '#1A1A1E', // COLORS.card
+    borderRadius: 12, // SIZES.radius.lg
+    padding: 16, // SIZES.spacing.base
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 8,
   },
   modernSectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: SIZES.spacing.base,
+    marginBottom: 16,
   },
   sectionTitleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   sectionIcon: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    width: 15,
+    height: 15,
+    borderRadius: 7.5,
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: SIZES.spacing.xs,
+    marginRight: 4,
   },
   modernSectionTitle: {
-    fontSize: SIZES.lg,
-    fontFamily: FONTS.bold,
-    color: COLORS.text,
+    fontSize: 18,
+    fontFamily: 'Inter_18pt-Bold',
+    color: '#e0e0e0',
   },
   moreButton: {
-    padding: SIZES.spacing.xs,
+    padding: 4,
   },
   modernActionButtons: {
     flexDirection: 'row',
@@ -1073,65 +1124,73 @@ const styles = StyleSheet.create({
   },
   modernActionButton: {
     flex: 1,
-    marginHorizontal: SIZES.spacing.xs,
+    marginHorizontal: 4,
   },
   actionButtonGradient: {
-    borderRadius: SIZES.radius.md,
-    paddingVertical: SIZES.spacing.sm,
-    paddingHorizontal: SIZES.spacing.lg,
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    ...SHADOWS.sm,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   actionButtonText: {
-    fontSize: SIZES.base,
-    color: '#FFFFFF',
-    fontFamily: FONTS.bold,
-    marginTop: SIZES.spacing.xs,
+    fontSize: 16,
+    color: '#e0e0e0',
+    fontFamily: 'Inter_18pt-Bold',
+    marginTop: 4,
   },
   actionButtonSubtext: {
-    fontSize: SIZES.xs,
+    fontSize: 12,
     color: 'rgba(255, 255, 255, 0.8)',
-    fontFamily: FONTS.regular,
+    fontFamily: 'Inter_18pt-Regular',
   },
   actionButtonOutline: {
-    borderRadius: SIZES.radius.md,
-    paddingVertical: SIZES.spacing.sm,
-    paddingHorizontal: SIZES.spacing.lg,
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 24,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: COLORS.primarySolid,
+    borderColor: '#0052FF',
     backgroundColor: 'transparent',
   },
   actionButtonTextOutline: {
-    fontSize: SIZES.base,
-    color: COLORS.primarySolid,
-    fontFamily: FONTS.bold,
-    marginTop: SIZES.spacing.xs,
+    fontSize: 16,
+    color: '#0052FF',
+    fontFamily: 'Inter_18pt-Bold',
+    marginTop: 4,
   },
   actionButtonSubtextOutline: {
-    fontSize: SIZES.xs,
-    color: COLORS.textSecondary,
-    fontFamily: FONTS.regular,
+    fontSize: 12,
+    color: '#6B7280',
+    fontFamily: 'Inter_18pt-Regular',
   },
   modernSubmissionItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.card,
-    borderRadius: SIZES.radius.base,
-    padding: SIZES.spacing.base,
-    marginBottom: SIZES.spacing.sm,
-    ...SHADOWS.sm,
+    backgroundColor: '#1A1A1E',
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   submissionIconContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 25,
+    height: 25,
+    borderRadius: 12.5,
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: SIZES.spacing.base,
+    marginRight: 16,
   },
   submissionInfo: {
     flex: 1,
@@ -1140,69 +1199,69 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: SIZES.spacing.xs,
+    marginBottom: 4,
   },
   submissionStatus: {
-    fontSize: SIZES.base,
-    fontFamily: FONTS.medium,
-    color: COLORS.text,
+    fontSize: 16,
+    fontFamily: 'Inter_18pt-Medium',
+    color: '#e0e0e0',
   },
   submissionBadge: {
-    backgroundColor: COLORS.primarySolid,
-    borderRadius: SIZES.radius.sm,
-    paddingVertical: SIZES.spacing.xs,
-    paddingHorizontal: SIZES.spacing.sm,
+    backgroundColor: '#0052FF',
+    borderRadius: 6,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
   },
   submissionEarnings: {
-    fontSize: SIZES.xs,
-    color: '#FFFFFF',
-    fontFamily: FONTS.bold,
+    fontSize: 12,
+    color: '#e0e0e0',
+    fontFamily: 'Inter_18pt-Bold',
   },
   modernEmptyState: {
     alignItems: 'center',
-    paddingVertical: SIZES.spacing.xl,
+    paddingVertical: 32,
   },
   emptyStateIcon: {
-    marginBottom: SIZES.spacing.base,
+    marginBottom: 16,
   },
   emptyStateTitle: {
-    fontSize: SIZES.lg,
-    fontFamily: FONTS.bold,
-    color: COLORS.text,
-    marginBottom: SIZES.spacing.xs,
+    fontSize: 18,
+    fontFamily: 'Inter_18pt-SemiBold',
+    color: '#e0e0e0',
+    marginBottom: 4,
   },
   emptyStateText: {
-    fontSize: SIZES.base,
-    color: COLORS.textSecondary,
-    fontFamily: FONTS.regular,
+    fontSize: 16,
+    color: '#8B8B8D',
+    fontFamily: 'Inter_18pt-Regular',
     textAlign: 'center',
-    marginBottom: SIZES.spacing.lg,
+    marginBottom: 24,
   },
   emptyStateButton: {
-    backgroundColor: COLORS.primarySolid,
-    borderRadius: SIZES.radius.md,
-    paddingVertical: SIZES.spacing.sm,
-    paddingHorizontal: SIZES.spacing.lg,
+    backgroundColor: '#0052FF',
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 24,
   },
   emptyStateButtonText: {
-    fontSize: SIZES.base,
-    color: '#FFFFFF',
-    fontFamily: FONTS.bold,
+    fontSize: 16,
+    color: '#e0e0e0',
+    fontFamily: 'Inter_18pt-SemiBold',
   },
   seeAllButton: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   modernStatCard: {
-    backgroundColor: COLORS.surface,
-    borderRadius: SIZES.radius.md,
-    padding: SIZES.spacing.xs,
-    marginBottom: SIZES.spacing.xs,
+    backgroundColor: '#1A1A1E',
+    borderRadius: 8,
+    padding: 4,
+    marginBottom: 4,
     width: '48%',
     aspectRatio: 1.8,
     ...SHADOWS.sm,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: '#2A2A2E',
   },
   modernStatContent: {
     flex: 1,
@@ -1211,45 +1270,45 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   modernStatIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: COLORS.card,
+    width: 12, // Réduit de 24 à 12
+    height: 12, // Réduit de 24 à 12
+    borderRadius: 6, // Réduit de 12 à 6
+    backgroundColor: '#1A1A1E',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: 2, // Réduit de 4 à 2
   },
   modernStatInfo: {
     alignItems: 'center',
   },
   modernStatValue: {
-    fontSize: SIZES.sm,
-    fontFamily: FONTS.bold,
-    color: COLORS.text,
-    marginBottom: 2,
+    fontSize: 14,
+    fontFamily: 'Inter_18pt-SemiBold',
+    color: '#e0e0e0',
+    marginBottom: 1, // Réduit de 2 à 1
     textAlign: 'center',
   },
   modernStatLabel: {
-    fontSize: 10,
-    color: COLORS.textSecondary,
-    fontFamily: FONTS.medium,
+    fontSize: 5, // Réduit de 10 à 5
+    color: '#8B8B8D',
+    fontFamily: 'Inter_18pt-Medium',
     textAlign: 'center',
-    lineHeight: 11,
+    lineHeight: 5.5, // Réduit de 11 à 5.5
   },
 
   avatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: COLORS.primarySolid,
+    width: 25, // Réduit de 50 à 25
+    height: 25, // Réduit de 50 à 25
+    borderRadius: 12.5, // Réduit de 25 à 12.5
+    backgroundColor: '#0052FF',
     justifyContent: 'center',
     alignItems: 'center',
     ...SHADOWS.base,
   },
   createMissionButton: {
-    marginHorizontal: SIZES.spacing.lg,
-    marginBottom: SIZES.spacing.xs,
-    borderRadius: SIZES.radius.lg,
+    marginHorizontal: 24,
+    marginBottom: 4,
+    borderRadius: 12,
     overflow: 'hidden',
     ...SHADOWS.lg,
   },
@@ -1257,20 +1316,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: SIZES.spacing.sm,
-    paddingHorizontal: SIZES.spacing.xl,
+    paddingVertical: 8,
+    paddingHorizontal: 32,
   },
   createMissionText: {
-    fontSize: SIZES.lg,
-    color: '#FFFFFF',
-    fontFamily: FONTS.bold,
-    marginLeft: SIZES.spacing.sm,
+    fontSize: 18,
+    color: '#e0e0e0',
+    fontFamily: 'Inter_18pt-SemiBold',
+    marginLeft: 8,
   },
 
   refreshButton: {
-    marginLeft: SIZES.spacing.xs,
-    padding: SIZES.spacing.xs,
-    borderRadius: SIZES.radius.sm,
+    marginLeft: 4,
+    padding: 4,
+    borderRadius: 4,
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
   },
   // Nouveaux styles pour le design simplifié
@@ -1279,9 +1338,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: '#1A1A1E',
-    padding: SIZES.spacing.xl,
-    marginBottom: SIZES.spacing.lg,
-    borderRadius: SIZES.radius.lg,
+    padding: 32,
+    marginBottom: 24,
+    borderRadius: 12,
     width: '100%',
     borderWidth: 1,
     borderColor: '#333',
@@ -1298,115 +1357,134 @@ const styles = StyleSheet.create({
   balanceHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: SIZES.spacing.sm,
+    marginBottom: 8,
   },
   balanceRight: {
     flexDirection: 'row',
-    gap: SIZES.spacing.sm,
+    gap: 8,
     flexShrink: 0,
     minWidth: 'auto',
   },
   balanceLabel: {
-    fontSize: 40,
+    fontSize: 18, // Réduit de 40 à 20
     color: '#B5B5B5',
-    fontFamily: FONTS.bold,
-    marginLeft: SIZES.spacing.sm,
+    fontFamily: 'Inter_18pt-Medium',
     flexShrink: 0,
     minWidth: 'auto',
     whiteSpace: 'nowrap',
     textAlign: 'left',
-    lineHeight: 40,
+    lineHeight: 20, // Réduit de 40 à 20
   },
   balanceAmount: {
-    fontSize: 44,
-    color: '#FFFFFF',
-    fontFamily: FONTS.bold,
+    fontSize: 20, // Réduit de 44 à 22
+    color: '#e0e0e0',
+    fontFamily: 'Inter_18pt-SemiBold',
     fontWeight: 'semibold',
-    marginTop: SIZES.spacing.sm,
+    marginTop: 8,
   },
   simpleActionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: SIZES.spacing.xl,
-    paddingVertical: SIZES.spacing.lg,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
     backgroundColor: '#2A2A2E',
-    borderRadius: SIZES.radius.lg,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: '#444',
-    marginLeft: SIZES.spacing.sm,
-    gap: SIZES.spacing.base,
+    marginLeft: 4,
+    gap: 16,
     minWidth: 120,
     flexShrink: 0,
     justifyContent: 'center',
   },
+  addMoneyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+    paddingVertical: 16,
+    borderRadius: 12,
+    marginLeft: 4,
+    gap: 16,
+    minWidth: 120,
+    flexShrink: 0,
+    justifyContent: 'center',
+    shadowColor: '#4a5cf9',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
+  },
   simpleActionText: {
-    fontSize: 30,
+    fontSize: 14, // Réduit de 30 à 15
+    color: '#e0e0e0',
+    fontFamily: 'Inter_18pt-Medium',
+    whiteSpace: 'nowrap',
+    textAlign: 'center',
+  },
+  addMoneyText: {
+    fontSize: 14,
     color: '#FFFFFF',
-    fontFamily: FONTS.medium,
+    fontFamily: 'Inter_18pt-SemiBold',
+    fontWeight: 'semibold',
     whiteSpace: 'nowrap',
     textAlign: 'center',
   },
   simpleCreateButton: {
-    backgroundColor: '#4b5ef2',
-    paddingVertical: SIZES.spacing.lg,
-    paddingHorizontal: SIZES.spacing.lg,
-    borderRadius: 26,
-    marginTop: 15,
-    marginBottom: 5,
+    backgroundColor: '#e0e0e0', // COLORS.card
+    borderRadius: 12, // Réduit de 40 à 20
+    paddingVertical: 15, // Réduit de 30 à 15
+    paddingHorizontal: 18, // Réduit de 40 à 20
+    marginHorizontal: 10, // Réduit de 20 à 10
+    marginBottom: 15, // Réduit de 30 à 15
     alignItems: 'center',
-    alignSelf: 'stretch',
-    marginHorizontal: 20,
-    ...SHADOWS.md,
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#333333',
   },
   simpleCreateText: {
-    fontSize: 30,
-    color: '#FFFFFF',
-    fontFamily: FONTS.bold,
+    fontSize: 16, // Réduit de 30 à 15
+    color: '#0a0a0a',
+    fontFamily: 'Inter_18pt-SemiBold',
   },
   simpleStatsGrid: {
-    width: '100%',
-    height: '100%',
-    flex: 1,
-    marginTop: 24,
+    height: 600, // Augmenté de 300 à 500
     position: 'relative',
-    minHeight: 500,
+    width: '100%',
+    marginBottom: 30, // Réduit de 60 à 30
+    marginTop: 15, // Réduit de 30 à 15
   },
   simpleStatCard: {
     width: '48%',
     height: '48%',
-    backgroundColor: '#1A1A1E',
-    padding: SIZES.spacing.xl,
+    backgroundColor: '#0A0A0A',
+    padding: 32,
     borderRadius: 20,
+    borderColor: '#2a2a2a',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#333',
-    borderTopColor: '#444',
-    borderLeftColor: '#444',
-    borderRightColor: '#222',
-    borderBottomColor: '#222',
+    borderWidth: 1,
     ...SHADOWS.lg,
     position: 'absolute',
   },
   simpleStatValue: {
-    fontSize: 48,
-    color: '#FFFFFF',
-    fontFamily: FONTS.bold,
+    fontSize: 24, // Réduit de 48 à 24
+    color: '#e0e0e0',
+    fontFamily: 'Inter_18pt-SemiBold',
     textAlign: 'center',
-    marginVertical: SIZES.spacing.lg,
+    marginVertical: 24,
     textShadowColor: 'rgba(255, 255, 255, 0.1)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
+    textShadowOffset: { width: 0.5, height: 0.5 }, // Réduit de 1 à 0.5
+    textShadowRadius: 1, // Réduit de 2 à 1
   },
   simpleStatText: {
-    fontSize: 30,
+    fontSize: 15, // Réduit de 30 à 15
     color: '#B5B5B5',
-    fontFamily: FONTS.medium,
+    fontFamily: 'Inter_18pt-Medium',
     textAlign: 'center',
-    lineHeight: 22,
+    lineHeight: 11, // Réduit de 22 à 11
     textShadowColor: 'rgba(255, 255, 255, 0.05)',
-    textShadowOffset: { width: 0.5, height: 0.5 },
-    textShadowRadius: 1,
+    textShadowOffset: { width: 0.25, height: 0.25 }, // Réduit de 0.5 à 0.25
+    textShadowRadius: 0.5, // Réduit de 1 à 0.5
   },
   // Styles pour les positions des cartes
   cardTopLeft: {
@@ -1426,21 +1504,21 @@ const styles = StyleSheet.create({
     right: '1%',
   },
   mainTitleContainer: {
-    marginBottom: SIZES.spacing.xl,
+    marginBottom: 32,
     alignItems: 'center',
   },
   mainTitle: {
-    fontSize: 28,
-    color: COLORS.text,
-    fontFamily: FONTS.bold,
+    fontSize: 14, // Réduit de 28 à 14
+    color: '#e0e0e0',
+    fontFamily: 'Inter_18pt-SemiBold',
     textAlign: 'center',
-    lineHeight: 36,
+    lineHeight: 18, // Réduit de 36 à 18
     maxWidth: '80%',
   },
   
   // Mission Cards Styles (same as AvailableMissionsScreen)
   missionsSection: {
-    marginBottom: SIZES.spacing.xl,
+    marginBottom: 32,
   },
   missionsList: {
     flexDirection: 'row',
@@ -1452,21 +1530,16 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   missionCard: {
-    backgroundColor: '#1A1A1E',
-    borderRadius: 30,
-    padding: 28,
+    backgroundColor: '#0A0A0A',
+    borderRadius: 8, // Réduit de 16 à 8
+    padding: 8, // Réduit de 16 à 8
+    margin: 4, // Réduit de 8 à 4
+    minHeight: 100, // Réduit de 200 à 100
+    flexDirection: 'column',
+    justifyContent: 'space-between',
     borderWidth: 1,
-    borderColor: '#333',
-    minHeight: 450,
-    marginBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    elevation: 12,
-    transform: [{ translateY: -2 }],
+    borderColor: '#2A2A2E',
     overflow: 'hidden',
-    width: '100%',
   },
   cardHeaderTwitchLike: {
     flexDirection: 'row',
@@ -1474,39 +1547,39 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 100,
-    marginRight: 20,
+    width: 50, // Réduit de 100 à 50
+    height: 50, // Réduit de 100 à 50
+    borderRadius: 50, // Réduit de 100 à 50
+    marginRight: 10, // Réduit de 20 à 10
     flexShrink: 0,
-    elevation: 4,
-    borderWidth: 2,
-    borderColor: '#ffffff',
+    elevation: 2, // Réduit de 4 à 2
+    borderWidth: 1, // Réduit de 2 à 1
+    borderColor: '#e0e0e0',
     overflow: 'hidden',
   },
   avatarPlaceholder: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 50, // Réduit de 100 à 50
+    height: 50, // Réduit de 100 à 50
+    borderRadius: 25, // Réduit de 50 à 25
     backgroundColor: '#f3f4f6',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 20,
+    marginRight: 10, // Réduit de 20 à 10
     flexShrink: 0,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
+    shadowOffset: { width: 0, height: 1.5 }, // Réduit de 3 à 1.5
     shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 4,
-    borderWidth: 2,
-    borderColor: '#ffffff',
+    shadowRadius: 3, // Réduit de 6 à 3
+    elevation: 2, // Réduit de 4 à 2
+    borderWidth: 1, // Réduit de 2 à 1
+    borderColor: '#e0e0e0',
     overflow: 'hidden',
   },
   centerNameFollowersBlockk: {
     flex: 1,
     flexDirection: 'column',
     justifyContent: 'center',
-    marginLeft: 16,
+    marginLeft: 8, // Réduit de 16 à 8
     minWidth: 0,
   },
   nameAndBadgeContainerRefactored: {
@@ -1515,42 +1588,42 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   streamerName: {
-    fontSize: 30,
-    color: '#FFFFFF',
-    fontFamily: FONTS.bold,
-    maxWidth: 300,
+    fontSize: 15, // Réduit de 30 à 15
+    color: '#e0e0e0',
+    fontFamily: 'Inter_18pt-SemiBold',
+    maxWidth: 150, // Réduit de 300 à 150
     overflow: 'hidden',
     flexShrink: 1,
   },
   streamerFollowersRefactored: {
-    fontSize: 24,
+    fontSize: 12, // Réduit de 24 à 12
     color: '#B5B5B5',
-    fontFamily: FONTS.regular,
+    fontFamily: 'Inter_18pt-Regular',
     alignSelf: 'flex-start',
   },
   priceContainerRefactored: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 12,
+    paddingHorizontal: 8, // Réduit de 16 à 8
+    paddingVertical: 5, // Réduit de 10 à 5
+    borderRadius: 6, // Réduit de 12 à 6
     alignSelf: 'center',
-    minWidth: 130,
+    minWidth: 65, // Réduit de 130 à 65
     flexShrink: 0,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#E65100',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 2 }, // Réduit de 4 à 2
     shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
+    shadowRadius: 4, // Réduit de 8 à 4
+    elevation: 3, // Réduit de 6 à 3
     borderWidth: 1,
     borderColor: '#FF8C42',
-    borderBottomWidth: 3,
+    borderBottomWidth: 1.5, // Réduit de 3 à 1.5
     borderBottomColor: '#E65100',
   },
   priceText: {
-    color: '#FFFFFF',
-    fontSize: 26,
-    fontFamily: FONTS.bold,
+    color: '#e0e0e0',
+    fontSize: 13, // Réduit de 26 à 13
+    fontFamily: 'Inter_18pt-SemiBold',
     fontWeight: 'semibold',
     textAlign: 'center',
     flexShrink: 0,
@@ -1560,9 +1633,9 @@ const styles = StyleSheet.create({
   },
   thumbnail: {
     width: '100%',
-    height: 250,
+    height: 125, // Réduit de 250 à 125
     backgroundColor: '#f9fafb',
-    borderRadius: 12,
+    borderRadius: 6, // Réduit de 12 à 6
     overflow: 'hidden',
   },
   thumbnailImage: {
@@ -1577,10 +1650,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#f3f4f6',
   },
   thumbnailText: {
-    fontSize: 18,
+    fontSize: 9, // Réduit de 18 à 9
     color: '#6b7280',
-    fontFamily: FONTS.regular,
-    marginTop: 4,
+    fontFamily: 'Inter_18pt-Regular',
+    marginTop: 2, // Réduit de 4 à 2
   },
   progressSection: {
     marginTop: 10,
@@ -1593,8 +1666,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   budgetText: {
-    fontSize: 26,
-    fontFamily: FONTS.medium,
+    fontSize: 13, // Réduit de 26 à 13
+    fontFamily: 'Inter_18pt-Medium',
     fontWeight: 'bold',
     color: '#374151',
   },
@@ -1605,9 +1678,9 @@ const styles = StyleSheet.create({
   },
   progressBackground: {
     flex: 1,
-    height: 20,
+    height: 10, // Réduit de 20 à 10
     backgroundColor: '#E5E7EB',
-    borderRadius: 10,
+    borderRadius: 5, // Réduit de 10 à 5
     overflow: 'hidden',
   },
   progressBar: {
@@ -1616,8 +1689,8 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   progressPercentage: {
-    fontSize: 26,
-    fontFamily: FONTS.bold,
+    fontSize: 13, // Réduit de 26 à 13
+    fontFamily: 'Inter_18pt-SemiBold',
     fontWeight: 'bold',
     color: '#374151',
     textAlign: 'right',
@@ -1633,15 +1706,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   statLabel: {
-    fontSize: 26,
-    fontFamily: FONTS.medium,
+    fontSize: 13, // Réduit de 26 à 13
+    fontFamily: 'Inter_18pt-Medium',
     fontWeight: 'semibold',
     color: '#6B7280',
-    marginBottom: 4,
+    marginBottom: 2, // Réduit de 4 à 2
   },
   statValue: {
-    fontSize: 26,
-    fontFamily: FONTS.bold,
+    fontSize: 13, // Réduit de 26 à 13
+    fontFamily: 'Inter_18pt-SemiBold',
     fontWeight: 'bold',
     color: '#374151',
   },
@@ -1664,8 +1737,8 @@ const styles = StyleSheet.create({
     borderBottomColor: '#e8e6d9',
   },
   participateText: {
-    fontSize: 24,
-    fontFamily: FONTS.bold,
+    fontSize: 12, // Réduit de 24 à 12
+    fontFamily: 'Inter_18pt-SemiBold',
     fontWeight: 'bold',
     color: '#374151',
     textAlign: 'center',
@@ -1674,23 +1747,23 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
     marginHorizontal: 20,
     shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 2 }, // Réduit de 4 à 2
     shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 6,
-    borderRadius: 30,
+    shadowRadius: 4, // Réduit de 8 à 4
+    elevation: 3, // Réduit de 6 à 3
+    borderRadius: 15, // Réduit de 30 à 15
     overflow: 'hidden',
-    marginBottom: 24,
+    marginBottom: 12, // Réduit de 24 à 12
   },
   balanceTitleGradient: {
-    paddingHorizontal: 40,
-    paddingVertical: 30,
-    borderRadius: 30,
+    paddingHorizontal: 20, // Réduit de 40 à 20
+    paddingVertical: 15, // Réduit de 30 à 15
+    borderRadius: 15, // Réduit de 30 à 15
     borderWidth: 1,
     borderColor: '#333',
-    borderBottomWidth: 3,
+    borderBottomWidth: 1.5, // Réduit de 3 à 1.5
     borderBottomColor: '#222',
-    backgroundColor: '#1A1A1E',
+    backgroundColor: '#0A0A0A',
   },
   balanceTitleContent: {
     flexDirection: 'column',
@@ -1698,20 +1771,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   balanceTitleText: {
-    fontSize: 40,
-    fontFamily: FONTS.bold,
+    fontSize: 20, // Réduit de 40 à 20
+    fontFamily: 'Inter_18pt-SemiBold',
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: '#e0e0e0',
     textAlign: 'center',
-    lineHeight: 36,
+    lineHeight: 18, // Réduit de 36 à 18
   },
   balanceTitleDescription: {
-    fontSize: 24,
-    fontFamily: FONTS.regular,
+    fontSize: 12, // Réduit de 24 à 12
+    fontFamily: 'Inter_18pt-Regular',
     color: '#B5B5B5',
     textAlign: 'center',
-    lineHeight: 22,
-    marginTop: 20,
+    lineHeight: 11, // Réduit de 22 à 11
+    marginTop: 10, // Réduit de 20 à 10
     flexShrink: 1,
   },
   balanceContentSection: {
@@ -1720,6 +1793,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
   },
-});
+  });
 
 export default DashboardScreen; 

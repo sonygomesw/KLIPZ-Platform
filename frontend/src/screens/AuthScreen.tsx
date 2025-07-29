@@ -30,6 +30,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [twitchUrl, setTwitchUrl] = useState('');
+  const [youtubeUrl, setYoutubeUrl] = useState('');
   const [tiktokUsername, setTiktokUsername] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -45,25 +46,38 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
     }
     console.log('✅ Champs email/password OK');
 
-    // For registration, also check Twitch URL
+    // For registration, also check Twitch or YouTube URL
     if (!isLogin) {
       console.log('🔵 Mode inscription - vérifications supplémentaires...');
       
-      if (!twitchUrl) {
-        console.log('❌ URL Twitch manquante');
-        Alert.alert('Error', 'Please fill in all fields');
+      if (!twitchUrl && !youtubeUrl) {
+        console.log('❌ Aucune chaîne fournie');
+        Alert.alert('Error', 'Please provide at least one channel (Twitch or YouTube)');
         return;
       }
-      console.log('✅ URL Twitch présente');
+      console.log('✅ Au moins une chaîne fournie');
       
-      // Validate Twitch URL
-      console.log('🔵 Validation URL Twitch...');
-      if (!authService.validateTwitchUrl(twitchUrl)) {
-        console.log('❌ URL Twitch invalide');
-        Alert.alert('Error', 'Invalid Twitch URL. Expected format: https://twitch.tv/your_channel');
-        return;
+      // Validate Twitch URL if provided
+      if (twitchUrl) {
+        console.log('🔵 Validation URL Twitch...');
+        if (!authService.validateTwitchUrl(twitchUrl)) {
+          console.log('❌ URL Twitch invalide');
+          Alert.alert('Error', 'Invalid Twitch URL. Expected format: https://twitch.tv/your_channel');
+          return;
+        }
+        console.log('✅ URL Twitch valide');
       }
-      console.log('✅ URL Twitch valide');
+      
+      // Validate YouTube URL if provided
+      if (youtubeUrl) {
+        console.log('🔵 Validation URL YouTube...');
+        if (!youtubeUrl.includes('youtube.com/') && !youtubeUrl.includes('youtu.be/')) {
+          console.log('❌ URL YouTube invalide');
+          Alert.alert('Error', 'Invalid YouTube URL. Expected format: https://youtube.com/@your_channel');
+          return;
+        }
+        console.log('✅ URL YouTube valide');
+      }
       
       // Check password confirmation for registration
       console.log('🔵 Vérification confirmation mot de passe...');
@@ -92,6 +106,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
           email,
           password,
           twitchUrl,
+          youtubeUrl,
         });
         
         console.log('✅ Inscription réussie:', user);
@@ -246,18 +261,27 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
           ]}
           onPress={() => setUserType('streamer')}
         >
-          <View style={[styles.iconContainer, userType === 'streamer' && styles.selectedIconContainer]}>
+          <View style={styles.platformLogosContainer}>
+            <View style={[styles.iconContainer, userType === 'streamer' && styles.selectedIconContainer]}>
               <Image 
                 source={require('../../assets/twitch-logo.jpg')}
                 style={styles.platformLogo}
                 resizeMode="contain"
-            />
+              />
+            </View>
+            <View style={[styles.iconContainer, userType === 'streamer' && styles.selectedIconContainer]}>
+              <Image 
+                source={require('../../assets/youtube_logo.png')}
+                style={styles.platformLogo}
+                resizeMode="contain"
+              />
+            </View>
           </View>
           <Text style={[
             styles.userTypeTitle,
             userType === 'streamer' && styles.selectedText,
           ]}>
-            Streamer
+            Streamer / YouTubeur
           </Text>
           <Text style={styles.userTypeDescription}>
             Create campaigns and manage your budget
@@ -321,7 +345,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
           </Text>
           <Text style={styles.subtitle}>
             {userType === 'streamer' 
-              ? 'Connect your Twitch account to create campaigns'
+              ? 'Connect your Twitch or YouTube account to create campaigns'
               : 'Connect your TikTok account to start clipping'
             }
           </Text>
@@ -386,12 +410,25 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
 
             {!isLogin && (
               <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Twitch URL</Text>
+                <Text style={styles.inputLabel}>Chaîne Twitch</Text>
                 <TextInput
                   style={styles.input}
                   value={twitchUrl}
                   onChangeText={setTwitchUrl}
                   placeholder="https://twitch.tv/your_channel"
+                  autoCapitalize="none"
+                />
+              </View>
+            )}
+
+            {!isLogin && (
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Chaîne YouTube</Text>
+                <TextInput
+                  style={styles.input}
+                  value={youtubeUrl}
+                  onChangeText={setYoutubeUrl}
+                  placeholder="https://youtube.com/@your_channel"
                   autoCapitalize="none"
                 />
               </View>
@@ -403,7 +440,11 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
                 console.log('🔵 Bouton cliqué !');
                 console.log('🔵 isLogin:', isLogin);
                 console.log('🔵 Titre du bouton:', isLogin ? "Sign In" : "Sign Up");
-                handleStreamerAuth();
+                if (userType === 'streamer') {
+                  handleStreamerAuth();
+                } else {
+                  handleTikTokAuth();
+                }
               }}
               loading={isLoading}
               style={styles.authButton}
@@ -517,7 +558,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
                   }}
                   disabled={isLoading}
                 >
-                  <Ionicons name="logo-tiktok" size={30} color="#000000" />
+                  <Ionicons name="logo-tiktok" size={25} color="#000000" />
                   <Text style={styles.tiktokButtonText}>Connect with TikTok</Text>
                 </TouchableOpacity>
               </View>
@@ -546,277 +587,287 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: COLORS.background, // Blanc
+    backgroundColor: '#0A0A0B', // Blanc
   },
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: '#0A0A0B',
     justifyContent: 'center',
     alignItems: 'center',
   },
   centeredContent: {
     width: '100%',
-    maxWidth: 1000,
+    maxWidth: 550,
     alignItems: 'center',
-    paddingHorizontal: SIZES.spacing.xl * 1.5,
+    paddingHorizontal: 26,
   },
   scrollContent: {
     flexGrow: 1,
-    padding: SIZES.spacing.xl * 2,
+    padding: 20,
     justifyContent: 'space-between',
   },
   header: {
     alignItems: 'center',
-    marginBottom: SIZES.spacing.xl * 4,
-    marginTop: SIZES.spacing.xl * 4,
-    paddingHorizontal: SIZES.spacing.xl,
+    marginBottom: 40,
+    marginTop: 24,
+    paddingHorizontal: 24,
   },
   headerContainer: {
     alignItems: 'center',
-    marginBottom: SIZES.spacing.xl * 4,
-    marginTop: SIZES.spacing.xl * 2,
+    marginBottom: 35,
+    marginTop: 18,
   },
   logoContainer: {
-    backgroundColor: COLORS.primarySolid,
-    width: 120,
-    height: 120,
-    borderRadius: 30,
+    backgroundColor: '#0052FF',
+    width: 132,
+    height: 132,
+    borderRadius: 33,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: SIZES.spacing.xl,
-    shadowColor: COLORS.primarySolid,
-    shadowOffset: { width: 0, height: 12 },
+    marginBottom: 35,
+    shadowColor: '#0052FF',
+    shadowOffset: { width: 0, height: 13 },
     shadowOpacity: 0.4,
-    shadowRadius: 24,
-    elevation: 12,
+    shadowRadius: 26,
+    elevation: 13,
   },
   logoImage: {
-    width: 200,
-    height: 200,
-    marginBottom: SIZES.spacing.xl,
+    width: 110,
+    height: 110,
+    marginBottom: 35,
   },
   authLogoImage: {
-    width: 150,
-    height: 150,
-    marginBottom: SIZES.spacing.xl,
+    width: 59,
+    height: 59,
+    marginBottom: 20,
   },
-  title: {
-    fontSize: 56,
-    fontFamily: FONTS.bold,
-    color: COLORS.text,
-    textAlign: 'center',
-    marginBottom: SIZES.spacing.lg,
-    fontWeight: '700',
-  },
+      title: {
+      fontSize: 24,
+      fontFamily: 'Inter_18pt-SemiBold',
+      color: '#FFFFFF',
+      textAlign: 'center',
+      marginTop: 8,
+      marginBottom: 8,
+      fontWeight: '700',
+    },
   subtitle: {
-    fontSize: 24,
-    color: COLORS.textSecondary,
+    fontSize: 12,
+    color: '#8B8B8D',
     textAlign: 'center',
-    lineHeight: 32,
-    maxWidth: 600,
+    lineHeight: 15,
+    maxWidth: 277,
+    marginBottom: -8,
   },
   userTypeContainer: {
     width: '100%',
-    marginBottom: SIZES.spacing.xl * 3,
+    marginBottom: 24,
     flexDirection: 'column',
-    gap: SIZES.spacing.xl * 2,
+    gap: 14,
   },
   userTypeCard: {
-    backgroundColor: COLORS.surface,
-    borderRadius: 28,
-    padding: SIZES.spacing.xl * 3,
+    backgroundColor: '#1A1A1E',
+    borderRadius: 12,
+    padding: 22,
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: COLORS.border,
+    borderWidth: 1,
+    borderColor: '#2A2A2E',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 12 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
-    shadowRadius: 24,
-    elevation: 12,
-    minHeight: 400,
+    shadowRadius: 10,
+    elevation: 6,
+    minHeight: 145,
     justifyContent: 'center',
     width: '100%',
   },
   selectedCard: {
-    borderColor: COLORS.primarySolid,
+    borderColor: '#0052FF',
     borderWidth: 3,
-    backgroundColor: COLORS.cardLight,
-    shadowColor: COLORS.primarySolid,
+    backgroundColor: '#2A2A2E',
+    shadowColor: '#0052FF',
     shadowOpacity: 0.3,
   },
   iconContainer: {
-    width: 140,
-    height: 140,
-    borderRadius: 35,
-    backgroundColor: COLORS.cardLight,
+    width: 62,
+    height: 62,
+    borderRadius: 15,
+    backgroundColor: '#2A2A2E',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: SIZES.spacing.xl * 1.5,
+    marginBottom: 10,
+  },
+  platformLogosContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 9,
+    gap: 14,
   },
   platformLogo: {
-    width: 110,
-    height: 110,
-    borderRadius: 22,
+    width: 36,
+    height: 36,
+    borderRadius: 9,
   },
   selectedIconContainer: {
-    backgroundColor: COLORS.primarySolid,
+    backgroundColor: '#0052FF',
   },
   userTypeTitle: {
-    fontSize: 36,
-    fontFamily: FONTS.bold,
-    color: COLORS.text,
-    marginTop: SIZES.spacing.base,
-    marginBottom: SIZES.spacing.base,
+    fontSize: 19,
+    fontFamily: 'Inter_18pt-SemiBold',
+    color: '#FFFFFF',
+    marginTop: 15,
+    marginBottom: 15,
     fontWeight: '600',
   },
   selectedText: {
-    color: COLORS.primarySolid,
+    color: '#0052FF',
   },
   userTypeDescription: {
-    fontSize: 20,
-    color: COLORS.textSecondary,
+    fontSize: 11,
+    color: '#8B8B8D',
     textAlign: 'center',
-    lineHeight: 28,
-    maxWidth: 300,
+    lineHeight: 14,
+    maxWidth: 155,
   },
   continueButton: {
-    marginTop: SIZES.spacing.xl,
+    marginTop: 14,
     width: '100%',
-    maxWidth: 300,
+    maxWidth: 149,
   },
   formContainer: {
     flex: 1,
     justifyContent: 'center',
   },
   inputContainer: {
-    marginBottom: SIZES.spacing.xl * 1.5,
+    marginBottom: 18,
   },
   inputLabel: {
-    fontSize: 24,
-    fontFamily: FONTS.medium,
-    color: COLORS.text,
-    marginBottom: SIZES.spacing.base,
+    fontSize: 11,
+    fontFamily: 'Inter_18pt-Medium',
+    color: '#FFFFFF',
+    marginBottom: 6,
     fontWeight: '700',
   },
   input: {
-    borderWidth: 3,
-    borderColor: COLORS.border,
-    borderRadius: SIZES.radius.xl,
-    padding: SIZES.spacing.xl,
-    fontSize: 24,
-    fontFamily: FONTS.regular,
-    color: COLORS.text,
-    backgroundColor: COLORS.surface,
-    minHeight: 72,
+    borderWidth: 1.5,
+    borderColor: '#2A2A2E',
+    borderRadius: 7,
+    padding: 13,
+    fontSize: 11,
+    fontFamily: 'Inter_18pt-Regular',
+    color: '#FFFFFF',
+    backgroundColor: '#1A1A1E',
+    minHeight: 31,
   },
   authButton: {
-    marginTop: SIZES.spacing.xl * 3,
-    minHeight: 80,
+    marginTop: 20,
+    minHeight: 36,
   },
   tiktokAuthContainer: {
     alignItems: 'center',
-    padding: SIZES.spacing.xl,
+    padding: 31,
   },
   tiktokTitle: {
-    fontSize: SIZES.xl,
-    fontFamily: FONTS.bold,
-    color: COLORS.text,
-    marginTop: SIZES.spacing.lg,
-    marginBottom: SIZES.spacing.sm,
+    fontSize: 20,
+    fontFamily: 'Inter_18pt-SemiBold',
+    color: '#FFFFFF',
+    marginTop: 23,
+    marginBottom: 8,
   },
   tiktokDescription: {
-    fontSize: SIZES.base,
-    color: COLORS.textSecondary,
+    fontSize: 16,
+    color: '#8B8B8D',
     textAlign: 'center',
     lineHeight: 20,
-    marginBottom: SIZES.spacing.xl,
+    marginBottom: 31,
   },
   tiktokButton: {
     width: '100%',
-    minHeight: 80,
+    minHeight: 36,
     backgroundColor: '#FFFFFF',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: SIZES.spacing.lg,
-    paddingHorizontal: SIZES.spacing.xl,
-    borderRadius: SIZES.radius.xl,
-    borderWidth: 3,
-    borderColor: '#E5E5E5',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 0,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
+    shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.2,
-    shadowRadius: 16,
-    elevation: 8,
+    shadowRadius: 8,
+    elevation: 4,
   },
   backButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#ffffff',
-    paddingVertical: 24,
-    paddingHorizontal: 32,
-    borderRadius: 16,
-    marginTop: SIZES.spacing.xl * 3,
-    marginBottom: SIZES.spacing.xl * 2,
-    minWidth: 160,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 14,
+    marginTop: 30,
+    marginBottom: 31,
+    minWidth: 79,
   },
   backButtonText: {
-    fontSize: 26,
-    fontFamily: FONTS.medium,
+    fontSize: 13,
+    fontFamily: 'FONTS.medium',
     fontWeight: '600',
     color: '#000000',
+    textAlign: 'center',
+    marginLeft: -18,
   },
   toggleContainer: {
     flexDirection: 'row',
-    backgroundColor: COLORS.surface,
-    borderRadius: SIZES.radius.xl,
-    padding: 8,
-    marginBottom: SIZES.spacing.xl * 1.5,
-    borderWidth: 3,
-    borderColor: COLORS.border,
+    backgroundColor: '#1A1A1E',
+    borderRadius: 7,
+    padding: 2.5,
+    marginBottom: 18,
+    borderWidth: 1.5,
+    borderColor: '#2A2A2E',
   },
   toggleButton: {
     flex: 1,
-    paddingVertical: SIZES.spacing.xl,
-    paddingHorizontal: SIZES.spacing.xl * 1.5,
-    borderRadius: SIZES.radius.lg,
+    paddingVertical: 13,
+    paddingHorizontal: 18,
+    borderRadius: 5,
     alignItems: 'center',
   },
   activeToggle: {
     backgroundColor: '#4a5cf9',
   },
   toggleText: {
-    fontSize: 24,
-    fontFamily: FONTS.medium,
-    color: COLORS.textSecondary,
-    fontWeight: '700',
+    fontSize: 13,
+    fontFamily: 'FONTS.medium',
+    color: '#8B8B8D',
+    fontWeight: '600',
   },
   activeToggleText: {
-    color: COLORS.white,
+    color: '#FFFFFF',
   },
   helperText: {
-    fontSize: 24,
-    color: COLORS.textSecondary,
-    fontFamily: FONTS.regular,
-    marginTop: SIZES.spacing.xs,
+    fontSize: 13,
+    color: '#8B8B8D',
+    fontFamily: 'Inter_18pt-Regular',
+    marginTop: 4,
   },
   socialAuthContainer: {
-    marginTop: SIZES.spacing.lg,
+    marginTop: 23,
     alignItems: 'center',
   },
   socialAuthText: {
-    fontSize: SIZES.base,
-    color: COLORS.textSecondary,
-    fontFamily: FONTS.regular,
-    marginBottom: SIZES.spacing.base,
+    fontSize: 16,
+    color: '#8B8B8D',
+    fontFamily: 'Inter_18pt-Regular',
+    marginBottom: 16,
   },
   tiktokButtonText: {
-    fontSize: 24,
-    fontFamily: FONTS.medium,
-    fontWeight: '700',
+    fontSize: 13,
+    fontFamily: 'Inter_18pt-Medium',
+    fontWeight: '600',
     color: '#000000',
-    marginLeft: SIZES.spacing.sm,
+    marginLeft: 3,
   },
 });
 

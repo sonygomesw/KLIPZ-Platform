@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path, Polygon, Circle, Line } from 'react-native-svg';
-import { COLORS, SIZES, SHADOWS, FONTS } from '../constants';
+
 import { User } from '../types';
 
 const { width, height } = Dimensions.get('window');
@@ -219,242 +219,168 @@ const Sidebar: React.FC<{
           style={styles.logoImage}
           resizeMode="contain"
         />
-        <View style={styles.welcomeContainer}>
-          <View style={styles.welcomeContent}>
-            <Text style={styles.welcomeText}>
-              {isStreamer ? (user.twitchDisplayName || user.email) : user.email}
-            </Text>
-            <Image 
-              source={require('../../assets/twitch-badge.png')} 
-              style={styles.twitchBadge}
-            />
-          </View>
-          <View style={styles.roleBadge}>
-            <Ionicons 
-              name={isStreamer ? 'videocam' : 'film'} 
-              size={12} 
-              color="#FFFFFF" 
-            />
-            <Text style={styles.roleText}>
-              {isStreamer ? 'Streamer' : 'Clipper'}
-            </Text>
-          </View>
-        </View>
       </View>
       
       <View style={styles.navItems}>
-        <View style={styles.navSection}>
+        <TouchableOpacity 
+          style={[
+            styles.navItem, 
+            activeTab === 'Dashboard' && styles.navItemActive
+          ]} 
+          onPress={() => onTabChange('Dashboard')}
+        >
+                      <HomeIcon 
+              isActive={activeTab === 'Dashboard'}
+              size={25}
+            />
+        </TouchableOpacity>
+        
+        {isClipper && (
           <TouchableOpacity 
             style={[
               styles.navItem, 
-              activeTab === 'Dashboard' && styles.navItemActive
+              activeTab === 'AvailableMissions' && styles.navItemActive
             ]} 
-            onPress={() => onTabChange('Dashboard')}
+            onPress={() => onTabChange('AvailableMissions')}
           >
-            <HomeIcon 
-              isActive={activeTab === 'Dashboard'}
-              size={45}
+            <Ionicons 
+              name="megaphone-outline" 
+              size={30} 
+              color={activeTab === 'AvailableMissions' ? '#f1f1f1' : '#b5b5b5'} 
             />
-            <Text style={[
-              styles.navText, 
-              activeTab === 'Dashboard' && styles.navTextActive
-            ]}>Dashboard</Text>
-          </TouchableOpacity>
-          
-          {isClipper && (
-            <TouchableOpacity 
-              style={[
-                styles.navItem, 
-                activeTab === 'AvailableMissions' && styles.navItemActive
-              ]} 
-              onPress={() => onTabChange('AvailableMissions')}
-            >
-              <Ionicons 
-                name="megaphone-outline" 
-                size={45} 
-                color={activeTab === 'AvailableMissions' ? '#f1f1f1' : '#b5b5b5'} 
-              />
-              <Text style={[
-                styles.navText, 
-                                  activeTab === 'AvailableMissions' && styles.navTextActive
-                ]}>Available Missions</Text>
-            </TouchableOpacity>
-          )}
-          
-          {isStreamer && (
-            <TouchableOpacity 
-              style={[
-                styles.navItem, 
-                activeTab === 'Campaigns' && styles.navItemActive
-              ]} 
-              onPress={() => onTabChange('Campaigns')}
-            >
-              <CampaignsIcon 
-                isActive={activeTab === 'Campaigns'}
-                size={45}
-              />
-              <Text style={[
-                styles.navText, 
-                activeTab === 'Campaigns' && styles.navTextActive
-              ]}>My Missions</Text>
-            </TouchableOpacity>
-          )}
-          
-          {isClipper && (
-            <TouchableOpacity 
-              style={[
-                styles.navItem, 
-                activeTab === 'Campaigns' && styles.navItemActive
-              ]} 
-              onPress={() => onTabChange('Campaigns')}
-            >
-              <CampaignsIcon 
-                isActive={activeTab === 'Campaigns'}
-                size={45}
-              />
-              <Text style={[
-                styles.navText, 
-                activeTab === 'Campaigns' && styles.navTextActive
-              ]}>Missions</Text>
-            </TouchableOpacity>
-          )}
-          
-
-          
-          {isClipper && (
-            <TouchableOpacity 
-              style={[
-                styles.navItem, 
-                activeTab === 'Earnings' && styles.navItemActive
-              ]} 
-              onPress={() => onTabChange('Earnings')}
-            >
-              <Ionicons 
-                name="wallet-outline" 
-                size={45} 
-                color={activeTab === 'Earnings' ? '#f1f1f1' : '#b5b5b5'} 
-              />
-              <Text style={[
-                styles.navText, 
-                activeTab === 'Earnings' && styles.navTextActive
-              ]}>Earnings</Text>
-            </TouchableOpacity>
-          )}
-          
-          {isClipper && (
-            <TouchableOpacity 
-              style={[
-                styles.navItem, 
-                activeTab === 'Submissions' && styles.navItemActive
-              ]} 
-              onPress={() => onTabChange('Submissions')}
-            >
-              <Ionicons 
-                name="videocam-outline" 
-                size={45} 
-                color={activeTab === 'Submissions' ? '#f1f1f1' : '#b5b5b5'} 
-              />
-              <Text style={[
-                styles.navText, 
-                activeTab === 'Submissions' && styles.navTextActive
-              ]}>My Clips</Text>
-            </TouchableOpacity>
-          )}
-          
-
-        </View>
-        
-        <View style={styles.navSection}>
-          <Text style={styles.navSectionTitle}>Actions</Text>
-          
-          {isStreamer && (
-    <TouchableOpacity
-      style={[
-        styles.navItem,
-                activeTab === 'CreateCampaign' && styles.navItemActive
-      ]}
-              onPress={() => onTabChange('CreateCampaign')}
-    >
-      <CreateCampaignIcon
-                isActive={activeTab === 'CreateCampaign'}
-                size={45}
-              />
-              <Text style={[
-                styles.navText, 
-                activeTab === 'CreateCampaign' && styles.navTextActive
-                                ]}>Create Mission</Text>
-            </TouchableOpacity>
-          )}
-          
-          {isStreamer && (
-            <TouchableOpacity 
-              style={[
-                styles.navItem, 
-                activeTab === 'Payment' && styles.navItemActive
-              ]} 
-              onPress={() => onTabChange('Payment')}
-            >
-              <Ionicons 
-                name="wallet-outline" 
-                size={40} 
-                color={activeTab === 'Payment' ? '#000000' : '#6a6a6a'} 
-              />
-              <Text style={[
-                styles.navText, 
-                activeTab === 'Payment' && styles.navTextActive
-              ]}>Payment</Text>
-            </TouchableOpacity>
-          )}
-          
-
-          
-          <TouchableOpacity 
-        style={[
-              styles.navItem, 
-              activeTab === 'Profile' && styles.navItemActive
-            ]} 
-            onPress={() => onTabChange('Profile')}
-          >
-            <ProfileIcon 
-              isActive={activeTab === 'Profile'}
-              size={45}
-            />
-            <Text style={[
-              styles.navText, 
-              activeTab === 'Profile' && styles.navTextActive
-            ]}>Profile</Text>
-    </TouchableOpacity>
-          
-          {user.role === 'admin' && (
-            <TouchableOpacity 
-              style={[
-                styles.navItem, 
-                activeTab === 'AdminDeclarations' && styles.navItemActive
-              ]} 
-              onPress={() => onTabChange('AdminDeclarations')}
-            >
-              <Ionicons 
-                name="shield-checkmark-outline" 
-                size={45} 
-                color={activeTab === 'AdminDeclarations' ? '#f1f1f1' : '#b5b5b5'} 
-              />
-              <Text style={[
-                styles.navText, 
-                activeTab === 'AdminDeclarations' && styles.navTextActive
-              ]}>Admin</Text>
           </TouchableOpacity>
         )}
-        </View>
+        
+        {isStreamer && (
+          <TouchableOpacity 
+            style={[
+              styles.navItem, 
+              activeTab === 'Campaigns' && styles.navItemActive
+            ]} 
+            onPress={() => onTabChange('Campaigns')}
+          >
+            <CampaignsIcon 
+              isActive={activeTab === 'Campaigns'}
+              size={25}
+            />
+          </TouchableOpacity>
+        )}
+        
+        {isClipper && (
+          <TouchableOpacity 
+            style={[
+              styles.navItem, 
+              activeTab === 'Campaigns' && styles.navItemActive
+            ]} 
+            onPress={() => onTabChange('Campaigns')}
+          >
+            <CampaignsIcon 
+              isActive={activeTab === 'Campaigns'}
+              size={25}
+            />
+          </TouchableOpacity>
+        )}
+        
+        {isClipper && (
+          <TouchableOpacity 
+            style={[
+              styles.navItem, 
+              activeTab === 'Earnings' && styles.navItemActive
+            ]} 
+            onPress={() => onTabChange('Earnings')}
+          >
+            <Ionicons 
+              name="wallet-outline" 
+              size={25} 
+              color={activeTab === 'Earnings' ? '#f1f1f1' : '#b5b5b5'} 
+            />
+          </TouchableOpacity>
+        )}
+        
+        {isClipper && (
+          <TouchableOpacity 
+            style={[
+              styles.navItem, 
+              activeTab === 'Submissions' && styles.navItemActive
+            ]} 
+            onPress={() => onTabChange('Submissions')}
+          >
+            <Ionicons 
+              name="videocam-outline" 
+              size={25} 
+              color={activeTab === 'Submissions' ? '#f1f1f1' : '#b5b5b5'} 
+            />
+          </TouchableOpacity>
+        )}
+        
+        {isStreamer && (
+          <TouchableOpacity
+            style={[
+              styles.navItem,
+              activeTab === 'CreateCampaign' && styles.navItemActive
+            ]}
+            onPress={() => onTabChange('CreateCampaign')}
+          >
+            <CreateCampaignIcon
+              isActive={activeTab === 'CreateCampaign'}
+              size={25}
+            />
+          </TouchableOpacity>
+        )}
+        
+        {isStreamer && (
+          <TouchableOpacity 
+            style={[
+              styles.navItem, 
+              activeTab === 'Payment' && styles.navItemActive
+            ]} 
+            onPress={() => onTabChange('Payment')}
+          >
+            <Ionicons 
+              name={activeTab === 'Payment' ? "wallet" : "wallet-outline"} 
+              size={25} 
+              color={activeTab === 'Payment' ? '#f1f1f1' : '#b5b5b5'} 
+            />
+          </TouchableOpacity>
+        )}
+        
+        <TouchableOpacity 
+          style={[
+            styles.navItem, 
+            activeTab === 'Profile' && styles.navItemActive
+          ]} 
+          onPress={() => onTabChange('Profile')}
+        >
+          <ProfileIcon 
+            isActive={activeTab === 'Profile'}
+            size={25}
+          />
+        </TouchableOpacity>
+        
+        {user.role === 'admin' && (
+          <TouchableOpacity 
+            style={[
+              styles.navItem, 
+              activeTab === 'AdminDeclarations' && styles.navItemActive
+            ]} 
+            onPress={() => onTabChange('AdminDeclarations')}
+          >
+            <Ionicons 
+              name="shield-checkmark-outline" 
+              size={25} 
+              color={activeTab === 'AdminDeclarations' ? '#f1f1f1' : '#b5b5b5'} 
+            />
+          </TouchableOpacity>
+        )}
       </View>
       
       <View style={styles.footer}>
-        <View style={styles.userInfo}>
-          <Text style={styles.userEmail}>{user.email}</Text>
-          <Text style={styles.userRole}>{user.role}</Text>
-        </View>
-        
         <TouchableOpacity style={styles.signOutButton} onPress={onSignOut}>
-          <Text style={styles.signOutText}>Sign out</Text>
+          <Ionicons 
+            name="log-out-outline" 
+            size={25} 
+            color="#b5b5b5" 
+          />
         </TouchableOpacity>
       </View>
     </View>
@@ -506,154 +432,109 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     flexDirection: 'row',
-    backgroundColor: COLORS.background,
+    backgroundColor: '#0A0A0A',
     height: '100vh',
     overflow: 'hidden',
-    minWidth: 950, // Largeur minimum pour éviter que tout disparaisse
+    minWidth: 950,
   },
   sidebar: {
-    width: 500, // Augmente la largeur de la sidebar
-    minWidth: 450, // Largeur minimum de la sidebar
-    backgroundColor: '#000000',
-    borderRightWidth: 1,
-    borderRightColor: COLORS.border,
-    paddingVertical: 24,
-    paddingHorizontal: 40, // Augmente le padding horizontal
+    width: 80,
+    minWidth: 80,
+    backgroundColor: '#0A0A0A',
+    paddingVertical: 12,
+    paddingHorizontal: 8,
     justifyContent: 'space-between',
-    ...SHADOWS.sm,
-    flexShrink: 0, // Empêche la sidebar de rétrécir
+    flexShrink: 0,
+    alignItems: 'center',
   },
   logoContainer: {
-    marginTop: 40,
-    marginBottom: 40,
-    flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 32,
+    marginTop: -15,
+    borderRadius: 12,
   },
   logoImage: {
-    width: 150,
-    height: 150,
-    borderRadius: 32,
+    width: 70,
+    height: 70,
+    borderRadius: 12,
   },
   welcomeContainer: {
-    flex: 1,
-    marginLeft: SIZES.spacing.lg,
-    justifyContent: 'center',
-    paddingHorizontal: SIZES.spacing.sm,
+    display: 'none',
   },
   welcomeContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: SIZES.spacing.sm,
-    paddingRight: SIZES.spacing.md,
+    display: 'none',
   },
   welcomeText: {
-    fontSize: 33,
-    color: COLORS.text,
-    fontFamily: FONTS.medium,
-    fontWeight: '450',
+    display: 'none',
   },
   twitchBadge: {
-    width: 33,
-    height: 33,
-    marginLeft: 10,
+    display: 'none',
   },
   roleBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.primarySolid,
-    paddingHorizontal: SIZES.spacing.sm,
-    paddingVertical: SIZES.spacing.xs,
-    borderRadius: 9,
-    alignSelf: 'flex-start',
-    marginTop: 5,
+    display: 'none',
   },
   roleText: {
-    fontSize: 25,
-    color: '#FFFFFF',
-    fontFamily: FONTS.medium,
-    marginLeft: 10,
+    display: 'none',
   },
   navItems: {
     flex: 1,
-  },
-  navSection: {
-    marginTop: 10,
-    marginBottom: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   navSectionTitle: {
-    fontSize: 30,
-    fontWeight: '600',
-    color: COLORS.textSecondary,
-    marginBottom: 12,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    fontFamily: FONTS.medium,
+    display: 'none',
   },
   navItem: {
-    flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 26,
-    paddingHorizontal: 20,
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 10,
     borderRadius: 12,
-    marginBottom: 20,
-    transition: 'all 0.3s ease',
+    marginBottom: 15,
+    width: 50,
+    height: 50,
   },
   navItemActive: {
-    backgroundColor: '#363636',
-    borderRadius: 27,
+    backgroundColor: '#181818',
+    borderRadius: 12,
+    width: 65,
   },
   navText: {
-    marginLeft: 20,
-    fontSize: 35,
-    color: '#b5b5b5',
-    fontWeight: '350',
-    fontFamily: FONTS.medium,
+    display: 'none',
   },
   navTextActive: {
-    color: '#f1f1f1',
+    display: 'none',
   },
   footer: {
     marginTop: 20,
+    alignItems: 'center',
   },
   userInfo: {
-    marginBottom: 20,
+    display: 'none',
   },
   userEmail: {
-    fontSize: 14,
-    color: COLORS.text,
-    fontFamily: FONTS.medium,
-    marginBottom: 4,
+    display: 'none',
   },
   userRole: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
-    fontFamily: FONTS.regular,
-    textTransform: 'capitalize',
+    display: 'none',
   },
   signOutButton: {
-    paddingHorizontal: 24,
-    paddingVertical: 14,
-    backgroundColor: '#FF4444',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 60,
+    height: 60,
+    backgroundColor: 'transparent',
     borderRadius: 12,
-    ...SHADOWS.sm,
-    borderWidth: 1,
-    borderColor: '#FF4444',
   },
   signOutText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-    fontFamily: FONTS.bold,
-    textAlign: 'center',
+    display: 'none',
   },
   mainContent: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: '#0A0A0A',
     width: '100%',
     maxWidth: '100%',
-    minWidth: 400, // Largeur minimum pour le contenu principal
-    overflow: 'auto', // Permet le scroll si nécessaire
+    minWidth: 400,
+    overflow: 'scroll',
   },
   mainContentFlex: {
     flex: 1,
