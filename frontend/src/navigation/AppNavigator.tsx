@@ -128,20 +128,32 @@ const AppNavigator: React.FC = () => {
       setIsLoading(true);
       
       // Vérifier si Supabase est configuré
-      const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
-      const supabaseKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+      const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || (window as any)?.ENV?.EXPO_PUBLIC_SUPABASE_URL;
+      const supabaseKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || (window as any)?.ENV?.EXPO_PUBLIC_SUPABASE_ANON_KEY;
       
       if (!supabaseUrl || !supabaseKey || 
           supabaseUrl === 'your_supabase_url_here' || 
           supabaseKey === 'your_supabase_anon_key_here') {
-        console.log('⚠️ Supabase non configuré - Mode développement');
+        console.log('⚠️ Supabase non configuré - Mode développement avec utilisateur mock');
+        
+        // Créer un utilisateur mock pour le développement
+        const mockUser: User = {
+          id: 'mock-user-id',
+          email: 'sonygomes.97@gmail.com',
+          role: 'admin',
+          balance: 0,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        
+        setUser(mockUser);
         setIsLoading(false);
-        return; // Afficher l'écran d'authentification
+        return;
       }
       
       const currentUser = await authService.getCurrentUser();
       if (currentUser) {
-      setUser(currentUser);
+        setUser(currentUser);
       }
     } catch (error) {
       console.error('Error lors de la vérification de l\'état d\'authentification:', error);

@@ -1,0 +1,6 @@
+// Configuration pour le web - variables d'environnement
+window.ENV = {
+  EXPO_PUBLIC_SUPABASE_URL: 'https://ajbfgeojhfbtbmouynva.supabase.co',
+  EXPO_PUBLIC_SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqYmZnZW9qaGZidGJtb3V5bnZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI1ODYxMTYsImV4cCI6MjA2ODE2MjExNn0.qAmwnMgKCg8vY_LKcYrJHaAp7rCvmro9cwpXrFS574A',
+  EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY: 'pk_test_51RmZRIRnwarIVw4gJfO3Gc6kdvkeAcadRzaiDHQ4LauVJi3PD7dGVLXHilFBSRva7q2okVhcCxAKfZXqMPm4PuHm00H16wTQEB'
+};

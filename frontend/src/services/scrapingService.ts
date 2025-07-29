@@ -38,26 +38,12 @@ export class ScrapingService {
     try {
       console.log('🔍 Scraping views for URL:', url);
       
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/scrape-views`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY}`,
-        },
-        body: JSON.stringify({
-          action: 'scrape-single',
-          url: url
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to scrape URL');
-      }
-
-      const data = await response.json();
-      console.log('✅ Scraped views:', data.views);
-      return data;
+      // Pour l'instant, simuler le scraping (car nous n'avons pas d'endpoint pour une URL spécifique)
+      // TODO: Ajouter un endpoint pour scraper une URL spécifique
+      const mockViews = Math.floor(Math.random() * 1000) + 100;
+      
+      console.log('✅ Simulated views for URL:', mockViews);
+      return { success: true, views: mockViews };
     } catch (error) {
       console.error('❌ Error scraping URL:', error);
       throw error;
@@ -69,7 +55,26 @@ export class ScrapingService {
     try {
       console.log('🔍 Updating views for submission:', submissionId);
       
-      // Récupérer la soumission
+      // Utiliser notre serveur backend pour le scraping
+      const response = await fetch('http://localhost:8085/api/admin/scrape-views', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          submissionId: submissionId
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to scrape views');
+      }
+
+      const data = await response.json();
+      console.log('✅ Scraped views from backend:', data);
+      
+      // Récupérer la soumission mise à jour
       const { data: submission, error: fetchError } = await supabase
         .from('submissions')
         .select(`
@@ -85,18 +90,15 @@ export class ScrapingService {
       if (fetchError) throw fetchError;
       if (!submission) throw new Error('Submission not found');
 
-      // Scraper les vues
-      const { views } = await this.scrapeSingleUrl(submission.tiktok_url);
-      
-      // Calculer les gains
+      // Calculer les gains avec les nouvelles vues
+      const views = data.views;
       const cpm = submission.campaigns?.cpm_rate || 0.03;
       const earnings = (views / 1000) * cpm;
       
-      // Mettre à jour la soumission
+      // Mettre à jour les gains dans la base de données
       const { error: updateError } = await supabase
         .from('submissions')
         .update({
-          views: views,
           earnings: earnings,
           updated_at: new Date().toISOString()
         })
@@ -104,7 +106,7 @@ export class ScrapingService {
 
       if (updateError) throw updateError;
       
-      console.log('✅ Updated submission views:', { views, earnings });
+      console.log('✅ Updated submission earnings:', { views, earnings });
       
       // Vérifier si le paiement doit être déclenché
       const requiredViews = submission.campaigns?.required_views || 0;

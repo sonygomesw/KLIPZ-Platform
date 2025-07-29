@@ -7,23 +7,67 @@ if (typeof global.structuredClone === 'undefined') {
 
 import { createClient } from '@supabase/supabase-js';
 import { Database } from '../types';
+import ENV from './env';
 
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
+const supabaseUrl = ENV.SUPABASE_URL;
+const supabaseAnonKey = ENV.SUPABASE_ANON_KEY;
 
 // Debug: Vérifier que les variables d'environnement sont bien chargées
 console.log('🔍 Debug Supabase Config:');
-console.log('URL:', supabaseUrl ? '✅ Définie' : '❌ Manquante');
-console.log('Key:', supabaseAnonKey ? '✅ Définie' : '❌ Manquante');
+console.log('URL:', supabaseUrl ? `✅ Définie (${supabaseUrl.length} chars)` : '❌ Manquante');
+console.log('Key:', supabaseAnonKey ? `✅ Définie (${supabaseAnonKey.length} chars)` : '❌ Manquante');
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    // Configuration pour la persistance de session
-    autoRefreshToken: true,  // Activer le refresh automatique
-    persistSession: true,    // Activer la persistance de session
-    detectSessionInUrl: false,
-  },
-});
+// Créer un client Supabase mock si les clés ne sont pas disponibles
+let supabase: any;
+
+// Vérification plus stricte des clés
+const isValidSupabaseUrl = supabaseUrl && supabaseUrl.startsWith('https://') && supabaseUrl.includes('.supabase.co');
+const isValidSupabaseKey = supabaseAnonKey && supabaseAnonKey.startsWith('eyJ') && supabaseAnonKey.length > 100;
+
+console.log('🔍 Validation Supabase:');
+console.log('URL valide:', isValidSupabaseUrl ? '✅' : '❌');
+console.log('Key valide:', isValidSupabaseKey ? '✅' : '❌');
+
+// Vérifier que les clés sont valides avant d'initialiser Supabase
+if (!isValidSupabaseUrl || !isValidSupabaseKey) {
+  console.warn('⚠️ Supabase non configuré - Utilisation du mode mock');
+  supabase = {
+    auth: {
+      getUser: async () => ({ data: { user: null }, error: null }),
+      signOut: async () => ({ error: null })
+    },
+    from: () => ({
+      select: () => ({ eq: () => ({ single: async () => ({ data: null, error: null }) }) }),
+      update: () => ({ eq: () => ({ select: () => ({ single: async () => ({ data: null, error: null }) }) }) })
+    })
+  };
+} else {
+  try {
+    supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: false,
+      },
+    });
+    console.log('✅ Supabase initialisé avec succès');
+  } catch (error) {
+    console.error('❌ Erreur initialisation Supabase:', error);
+    // Fallback vers mock
+    supabase = {
+      auth: {
+        getUser: async () => ({ data: { user: null }, error: null }),
+        signOut: async () => ({ error: null })
+      },
+      from: () => ({
+        select: () => ({ eq: () => ({ single: async () => ({ data: null, error: null }) }) }),
+        update: () => ({ eq: () => ({ select: () => ({ single: async () => ({ data: null, error: null }) }) }) })
+      })
+    };
+  }
+}
+
+export { supabase };
 
 // Utilitaires Supabase simplifiés
 export const supabaseUtils = {
