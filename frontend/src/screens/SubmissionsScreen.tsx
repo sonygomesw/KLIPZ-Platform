@@ -11,6 +11,7 @@ import {
   TextInput,
   Dimensions,
   ScrollView,
+  Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -208,22 +209,42 @@ const SubmissionsScreen: React.FC<SubmissionsScreenProps> = ({ user, navigation 
   const renderSubmissionsTable = () => (
     <View style={styles.mainCard}>
       <View style={styles.tableHeader}>
-        <View style={styles.titleContainer}>
-          <View style={styles.titleWithIcon}>
-            <Text style={styles.tableTitle}>My Clips</Text>
-            <View style={styles.infoIconContainer}>
-              <Ionicons name="information-circle" size={20} color="#faf9f0" />
+        <View style={styles.leftContent}>
+          <View style={styles.platformStatsContainer}>
+            <View style={styles.platformStatContainer}>
+              <Image source={require('../../assets/twitch-logo.jpg')} style={styles.platformImage} />
+              <View style={styles.platformStatContent}>
+                <Text style={styles.statsText}>
+                  {getFilteredSubmissions().filter(s => (s as any).platform === 'twitch' || !(s as any).platform).length} clips
+                </Text>
+                <View style={styles.statsDot} />
+                <Text style={styles.statsText}>
+                  {formatCurrency(getFilteredSubmissions()
+                    .filter(s => (s as any).platform === 'twitch' || !(s as any).platform)
+                    .reduce((sum, s) => sum + (s.earnings || 0), 0))} earned
+                </Text>
+              </View>
+            </View>
+            <View style={styles.platformStatContainer}>
+              <Image source={require('../../assets/youtube_logo.png')} style={styles.platformImage} />
+              <View style={styles.platformStatContent}>
+                <Text style={styles.statsText}>
+                  {getFilteredSubmissions().filter(s => (s as any).platform === 'youtube').length} clips
+                </Text>
+                <View style={styles.statsDot} />
+                <Text style={styles.statsText}>
+                  {formatCurrency(getFilteredSubmissions()
+                    .filter(s => (s as any).platform === 'youtube')
+                    .reduce((sum, s) => sum + (s.earnings || 0), 0))} earned
+                </Text>
+              </View>
             </View>
           </View>
-          <View style={styles.statsContainer}>
-            <Text style={styles.statsText}>{getFilteredSubmissions().length} clips</Text>
-            <View style={styles.statsDot} />
-            <Text style={styles.statsText}>
-              {formatCurrency(getFilteredSubmissions().reduce((sum, s) => sum + (s.earnings || 0), 0))} earned
-            </Text>
-          </View>
         </View>
-        <TouchableOpacity style={styles.browseButton}>
+        <TouchableOpacity 
+          style={styles.browseButton}
+          onPress={() => navigation?.navigate('Discover')}
+        >
           <LinearGradient
             colors={['#4a5cf9', '#4a5cf9']}
             start={{ x: 0, y: 0 }}
@@ -238,7 +259,8 @@ const SubmissionsScreen: React.FC<SubmissionsScreenProps> = ({ user, navigation 
       
       <View style={styles.tableContainer}>
         <View style={styles.tableHeaderRow}>
-          <Text style={[styles.campaignHeaderCell, styles.tableHeaderCell]}>CAMPAIGN</Text>
+          <Text style={[styles.platformHeaderCell, styles.tableHeaderCell]}>PLATFORM</Text>
+          <Text style={[styles.campaignHeaderCell, styles.tableHeaderCell]}>MISSION</Text>
           <Text style={[styles.linkHeaderCell, styles.tableHeaderCell]}>TIKTOK LINK</Text>
           <Text style={[styles.viewsHeaderCell, styles.tableHeaderCell]}>VIEWS</Text>
           <Text style={[styles.earningsHeaderCell, styles.tableHeaderCell]}>EARNINGS</Text>
@@ -249,9 +271,16 @@ const SubmissionsScreen: React.FC<SubmissionsScreenProps> = ({ user, navigation 
         {getFilteredSubmissions().length > 0 ? (
           getFilteredSubmissions().map((submission, index) => (
             <View key={index} style={styles.tableDataRow}>
+              <View style={styles.platformCell}>
+                <Ionicons 
+                  name={(submission as any).platform === 'youtube' ? 'logo-youtube' : 'logo-twitch'} 
+                  size={20} 
+                  color={(submission as any).platform === 'youtube' ? '#FF0000' : '#9146FF'} 
+                />
+              </View>
               <View style={styles.campaignCell}>
                 <View style={styles.campaignIconContainer}>
-                  <Ionicons name="videocam" size={24} color="#4a5cf9" />
+                  <Ionicons name="videocam" size={13} color="#0a0a0a" />
                 </View>
                 <Text style={styles.campaignName}>{submission.campaignName}</Text>
               </View>
@@ -263,7 +292,7 @@ const SubmissionsScreen: React.FC<SubmissionsScreenProps> = ({ user, navigation 
                   {submission.tiktokUrl.replace('https://', '')}
                 </Text>
                 <View style={styles.linkIconContainer}>
-                  <Ionicons name="open-outline" size={24} color="#4a5cf9" />
+                  <Ionicons name="open-outline" size={13} color="#0a0a0a" />
                 </View>
               </TouchableOpacity>
               <View style={styles.viewsCell}>
@@ -326,13 +355,13 @@ const SubmissionsScreen: React.FC<SubmissionsScreenProps> = ({ user, navigation 
         </Text>
         <View style={styles.paginationControls}>
           <TouchableOpacity style={styles.paginationButton}>
-            <Ionicons name="chevron-back" size={20} color="#6B7280" />
+            <Ionicons name="chevron-back" size={14} color="#6B7280" />
           </TouchableOpacity>
           <View style={styles.currentPage}>
             <Text style={styles.currentPageText}>1</Text>
           </View>
           <TouchableOpacity style={styles.paginationButton}>
-            <Ionicons name="chevron-forward" size={20} color="#6B7280" />
+            <Ionicons name="chevron-forward" size={14} color="#6B7280" />
           </TouchableOpacity>
         </View>
         <View style={styles.showEntriesContainer}>
@@ -472,6 +501,7 @@ const SubmissionsScreen: React.FC<SubmissionsScreenProps> = ({ user, navigation 
 
   return (
     <View style={styles.container}>
+      <Text style={styles.pageTitle}>My Clips</Text>
       <ScrollView 
         style={styles.scrollView} 
         showsVerticalScrollIndicator={false}
@@ -480,22 +510,6 @@ const SubmissionsScreen: React.FC<SubmissionsScreenProps> = ({ user, navigation 
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-        <View style={styles.header}>
-          <View style={styles.headerTitleContainer}>
-            <LinearGradient
-              colors={['#ffffff', '#ffffff']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 0, y: 1 }}
-              style={styles.headerTitleGradient}
-            >
-              <View style={styles.headerTitleContent}>
-                <Text style={styles.headerTitle}>My Clips</Text>
-                <Text style={styles.headerDescription}>View your submitted clips and track their performance and earnings.</Text>
-              </View>
-            </LinearGradient>
-          </View>
-        </View>
-        
         {renderSubmissionsTable()}
       </ScrollView>
 
@@ -507,29 +521,41 @@ const SubmissionsScreen: React.FC<SubmissionsScreenProps> = ({ user, navigation 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#0A0A0A', // Thème sombre comme Dashboard
   },
+  pageTitle: {
+    fontSize: 14,
+    fontFamily: 'Inter_18pt-Medium',
+    color: '#e0e0e0',
+    textAlign: 'center',
+    marginTop: -30,
+    marginBottom: 6,
+  },
+
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: SIZES.spacing.xl,
-    paddingBottom: 50,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 24,
+    flexGrow: 1,
   },
   header: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 40,
-    marginBottom: SIZES.spacing.xl,
+    paddingVertical: 19,
+    marginBottom: 4,
+    marginTop: 4,
   },
 
   headerTitle: {
-    fontSize: 40,
-    fontFamily: FONTS.bold,
+    fontSize: 20, // Réduit de 40 à 20
+    fontFamily: 'Inter_18pt-SemiBold',
     fontWeight: '600',
-    color: '#363636',
+    color: '#FFFFFF', // Blanc pour le thème sombre
     textAlign: 'center',
-    lineHeight: 36,
+    lineHeight: 18, // Réduit de 36 à 18
   },
   headerTitleContainer: {
     alignSelf: 'stretch',
@@ -574,7 +600,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#0A0A0A',
   },
   loadingText: {
     fontSize: 42,
@@ -583,39 +609,63 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   mainCard: {
-    backgroundColor: '#FFFFFF',
-    marginBottom: 24,
-    borderRadius: 20,
+    backgroundColor: '#1C1C1E', // Thème sombre
+    marginBottom: 12, // Réduit de 24 à 12
+    borderRadius: 12, // Réduit de 20 à 12
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#38383A', // Couleur sombre
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 2 }, // Réduit de 4 à 2
     shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 6,
+    shadowRadius: 6, // Réduit de 12 à 6
+    elevation: 3, // Réduit de 6 à 3
     overflow: 'hidden',
   },
   tableHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 24,
-    marginBottom: 24,
+    alignItems: 'center', // Centrer verticalement comme le bouton
+    padding: 16, // Réduit de 24 à 16
+    flexWrap: 'wrap',
+    gap: 12,
   },
-  titleContainer: {
+
+  leftContent: {
     flexDirection: 'column',
     alignItems: 'flex-start',
     gap: 8,
+  },
+  platformStatsContainer: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  platformStatContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1C1C1E',
+    borderRadius: 8,
+    padding: 12,
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#38383A',
+  },
+  platformImage: {
+    width: 35,
+    height: 35,
+    borderRadius: 4,
+    marginRight: 8,
+    resizeMode: 'contain',
+  },
+  platformStatContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
   },
   titleWithIcon: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-  },
-  infoIconContainer: {
-    backgroundColor: 'rgba(250, 249, 240, 0.2)',
-    borderRadius: 12,
-    padding: 4,
   },
   statsContainer: {
     flexDirection: 'row',
@@ -623,10 +673,10 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   statsText: {
-    fontSize: 24,
-    fontFamily: FONTS.medium,
+    fontSize: 13, // Réduit de 24 à 12
+    fontFamily: 'Inter_18pt-Medium',
     fontWeight: '600',
-    color: '#6b7280',
+    color: '#ededee', // Couleur thème sombre
     opacity: 0.8,
   },
   statsDot: {
@@ -637,10 +687,10 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   tableTitle: {
-    fontSize: 28,
-    fontFamily: FONTS.bold,
+    fontSize: 14, // Réduit de 28 à 14
+    fontFamily: 'Inter_18pt-SemiBold',
     fontWeight: '600',
-    color: '#000000',
+    color: '#FFFFFF', // Blanc pour le thème sombre
   },
   browseButton: {
     borderRadius: 12,
@@ -654,51 +704,50 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   browseButtonText: {
-    fontSize: 24,
-    fontFamily: FONTS.semibold,
+    fontSize: 12, // Réduit de 24 à 12
+    fontFamily: 'Inter_18pt-SemiBold',
     fontWeight: '600',
     color: '#FFFFFF',
   },
   tableContainer: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#1C1C1E', // Thème sombre
     overflow: 'hidden',
   },
   tableHeaderRow: {
     flexDirection: 'row',
-    borderBottomWidth: 2,
-    borderBottomColor: '#e8e6d9',
-    backgroundColor: '#faf9f0',
+    borderBottomWidth: 1, // Réduit de 2 à 1
+    borderBottomColor: '#38383A', // Couleur sombre
+    backgroundColor: '#0A0A0A', // Background noir comme demandé
   },
   tableDataRow: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: '#e8e6d9',
-    backgroundColor: '#ffffff',
-    minHeight: 60,
+    borderBottomColor: '#38383A', // Couleur sombre
+    backgroundColor: '#1C1C1E', // Couleur sombre
+    minHeight: 40, // Réduit de 60 à 40
     alignItems: 'center',
-    '&:hover': {
-      backgroundColor: '#faf9f0',
-    },
   },
   tableCell: {
     flex: 1,
-    paddingVertical: 20,
-    paddingHorizontal: 20,
-    fontSize: 26,
-    fontFamily: FONTS.medium,
+    paddingVertical: 12, // Réduit de 20 à 12
+    paddingHorizontal: 12, // Réduit de 20 à 12
+    fontSize: 12, // Réduit de 26 à 12
+    fontFamily: 'Inter_18pt-Medium',
     fontWeight: '600',
-    color: '#374151',
+    color: '#FFFFFF', // Blanc pour le thème sombre
   },
   tableHeaderCell: {
-    backgroundColor: '#F9FAFB',
-    fontSize: 22,
+    backgroundColor: '#2A2A2E',
+    fontSize: 12,
     fontFamily: FONTS.bold,
     fontWeight: '600',
-    color: '#6B7280',
-    textTransform: 'uppercase',
-    letterSpacing: 1.2,
+    color: '#eaeaea',
     paddingVertical: 16,
     paddingHorizontal: 20,
+  },
+  platformHeaderCell: {
+    flex: 0.8,
+    textAlign: 'center',
   },
   campaignHeaderCell: {
     flex: 1.5,
@@ -722,6 +771,13 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: 'center',
   },
+  platformCell: {
+    flex: 0.8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+  },
   campaignCell: {
     flex: 1.5,
     flexDirection: 'row',
@@ -731,9 +787,9 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   campaignIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
+    width: 30,
+    height: 30,
+    borderRadius: 8,
     backgroundColor: '#f9fafb',
     alignItems: 'center',
     justifyContent: 'center',
@@ -754,21 +810,20 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   linkIconContainer: {
-    width: 32,
-    height: 32,
+    width: 30,
+    height: 30,
     borderRadius: 8,
     backgroundColor: '#f9fafb',
     alignItems: 'center',
     justifyContent: 'center',
   },
   linkText: {
-    fontSize: 24,
+    fontSize: 13,
     fontFamily: FONTS.medium,
-    fontWeight: '600',
-    color: '#374151',
+    color: '#e8eae9',
     flex: 1,
     textDecorationLine: 'underline',
-    textDecorationColor: '#374151',
+    textDecorationColor: '#e8eae9',
   },
   statusCell: {
     fontFamily: FONTS.medium,
@@ -786,29 +841,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   earningsAmount: {
-    fontSize: 26,
+    fontSize: 13,
     fontFamily: FONTS.bold,
-    color: '#374151',
+    color: '#e8eae9',
     fontWeight: '600',
   },
   statusCellContainer: {
     flex: 1,
     paddingVertical: 20,
     paddingHorizontal: 20,
+    borderRadius: 20,
     alignItems: 'center',
   },
   statusBadge: {
     paddingVertical: 8,
     paddingHorizontal: 16,
-    borderRadius: 25,
+    borderRadius: 10,
     minWidth: 120,
     alignItems: 'center',
   },
   statusBadgeText: {
-    fontSize: 20,
+    fontSize: 12,
     fontFamily: FONTS.bold,
     color: '#FFFFFF',
-    textTransform: 'uppercase',
   },
   actionsCell: {
     flex: 0.8,
@@ -883,9 +938,9 @@ const styles = StyleSheet.create({
     borderTopColor: '#E5E7EB',
   },
   paginationText: {
-    fontSize: 14,
+    fontSize: 12,
     fontFamily: FONTS.regular,
-    color: '#6B7280',
+    color: '#ededee',
   },
   paginationControls: {
     flexDirection: 'row',
@@ -902,8 +957,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   currentPageText: {
-    fontSize: 28,
+    fontSize: 12,
     fontFamily: FONTS.medium,
+    fontWeight: '600',
     color: '#374151',
   },
   showEntriesContainer: {
@@ -912,7 +968,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   showEntriesText: {
-    fontSize: 24,
+    fontSize: 12,
     fontFamily: FONTS.regular,
     color: '#6B7280',
   },
@@ -926,8 +982,9 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   showEntriesValue: {
-    fontSize: 24,
-    fontFamily: FONTS.medium,
+    fontSize: 12,
+    fontFamily: FONTS.bold,
+    fontWeight: '600',
     color: '#374151',
   },
   modalOverlay: {
@@ -942,8 +999,8 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
   modalContent: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 24,
+    backgroundColor: '#1C1C1E',
+    borderRadius: 20,
     width: Math.min(440, width - 40),
     maxHeight: '70%',
     shadowColor: '#000',
@@ -996,13 +1053,14 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     fontSize: 16,
     fontFamily: FONTS.regular,
-    color: '#111827',
-    backgroundColor: '#FFFFFF',
+    color: '#FFFFFF',
+    backgroundColor: '#0A0A0A',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
+    ...(Platform.OS === 'web' && { outline: 'none' }),
   },
   finalCheckbox: {
     flexDirection: 'row',
@@ -1010,7 +1068,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     gap: 16,
     padding: 16,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#2A2A2E',
     borderRadius: 12,
   },
   checkbox: {
@@ -1048,7 +1106,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 24,
     gap: 16,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#2A2A2E',
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
   },
@@ -1056,15 +1114,15 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 16,
     borderRadius: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#0A0A0A',
     borderWidth: 2,
-    borderColor: '#D1D5DB',
+    borderColor: '#38383A',
     alignItems: 'center',
   },
   cancelButtonText: {
     fontSize: 14,
     fontFamily: FONTS.medium,
-    color: '#000000',
+    color: '#FFFFFF',
   },
   confirmButton: {
     flex: 1,

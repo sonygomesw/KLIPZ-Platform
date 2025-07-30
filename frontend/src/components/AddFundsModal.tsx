@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../constants';
@@ -278,6 +279,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: COLORS.text,
     paddingVertical: 20,
+    ...(Platform.OS === 'web' && { outline: 'none' }),
   },
   securityInfo: {
     flexDirection: 'row',

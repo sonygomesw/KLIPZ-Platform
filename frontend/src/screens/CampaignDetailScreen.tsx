@@ -9,6 +9,9 @@ import {
   Alert,
   RefreshControl,
   SafeAreaView,
+  TextInput,
+  Platform,
+  Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -33,10 +36,98 @@ const CampaignDetailScreen: React.FC<CampaignDetailScreenProps> = ({
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'submissions' | 'settings'>('overview');
+  
+  // États pour les settings
+  const [editableTitle, setEditableTitle] = useState(campaign.title || '');
+  const [editableDescription, setEditableDescription] = useState(campaign.description || '');
+  const [addBudgetAmount, setAddBudgetAmount] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
 
   useEffect(() => {
     loadSubmissions();
   }, [campaign.id]);
+
+  // Fonction pour ajouter du budget
+  const handleAddBudget = () => {
+    const amountToAdd = Number(addBudgetAmount) || 0;
+    if (amountToAdd > 0 && user.balance >= amountToAdd) {
+      // Ici on appellerait une fonction pour :
+      // 1. Débiter le user.balance
+      // 2. Augmenter le campaign.budget
+      console.log(`Adding $${amountToAdd} to campaign budget`);
+      setAddBudgetAmount('');
+    } else {
+      alert('Insufficient balance or invalid amount');
+    }
+  };
+
+  // Fonction pour supprimer la campagne
+  const handleDeleteCampaign = async () => {
+    console.log('🗑️ handleDeleteCampaign - Début de la suppression');
+    try {
+      setIsDeleting(true);
+      console.log('🗑️ handleDeleteCampaign - setIsDeleting(true)');
+      
+      // Vérifier s'il y a des submissions en cours (pending/approved mais pas encore payées)
+      const pendingSubmissions = submissions.filter(sub => 
+        sub.status === 'pending' || sub.status === 'approved'
+      );
+      console.log('🗑️ handleDeleteCampaign - Submissions en cours:', pendingSubmissions.length);
+
+      if (pendingSubmissions.length > 0) {
+        console.log('🗑️ handleDeleteCampaign - Suppression programmée (submissions en cours)');
+        // Mettre en mode "suppression en cours"
+        await campaignService.updateCampaign(campaign.id, { status: 'pending_deletion' });
+        console.log('🗑️ handleDeleteCampaign - Campaign mis à jour avec status pending_deletion');
+        
+        // Actualiser les données
+        await loadSubmissions();
+        console.log('🗑️ handleDeleteCampaign - Submissions rechargées');
+        
+        Alert.alert(
+          '✅ Suppression programmée',
+          `La mission sera supprimée automatiquement une fois que toutes les submissions (${pendingSubmissions.length}) seront traitées. Le budget restant sera remboursé.`,
+          [{ 
+            text: 'OK', 
+            onPress: () => {
+              console.log('🗑️ handleDeleteCampaign - Alert OK pressed, calling onBack()');
+              // Retourner à la liste et la rafraîchir
+              onBack();
+            }
+          }]
+        );
+      } else {
+        console.log('🗑️ handleDeleteCampaign - Suppression immédiate (pas de submissions)');
+        // Suppression immédiate et remboursement
+        const remainingBudget = campaign.budget - (campaign.totalSpent || 0);
+        console.log('🗑️ handleDeleteCampaign - Budget restant:', remainingBudget);
+        await campaignService.deleteCampaign(campaign.id);
+        console.log('🗑️ handleDeleteCampaign - Campaign supprimée');
+        
+        // Note: Le remboursement sera géré côté backend
+        Alert.alert(
+          '✅ Mission supprimée',
+          `Mission supprimée avec succès. ${remainingBudget > 0 ? `$${remainingBudget.toFixed(2)} ont été remboursés dans votre wallet.` : ''}`,
+          [{ 
+            text: 'OK', 
+            onPress: () => {
+              console.log('🗑️ handleDeleteCampaign - Alert OK pressed, calling onBack()');
+              // Retourner à la liste et la rafraîchir
+              onBack();
+            }
+          }]
+        );
+      }
+    } catch (error) {
+      console.error('❌ handleDeleteCampaign - Erreur:', error);
+      Alert.alert('❌ Erreur', 'Impossible de supprimer la mission. Veuillez réessayer.');
+    } finally {
+      console.log('🗑️ handleDeleteCampaign - Finally: setIsDeleting(false), setShowDeleteConfirmation(false)');
+      setIsDeleting(false);
+      setShowDeleteConfirmation(false);
+    }
+  };
 
   const loadSubmissions = async () => {
     try {
@@ -111,12 +202,17 @@ const CampaignDetailScreen: React.FC<CampaignDetailScreenProps> = ({
 
   const renderTabs = () => (
     <View style={styles.tabsContainer}>
+      {/* Petit bouton Back à gauche */}
+      <TouchableOpacity onPress={onBack} style={styles.backButtonLeft}>
+        <Ionicons name="arrow-back" size={22} color="#8B8B8D" />
+      </TouchableOpacity>
+      
       <TouchableOpacity
         style={[styles.tab, activeTab === 'overview' && styles.activeTab]}
         onPress={() => setActiveTab('overview')}
       >
         <Ionicons 
-          name="stats-chart" 
+          name="analytics" 
           size={20} 
           color={activeTab === 'overview' ? '#FFFFFF' : '#8B8B8D'} 
         />
@@ -208,7 +304,7 @@ const CampaignDetailScreen: React.FC<CampaignDetailScreenProps> = ({
             </View>
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>Min Views:</Text>
-              <Text style={styles.detailValue}>{formatViews(campaign.minViewsPerVideo || 10000)}</Text>
+              <Text style={styles.detailValue}>{formatViews((campaign as any).minViewsPerVideo || 10000)}</Text>
             </View>
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>Total Views:</Text>
@@ -258,7 +354,7 @@ const CampaignDetailScreen: React.FC<CampaignDetailScreenProps> = ({
               <View style={styles.submissionInfo}>
                 <Text style={styles.submissionTitle}>Clip by {submission.clipperName}</Text>
                 <Text style={styles.submissionDate}>
-                  {new Date(submission.createdAt).toLocaleDateString()}
+                  {new Date((submission as any).createdAt || Date.now()).toLocaleDateString()}
                 </Text>
               </View>
               <View style={[
@@ -301,29 +397,168 @@ const CampaignDetailScreen: React.FC<CampaignDetailScreenProps> = ({
     </View>
   );
 
-  const renderSettings = () => (
-    <View style={styles.settingsContainer}>
-      <Text style={styles.settingsTitle}>Campaign Settings</Text>
-      
-      <TouchableOpacity style={styles.settingItem}>
-        <Ionicons name="edit" size={24} color={COLORS.primary} />
-        <Text style={styles.settingText}>Edit Campaign</Text>
-        <Ionicons name="chevron-forward" size={20} color={COLORS.textLight} />
-      </TouchableOpacity>
-      
-      <TouchableOpacity style={styles.settingItem}>
-        <Ionicons name="pause" size={24} color="#F59E0B" />
-        <Text style={styles.settingText}>Pause Campaign</Text>
-        <Ionicons name="chevron-forward" size={20} color={COLORS.textLight} />
-      </TouchableOpacity>
-      
-      <TouchableOpacity style={styles.settingItem}>
-        <Ionicons name="trash" size={24} color="#EF4444" />
-        <Text style={styles.settingText}>Delete Campaign</Text>
-        <Ionicons name="chevron-forward" size={20} color={COLORS.textLight} />
-      </TouchableOpacity>
-    </View>
-  );
+  const renderSettings = () => {
+    return (
+      <View style={styles.settingsContainer}>
+        <View style={styles.mainContent}>
+          {/* Left Side - Form */}
+          <View style={styles.leftSide}>
+            <View style={styles.setupCard}>
+              <View style={styles.setupHeader}>
+                <Text style={styles.setupTitle}>Edit</Text>
+                <View style={styles.helpIcon}>
+                  <Ionicons name="create-outline" size={20} color={COLORS.textSecondary} />
+                </View>
+              </View>
+
+              {/* Title Input */}
+              <View style={styles.modernInputGroup}>
+                <Text style={styles.modernLabel}>Title *</Text>
+                <TextInput
+                  style={styles.modernInput}
+                  value={editableTitle}
+                  onChangeText={setEditableTitle}
+                  placeholder="KLIPZ Mission"
+                  placeholderTextColor={COLORS.textLight}
+                  maxLength={100}
+                />
+              </View>
+
+              {/* Description */}
+              <View style={styles.modernInputGroup}>
+                <Text style={styles.modernLabel}>Description *</Text>
+                <TextInput
+                  style={[styles.modernInput, styles.textArea]}
+                  value={editableDescription}
+                  onChangeText={setEditableDescription}
+                  placeholder="Describe what kind of clips you want..."
+                  placeholderTextColor={COLORS.textLight}
+                  multiline
+                  numberOfLines={4}
+                  maxLength={500}
+                />
+              </View>
+
+              {/* Current Budget Display */}
+              <View style={styles.modernInputGroup}>
+                <Text style={styles.modernLabel}>Current Budget</Text>
+                <View style={styles.budgetDisplayContainer}>
+                  <Text style={styles.budgetDisplayText}>${campaign.budget || 0}</Text>
+                  <Text style={styles.budgetDisplayLabel}>USD</Text>
+                </View>
+              </View>
+
+              {/* Add Budget Section */}
+              <View style={styles.modernInputGroup}>
+                <Text style={styles.modernLabel}>Add Budget</Text>
+                <Text style={styles.balanceText}>Your balance: ${user.balance || 0}</Text>
+                <View style={styles.addBudgetContainer}>
+                  <Text style={styles.dollarSign}>$</Text>
+                  <TextInput
+                    style={styles.addBudgetInput}
+                    value={addBudgetAmount}
+                    onChangeText={setAddBudgetAmount}
+                    placeholder="0"
+                    placeholderTextColor={COLORS.textLight}
+                    keyboardType="numeric"
+                  />
+                  <TouchableOpacity style={styles.addBudgetButton} onPress={handleAddBudget}>
+                    <Ionicons name="add" size={16} color="#FFFFFF" />
+                    <Text style={styles.addBudgetButtonText}>Add</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              <Text style={styles.autoApproveText}>
+                All submissions will be auto-approved after 48 hours if still pending.
+              </Text>
+            </View>
+          </View>
+
+          {/* Right Side - Campaign Actions */}
+          <View style={styles.rightSide}>
+            <View style={styles.previewCard}>
+              <Text style={styles.previewTitle}>Campaign Actions</Text>
+              
+              {/* Platform Link */}
+              <View style={styles.modernInputGroup}>
+                <Text style={styles.modernLabel}>
+                  Twitch Rediffusion Link *
+                </Text>
+                <TextInput
+                  style={styles.modernInput}
+                  placeholder="https://www.twitch.tv/videos/..."
+                  placeholderTextColor={COLORS.textLight}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  keyboardType="url"
+                />
+              </View>
+
+              {/* TikTok Clips Requirements - Non modifiable */}
+              <View style={styles.modernInputGroup}>
+                <Text style={styles.modernLabel}>TikTok clips requirements *</Text>
+                <TextInput
+                  style={[styles.modernInput, styles.textArea, styles.disabledInput]}
+                  placeholder="Describe the specific requirements for TikTok clips..."
+                  placeholderTextColor={COLORS.textLight}
+                  multiline
+                  numberOfLines={4}
+                  maxLength={500}
+                  editable={false}
+                />
+              </View>
+
+              {/* Save Button */}
+              <View style={styles.createButtonContainer}>
+                <TouchableOpacity 
+                  style={styles.createButton}
+                >
+                  <Ionicons name="save-outline" size={18} color="#FFFFFF" />
+                  <Text style={styles.createButtonText}>
+                    Save Changes
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Delete Button */}
+              {campaign.status !== 'pending_deletion' && (
+                <View style={[styles.createButtonContainer, { marginTop: 16 }]}>
+                  <TouchableOpacity 
+                    style={[styles.createButton, styles.deleteButton]}
+                    onPress={() => setShowDeleteConfirmation(true)}
+                    disabled={isDeleting}
+                  >
+                    <Ionicons name="trash-outline" size={18} color="#FFFFFF" />
+                    <Text style={[styles.createButtonText, { color: '#FFFFFF' }]}>
+                      {isDeleting ? 'Deleting...' : 'Delete mission'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              {/* Message si suppression en cours */}
+              {campaign.status === 'pending_deletion' && (
+                <View style={styles.deletionWarningContainer}>
+                  <View style={styles.deletionWarningIcon}>
+                    <Ionicons name="warning" size={20} color="#FF6B35" />
+                  </View>
+                  <View style={styles.deletionWarningContent}>
+                    <Text style={styles.deletionWarningTitle}>
+                      Suppression en cours
+                    </Text>
+                    <Text style={styles.deletionWarningText}>
+                      Cette mission sera automatiquement supprimée une fois que toutes les submissions seront traitées. Le budget restant sera remboursé.
+                    </Text>
+                  </View>
+                </View>
+              )}
+            </View>
+          </View>
+        </View>
+      </View>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -342,10 +577,53 @@ const CampaignDetailScreen: React.FC<CampaignDetailScreenProps> = ({
           {activeTab === 'settings' && renderSettings()}
         </ScrollView>
       </View>
-      <TouchableOpacity onPress={onBack} style={styles.backButtonBottom}>
-        <Ionicons name="arrow-back" size={18} color="#000000" />
-        <Text style={styles.backText}>Back</Text>
-      </TouchableOpacity>
+
+      {/* Modal de confirmation de suppression */}
+      <Modal
+        visible={showDeleteConfirmation}
+        transparent={true}
+        animationType="fade"
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.deleteConfirmationModal}>
+            <View style={styles.deleteModalHeader}>
+              <Ionicons name="warning" size={32} color="#FF6B35" />
+              <Text style={styles.deleteModalTitle}>Delete</Text>
+            </View>
+            
+            <Text style={styles.deleteModalText}>
+              Êtes-vous sûr de vouloir supprimer cette mission ? Cette action est irréversible.
+            </Text>
+            
+            {submissions.filter(sub => sub.status === 'pending' || sub.status === 'approved').length > 0 && (
+              <View style={styles.deleteModalWarning}>
+                <Text style={styles.deleteModalWarningText}>
+                  ⚠️ Des submissions sont en cours de traitement. La mission sera marquée pour suppression et sera automatiquement supprimée une fois toutes les submissions traitées.
+                </Text>
+              </View>
+            )}
+
+            <View style={styles.deleteModalButtons}>
+              <TouchableOpacity 
+                style={styles.cancelDeleteButton}
+                onPress={() => setShowDeleteConfirmation(false)}
+              >
+                <Text style={styles.cancelDeleteButtonText}>Annuler</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.confirmDeleteButton}
+                onPress={handleDeleteCampaign}
+                disabled={isDeleting}
+              >
+                <Text style={styles.confirmDeleteButtonText}>
+                  {isDeleting ? 'Suppression...' : 'Supprimer'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -353,7 +631,7 @@ const CampaignDetailScreen: React.FC<CampaignDetailScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0A0A0B',
+    backgroundColor: '#181818',
   },
   scrollView: {
     flex: 1,
@@ -532,12 +810,6 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     maxWidth: '100%',
     width: '100%',
-  },
-  leftSide: {
-    flex: 1,
-  },
-  rightSide: {
-    flex: 1,
   },
   detailsCard: {
     backgroundColor: '#1A1A1E',
@@ -741,11 +1013,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_18pt-Regular',
     marginTop: 1, // Réduit de 2 à 1
   },
-  statusBadge: {
-    paddingHorizontal: 6, // Réduit de 12 à 6
-    paddingVertical: 2, // Réduit de 4 à 2
-    borderRadius: 6, // Réduit de 12 à 6
-  },
   statusText: {
     color: '#FFFFFF',
     fontSize: 9, // Même taille que My Missions
@@ -815,6 +1082,549 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_18pt-Medium',
     flex: 1,
     marginLeft: 6, // Réduit de 12 à 6
+  },
+  mainContent: {
+    flexDirection: 'row',
+    paddingVertical: 7,
+    paddingHorizontal: 7,
+    gap: 11,
+    backgroundColor: '#181818',
+    width: '100%',
+    flex: 1,
+    minHeight: 0,
+  },
+  leftSide: {
+    flex: 1,
+    maxWidth: '55%',
+    minHeight: 0,
+  },
+  rightSide: {
+    flex: 1,
+    maxWidth: '45%',
+    minHeight: 0,
+  },
+  setupCard: {
+    backgroundColor: '#1A1A1E',
+    borderRadius: 24,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: '#2A2A2E',
+    flex: 1,
+    minHeight: 0,
+  },
+  setupHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 17,
+  },
+  setupTitle: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  helpIcon: {
+    padding: 4,
+  },
+  modernInputGroup: {
+    marginBottom: 14,
+  },
+  modernLabel: {
+    color: '#E5E5E7',
+    fontSize: 11,
+    fontWeight: '500',
+    marginBottom: 5,
+  },
+  modernInput: {
+    backgroundColor: '#2A2A2E',
+    borderRadius: 7,
+    paddingHorizontal: 11,
+    paddingVertical: 8,
+    fontSize: 11,
+    color: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#3A3A3E',
+    ...(Platform.OS === 'web' && { outline: 'none' }),
+  },
+  textArea: {
+    height: 51,
+    textAlignVertical: 'top',
+    paddingTop: 8,
+  },
+  budgetContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  budgetInput: {
+    backgroundColor: '#2A2A2E',
+    borderRadius: 7,
+    paddingHorizontal: 11,
+    paddingVertical: 8,
+    fontSize: 11,
+    color: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#3A3A3E',
+    flex: 1,
+    marginRight: 5,
+    ...(Platform.OS === 'web' && { outline: 'none' }),
+  },
+  incrementButton: {
+    padding: 5,
+    backgroundColor: '#4F46E5',
+    borderRadius: 5,
+    marginLeft: 5,
+  },
+  currencySelector: {
+    backgroundColor: '#2A2A2E',
+    borderRadius: 7,
+    paddingHorizontal: 11,
+    paddingVertical: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#3A3A3E',
+    minWidth: 42,
+  },
+  currencyText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    marginRight: 1,
+  },
+  rewardSection: {
+    marginBottom: 28,
+  },
+  rewardRateContainer: {
+    backgroundColor: '#2A2A2E',
+    borderRadius: 8,
+    padding: 11,
+    borderWidth: 1,
+    borderColor: '#3A3A3E',
+  },
+  rateInputGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 9,
+  },
+  rateLabel: {
+    color: '#E5E5E7',
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  rateInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1A1A1E',
+    borderRadius: 6,
+    paddingHorizontal: 9,
+    paddingVertical: 7,
+    borderWidth: 1,
+    borderColor: '#3A3A3E',
+  },
+  dollarSign: {
+    color: '#E5E5E7',
+    fontSize: 11,
+    marginRight: 3,
+  },
+  rateInput: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    minWidth: 29,
+    ...(Platform.OS === 'web' && { outline: 'none' }),
+  },
+  perText: {
+    color: '#E5E5E7',
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  viewsContainer: {
+    backgroundColor: '#4F46E5',
+    borderRadius: 6,
+    paddingHorizontal: 9,
+    paddingVertical: 7,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  viewsNumber: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  viewsText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  previewCard: {
+    backgroundColor: '#1A1A1E',
+    borderRadius: 24,
+    padding: 25,
+    borderWidth: 1,
+    borderColor: '#2A2A2E',
+    flex: 1,
+  },
+  previewTitle: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '600',
+    marginBottom: 32,
+  },
+  statusContainer: {
+    marginBottom: 15,
+  },
+  statusBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  statusActive: {
+    backgroundColor: '#10B981',
+  },
+  actionButtonsContainer: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  saveButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: '#4F46E5',
+    borderWidth: 1,
+    borderColor: '#4F46E5',
+  },
+  saveButtonText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontFamily: 'Inter_18pt-Medium',
+    marginLeft: 5,
+  },
+  pauseButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: '#F59E0B',
+    borderWidth: 1,
+    borderColor: '#F59E0B',
+  },
+  pauseButtonText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontFamily: 'Inter_18pt-Medium',
+    marginLeft: 5,
+  },
+  deleteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: '#EF4444',
+    borderWidth: 1,
+    borderColor: '#EF4444',
+  },
+  deleteButtonText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontFamily: 'Inter_18pt-Medium',
+    marginLeft: 5,
+  },
+  // Styles copiés de CreateCampaignScreen
+  platformButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 10,
+  },
+  platformButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#2A2A2E',
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#3A3A3E',
+    gap: 3,
+  },
+  platformButtonActive: {
+    backgroundColor: '#9146FF',
+    borderColor: '#9146FF',
+  },
+  platformButtonActiveYoutube: {
+    backgroundColor: '#FF0000',
+    borderColor: '#FF0000',
+  },
+  platformButtonText: {
+    fontSize: 11,
+    fontFamily: 'Inter_18pt-Medium',
+    color: '#FFFFFF',
+    fontWeight: '500',
+  },
+  doubleRow: {
+    flexDirection: 'row',
+    gap: 11,
+    marginBottom: 14,
+  },
+  doubleRowItem: {
+    flex: 1,
+  },
+  payoutContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#2A2A2E',
+    borderRadius: 7,
+    paddingHorizontal: 9,
+    paddingVertical: 9,
+    borderWidth: 1,
+    borderColor: '#3A3A3E',
+  },
+  payoutInput: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    flex: 1,
+    ...(Platform.OS === 'web' && { outline: 'none' }),
+  },
+  autoApproveText: {
+    color: '#8B8B8D',
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: 30,
+  },
+  uploadDescription: {
+    color: '#8B8B8D',
+    fontSize: 11,
+    marginBottom: 16,
+    lineHeight: 20,
+  },
+  imageUploadButton: {
+    backgroundColor: 'transparent',
+    borderRadius: 16,
+    paddingVertical: 32,
+    paddingHorizontal: 24,
+    borderWidth: 2,
+    borderColor: '#4F46E5',
+    borderStyle: 'dashed',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    minHeight: 120,
+  },
+  imageUploadText: {
+    color: '#4F46E5',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  imageUploadSubtext: {
+    color: '#8B8B8D',
+    fontSize: 13,
+  },
+  createButtonContainer: {
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  createButton: {
+    backgroundColor: '#4F46E5',
+    borderRadius: 9,
+    paddingVertical: 11,
+    paddingHorizontal: 41,
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+    minWidth: 180,
+    shadowColor: '#4F4506E5',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 5,
+    marginTop: 10,
+  },
+  createButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  backButtonLeft: {
+    position: 'absolute',
+    left: 16,
+    top: 10,
+    zIndex: 1,
+  },
+  disabledInput: {
+    opacity: 0.5,
+  },
+  // Nouveaux styles pour Add Budget
+  budgetDisplayContainer: {
+    backgroundColor: '#2A2A2E',
+    borderRadius: 7,
+    paddingHorizontal: 11,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: '#3A3A3E',
+  },
+  budgetDisplayText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  budgetDisplayLabel: {
+    color: '#8B8B8D',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  balanceText: {
+    color: '#8B8B8D',
+    fontSize: 11,
+    marginBottom: 8,
+  },
+  addBudgetContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#2A2A2E',
+    borderRadius: 7,
+    paddingHorizontal: 11,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: '#3A3A3E',
+  },
+  addBudgetInput: {
+    flex: 1,
+    color: '#FFFFFF',
+    fontSize: 11,
+    marginLeft: 5,
+    ...(Platform.OS === 'web' && { outline: 'none' }),
+  },
+  addBudgetButton: {
+    backgroundColor: '#4F46E5',
+    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginLeft: 8,
+  },
+  addBudgetButtonText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+
+  // Styles pour le message de suppression en cours
+  deletionWarningContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#2A1A1A',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: '#FF6B35',
+  },
+  deletionWarningIcon: {
+    marginRight: 12,
+    marginTop: 2,
+  },
+  deletionWarningContent: {
+    flex: 1,
+  },
+  deletionWarningTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FF6B35',
+    marginBottom: 4,
+  },
+  deletionWarningText: {
+    fontSize: 12,
+    color: '#CCCCCC',
+    lineHeight: 16,
+  },
+
+  // Styles pour le modal de confirmation
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  deleteConfirmationModal: {
+    backgroundColor: '#1A1A1E',
+    borderRadius: 12,
+    padding: 24,
+    margin: 20,
+    maxWidth: 400,
+    width: '90%',
+    borderWidth: 1,
+    borderColor: '#2A2A2E',
+  },
+  deleteModalHeader: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  deleteModalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  deleteModalText: {
+    fontSize: 14,
+    color: '#CCCCCC',
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 16,
+  },
+  deleteModalWarning: {
+    backgroundColor: '#2A1A1A',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 20,
+    borderLeftWidth: 3,
+    borderLeftColor: '#FF6B35',
+  },
+  deleteModalWarningText: {
+    fontSize: 12,
+    color: '#E6E6E6',
+    lineHeight: 16,
+  },
+  deleteModalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  cancelDeleteButton: {
+    flex: 1,
+    backgroundColor: '#2A2A2E',
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  cancelDeleteButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  confirmDeleteButton: {
+    flex: 1,
+    backgroundColor: '#FF4444',
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  confirmDeleteButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 });
 

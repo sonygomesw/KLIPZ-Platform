@@ -297,6 +297,7 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     fontFamily: FONTS.regular,
     marginLeft: SIZES.spacing.sm,
+    ...(Platform.OS === 'web' && { outline: 'none' }),
   },
   instructionsContainer: {
     flexDirection: 'row',

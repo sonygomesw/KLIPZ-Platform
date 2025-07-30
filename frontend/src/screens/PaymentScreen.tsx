@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+                                                                                                      import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,20 +8,27 @@ import {
   ActivityIndicator,
   ScrollView,
   TextInput,
+  Modal,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SIZES, FONTS, SHADOWS } from '../constants';
+import { COLORS } from '../constants';
 import { StripeService } from '../services/stripeService';
-import { AuthUser } from '../services/authService';
+import { User } from '../types';
 
 interface PaymentScreenProps {
-  user: AuthUser;
+  user: User;
   activeTab?: string;
   onTabChange?: (tab: string) => void;
   onSignOut?: () => void;
 }
 
-const PaymentScreen: React.FC<PaymentScreenProps> = ({ user }) => {
+const PaymentScreen: React.FC<PaymentScreenProps> = ({ 
+  user,
+  activeTab = 'Payment',
+  onTabChange = () => {},
+  onSignOut = () => {}
+}) => {
   const [loading, setLoading] = useState(false);
   const [walletBalance, setWalletBalance] = useState(0);
   const [isConnectedToStripe, setIsConnectedToStripe] = useState(false);
@@ -45,7 +52,7 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({ user }) => {
       setIsConnectedToStripe(connected);
     } catch (error) {
       console.error('Error chargement wallet:', error);
-      Alert.alert('Error', 'Unable to load wallet data');
+      Alert.alert('Error', 'Impossible de charger les données du wallet');
     } finally {
       setLoading(false);
     }
@@ -62,20 +69,21 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({ user }) => {
       await StripeService.openCheckout(amount, user.id);
       
       Alert.alert(
-        'Payment Initiated',
-        'You will be redirected to Stripe payment page. Once payment is completed, your balance will be automatically updated.',
+        'Paiement initié',
+        'Vous allez être redirigé vers la page de paiement Stripe. Once payment is completed, your balance will be automatically updated.',
         [
           {
             text: 'OK',
             onPress: () => {
+              // Recharger les données après un délai
               setTimeout(loadWalletData, 2000);
             }
           }
         ]
       );
     } catch (error) {
-      console.error('Error opening checkout:', error);
-      Alert.alert('Error', 'Unable to open payment page');
+      console.error('Error ouverture checkout:', error);
+      Alert.alert('Error', 'Impossible d\'ouvrir la page de paiement');
     } finally {
       setLoading(false);
     }
@@ -89,7 +97,7 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({ user }) => {
 
     try {
       setLoading(true);
-      await StripeService.openConnectOnboarding(user.id, user.email);
+      await StripeService.openConnectOnboarding(user.id);
       
       Alert.alert(
         'Stripe Connection',
@@ -98,34 +106,28 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({ user }) => {
           {
             text: 'OK',
             onPress: () => {
+              // Recharger les données après un délai
               setTimeout(loadWalletData, 2000);
             }
           }
         ]
       );
     } catch (error) {
-      console.error('Error connecting to Stripe:', error);
-      Alert.alert('Error', 'Unable to connect to Stripe');
+      console.error('Error connexion Stripe:', error);
+              Alert.alert('Error', 'Unable to connect to Stripe');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleWithdrawFunds = async (amount?: number) => {
+  const handleWithdrawFunds = async () => {
     if (!user?.id) {
       Alert.alert('Error', 'User not connected');
       return;
     }
 
-    const withdrawAmount = amount || Number(customAmount);
-    
-    if (!withdrawAmount || withdrawAmount <= 0) {
-      Alert.alert('Error', 'Please enter a valid amount');
-      return;
-    }
-
-    if (withdrawAmount > walletBalance) {
-      Alert.alert('Error', 'Insufficient balance for this withdrawal');
+    if (walletBalance <= 0) {
+      Alert.alert('Error', 'No balance to withdraw');
       return;
     }
 
@@ -142,8 +144,8 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({ user }) => {
     }
 
     Alert.alert(
-      'Withdraw Funds',
-      `Do you want to withdraw $${withdrawAmount.toFixed(2)} to your bank account?`,
+      'Withdraw vos gains',
+      `Do you want to withdraw €${walletBalance.toFixed(2)} vers votre compte bancaire ?`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -151,24 +153,24 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({ user }) => {
           onPress: async () => {
             try {
               setLoading(true);
-              await StripeService.requestWithdrawal(user.id, withdrawAmount);
+              await StripeService.requestWithdrawal(user.id, walletBalance);
               
               Alert.alert(
-                'Withdrawal Initiated',
-                'Your withdrawal request has been sent. The money will be transferred to your bank account within 1-2 business days.',
+                'Retrait initié',
+                'Votre demande de retrait a été envoyée. L\'argent sera transféré vers votre compte bancaire dans 1-2 jours ouvrables.',
                 [
                   {
                     text: 'OK',
                     onPress: () => {
-                      setCustomAmount('');
+                      // Recharger les données après un délai
                       setTimeout(loadWalletData, 2000);
                     }
                   }
                 ]
               );
             } catch (error) {
-              console.error('Error withdrawal:', error);
-              Alert.alert('Error', 'Unable to process your withdrawal request');
+              console.error('Error retrait:', error);
+              Alert.alert('Error', 'Impossible de traiter votre demande de retrait');
             } finally {
               setLoading(false);
             }
@@ -178,9 +180,26 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({ user }) => {
     );
   };
 
+  const handleCustomAmount = () => {
+    const amount = parseFloat(customAmount);
+    if (isNaN(amount) || amount <= 0) {
+      Alert.alert('Error', 'Please enter a valid amount');
+      return;
+    }
+    if (amount < 5) {
+      Alert.alert('Error', 'Minimum amount is €5');
+      return;
+    }
+    if (amount > 10000) {
+      Alert.alert('Error', 'Maximum amount is €10,000');
+      return;
+    }
+    
+    setCustomAmount('');
+    handleAddFunds(amount);
+  };
+
   const presetAmounts = [10, 25, 50, 100, 200, 500];
-  const isStreamer = user.role === 'streamer';
-  const isClipper = user.role === 'clipper';
 
   if (loading) {
     return (
@@ -192,311 +211,183 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({ user }) => {
   }
 
   return (
-    <View style={styles.rootContainer}>
-      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-        {/* Page Title Header */}
-        <View style={styles.pageTitleContainer}>
-          <View style={styles.pageTitleContent}>
-            <Text style={styles.pageTitle}>Payment</Text>
-            <Text style={styles.pageSubtitle}>Manage your wallet and payment methods</Text>
-          </View>
-        </View>
+    <View style={styles.container}>
+      <Text style={styles.pageTitle}>Payment</Text>
+      <View style={styles.mainContentContainer}>
+        <ScrollView style={styles.scrollView}>
 
-        <View style={styles.mainContent}>
-          {/* Balance Card */}
-          <View style={styles.balanceCard}>
-            <View style={styles.balanceHeader}>
-              <Ionicons name="wallet" size={24} color="#FFFFFF" />
-              <Text style={styles.balanceLabel}>Available Balance</Text>
-            </View>
-            <Text style={styles.balanceAmount}>${walletBalance.toFixed(2)}</Text>
+      {/* Solde actuel */}
+      <View style={styles.balanceCard}>
+        <Text style={styles.balanceLabel}>Available Balance</Text>
+        <Text style={styles.balanceAmount}>€{walletBalance.toFixed(2)}</Text>
+                  <TouchableOpacity
+            style={styles.refreshButton}
+            onPress={loadWalletData}
+          >
+            <Ionicons name="refresh" size={20} color={COLORS.primarySolid} />
+          </TouchableOpacity>
+      </View>
+
+      {/* Button de retrait pour les clippers */}
+      {user?.role === 'clipper' && walletBalance > 0 && (
+        <View style={styles.section}>
+          <TouchableOpacity
+            style={styles.withdrawButton}
+            onPress={handleWithdrawFunds}
+            disabled={loading || !isConnectedToStripe}
+          >
+            <Ionicons name="cash-outline" size={24} color={COLORS.white} />
+            <Text style={styles.withdrawButtonText}>
+              Withdraw €{walletBalance.toFixed(2)}
+            </Text>
+          </TouchableOpacity>
+          {!isConnectedToStripe && (
+            <Text style={styles.withdrawNote}>
+              ⚠️ Connectez-vous à Stripe pour retirer vos gains
+            </Text>
+          )}
+        </View>
+      )}
+
+      {/* Add des fonds */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Add money</Text>
+        <Text style={styles.sectionDescription}>
+          Top up your balance to create missions and pay clippers
+        </Text>
+        
+        <View style={styles.amountGrid}>
+          {presetAmounts.map((amount) => (
             <TouchableOpacity
-              style={styles.refreshButton}
-              onPress={loadWalletData}
+              key={amount}
+              style={styles.amountButton}
+              onPress={() => handleAddFunds(amount)}
+              disabled={loading}
             >
-              <Ionicons name="refresh" size={20} color="#FFFFFF" />
+              <Text style={styles.amountText}>€{amount}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+        
+        {/* Montant personnalisé */}
+        <View style={styles.customAmountSection}>
+          <Text style={styles.customAmountLabel}>Montant personnalisé</Text>
+          <View style={styles.customAmountContainer}>
+            <View style={styles.customInputContainer}>
+              <Text style={styles.currencySymbol}>€</Text>
+              <TextInput
+                style={styles.customAmountInput}
+                value={customAmount}
+                onChangeText={setCustomAmount}
+                placeholder="0.00"
+                placeholderTextColor="#666"
+                keyboardType="numeric"
+              />
+            </View>
+            <TouchableOpacity
+              style={styles.addButton}
+              onPress={handleCustomAmount}
+              disabled={loading || !customAmount.trim()}
+            >
+              <Text style={styles.addButtonText}>Add</Text>
             </TouchableOpacity>
           </View>
-
-          {/* Add Funds Section - For Streamers */}
-          {isStreamer && (
-            <View style={styles.sectionCard}>
-              <View style={styles.sectionHeader}>
-                <Ionicons name="add-circle" size={24} color={COLORS.primarySolid} />
-                <Text style={styles.sectionTitle}>Add Funds</Text>
-              </View>
-              <Text style={styles.sectionDescription}>
-                Top up your balance to create campaigns and pay clippers
-              </Text>
-              
-              <View style={styles.amountGrid}>
-                {presetAmounts.map((amount) => (
-                  <TouchableOpacity
-                    key={amount}
-                    style={styles.amountButton}
-                    onPress={() => handleAddFunds(amount)}
-                    disabled={loading}
-                  >
-                    <Text style={styles.amountText}>${amount}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-              
-              {/* Custom Amount Input for Streamers */}
-              <View style={styles.customAmountContainer}>
-                <Text style={styles.inputLabel}>Or enter a custom amount:</Text>
-                <View style={styles.amountInputContainer}>
-                  <Text style={styles.currencySymbol}>$</Text>
-                  <TextInput
-                    style={styles.amountInput}
-                    value={customAmount}
-                    onChangeText={setCustomAmount}
-                    placeholder="0.00"
-                    placeholderTextColor="#9CA3AF"
-                    keyboardType="numeric"
-                    maxLength={10}
-                  />
-                </View>
-                <TouchableOpacity
-                  style={styles.addFundsButton}
-                  onPress={() => handleAddFunds(Number(customAmount))}
-                  disabled={loading || !customAmount || Number(customAmount) <= 0}
-                >
-                  <Ionicons name="add-circle" size={20} color="#FFFFFF" />
-                  <Text style={styles.addFundsButtonText}>Add Funds</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
-
-          {/* Withdraw Section - For Clippers */}
-          {isClipper && walletBalance > 0 && (
-            <View style={styles.sectionCard}>
-              <View style={styles.sectionHeader}>
-                <Ionicons name="cash" size={24} color="#4CAF50" />
-                <Text style={styles.sectionTitle}>Withdraw Funds</Text>
-              </View>
-              <Text style={styles.sectionDescription}>
-                Withdraw your earnings to your bank account
-              </Text>
-              
-              {/* Custom Amount Input */}
-              <View style={styles.customAmountContainer}>
-                <Text style={styles.inputLabel}>Amount to withdraw:</Text>
-                <View style={styles.amountInputContainer}>
-                  <Text style={styles.currencySymbol}>$</Text>
-                  <TextInput
-                    style={styles.amountInput}
-                    value={customAmount}
-                    onChangeText={setCustomAmount}
-                    placeholder="0.00"
-                    placeholderTextColor="#8B8B8D"
-                    keyboardType="numeric"
-                    maxLength={10}
-                  />
-                </View>
-                <TouchableOpacity
-                  style={styles.withdrawButton}
-                  onPress={() => handleWithdrawFunds()}
-                  disabled={loading || !customAmount || Number(customAmount) <= 0}
-                >
-                  <Ionicons name="cash-outline" size={20} color="#FFFFFF" />
-                  <Text style={styles.withdrawButtonText}>Withdraw</Text>
-                </TouchableOpacity>
-              </View>
-
-              {/* Quick Amount Buttons */}
-              <View style={styles.quickAmountsContainer}>
-                <Text style={styles.quickAmountsLabel}>Quick amounts:</Text>
-                <View style={styles.quickAmountsGrid}>
-                  {[25, 50, 100, 200].map((amount) => (
-                    <TouchableOpacity
-                      key={amount}
-                      style={styles.quickAmountButton}
-                      onPress={() => setCustomAmount(amount.toString())}
-                    >
-                      <Text style={styles.quickAmountText}>${amount}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
-
-              {!isConnectedToStripe && (
-                <View style={styles.warningContainer}>
-                  <Ionicons name="warning" size={20} color="#FF9800" />
-                  <Text style={styles.warningText}>
-                    Connect to Stripe to withdraw your earnings
-                  </Text>
-                </View>
-              )}
-            </View>
-          )}
-
-          {/* Stripe Connection Section - Only for Clippers */}
-          {isClipper && (
-            <View style={styles.sectionCard}>
-              <View style={styles.sectionHeader}>
-                <Ionicons 
-                  name={isConnectedToStripe ? "checkmark-circle" : "card"} 
-                  size={24} 
-                  color={isConnectedToStripe ? "#4CAF50" : COLORS.primarySolid} 
-                />
-                <Text style={styles.sectionTitle}>
-                  {isConnectedToStripe ? 'Connected to Stripe' : 'Connect to Stripe'}
-                </Text>
-              </View>
-              <Text style={styles.sectionDescription}>
-                Connect to Stripe to receive your payments as a clipper
-              </Text>
-              
-              {!isConnectedToStripe && (
-                <TouchableOpacity
-                  style={styles.connectButton}
-                  onPress={() => handleConnectStripe()}
-                  disabled={loading}
-                >
-                  <Ionicons name="card" size={20} color="#FFFFFF" />
-                  <Text style={styles.connectButtonText}>Connect to Stripe</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          )}
-
-          {/* How it Works Section */}
-          <View style={styles.sectionCard}>
-            <View style={styles.sectionHeader}>
-              <Ionicons name="information-circle" size={24} color={COLORS.primarySolid} />
-              <Text style={styles.sectionTitle}>How it works</Text>
-            </View>
-            
-            <View style={styles.stepsContainer}>
-              {isStreamer ? (
-                // Steps for Streamers
-                <>
-                  <View style={styles.stepItem}>
-                    <View style={styles.stepIcon}>
-                      <Ionicons name="card" size={20} color="#FFFFFF" />
-                    </View>
-                    <Text style={styles.stepText}>
-                      Add funds with your bank card via Stripe
-                    </Text>
-                  </View>
-                  
-                  <View style={styles.stepItem}>
-                    <View style={styles.stepIcon}>
-                      <Ionicons name="create" size={20} color="#FFFFFF" />
-                    </View>
-                    <Text style={styles.stepText}>
-                      Create campaigns with your balance
-                    </Text>
-                  </View>
-                  
-                  <View style={styles.stepItem}>
-                    <View style={styles.stepIcon}>
-                      <Ionicons name="cash" size={20} color="#FFFFFF" />
-                    </View>
-                    <Text style={styles.stepText}>
-                      Clippers are paid automatically based on views
-                    </Text>
-                  </View>
-                </>
-              ) : (
-                // Steps for Clippers
-                <>
-                  <View style={styles.stepItem}>
-                    <View style={styles.stepIcon}>
-                      <Ionicons name="card" size={20} color="#FFFFFF" />
-                    </View>
-                    <Text style={styles.stepText}>
-                      Connect your Stripe account to receive payments
-                    </Text>
-                  </View>
-                  
-                  <View style={styles.stepItem}>
-                    <View style={styles.stepIcon}>
-                      <Ionicons name="videocam" size={20} color="#FFFFFF" />
-                    </View>
-                    <Text style={styles.stepText}>
-                      Submit clips for available campaigns
-                    </Text>
-                  </View>
-                  
-                  <View style={styles.stepItem}>
-                    <View style={styles.stepIcon}>
-                      <Ionicons name="cash" size={20} color="#FFFFFF" />
-                    </View>
-                    <Text style={styles.stepText}>
-                      Get paid automatically when your clips are approved
-                    </Text>
-                  </View>
-                </>
-              )}
-            </View>
-          </View>
         </View>
-      </ScrollView>
+      </View>
+
+      {/* Connexion Stripe Connect */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Receive payments</Text>
+        <Text style={styles.sectionDescription}>
+          Connect to Stripe to receive your payments as a clipper
+        </Text>
+        
+        <TouchableOpacity
+          style={[
+            styles.connectButton,
+            isConnectedToStripe && styles.connectedButton
+          ]}
+          onPress={handleConnectStripe}
+          disabled={loading || isConnectedToStripe}
+        >
+          <Ionicons 
+            name={isConnectedToStripe ? "checkmark-circle" : "card"} 
+            size={24} 
+            color={isConnectedToStripe ? COLORS.success : '#181818'} 
+          />
+          <Text style={[
+            styles.connectButtonText,
+            isConnectedToStripe && styles.connectedButtonText
+          ]}>
+            {isConnectedToStripe ? 'Connected to Stripe' : 'Connect to Stripe'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Informations */}
+      <View style={styles.infoSection}>
+        <Text style={styles.infoTitle}>Comment ça marche ?</Text>
+        <View style={styles.infoItem}>
+          <Ionicons name="card" size={20} color={'#9e9e9e'} />
+          <Text style={styles.infoText}>
+            Ajoutez des fonds avec votre carte bancaire via Stripe
+          </Text>
+        </View>
+        <View style={styles.infoItem}>
+          <Ionicons name="create" size={20} color={'#9e9e9e'} />
+          <Text style={styles.infoText}>
+            Create campaigns with your balance
+          </Text>
+        </View>
+        <View style={styles.infoItem}>
+          <Ionicons name="cash" size={20} color={'#9e9e9e'} />
+          <Text style={styles.infoText}>
+            Les clippers sont payés selon les vues aprés verification
+          </Text>
+        </View>
+      </View>
+        </ScrollView>
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  rootContainer: {
-    flex: 1,
-    backgroundColor: '#F5F5F7',
-    width: '100%',
-    height: '100%',
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F7',
     width: '100%',
+    backgroundColor: '#0A0A0A',
+  },
+  pageTitle: {
+    fontSize: 14,
+    fontFamily: 'Inter_18pt-Medium',
+    color: '#e0e0e0',
+    textAlign: 'center',
+    marginTop: -30,
+    marginBottom: 6,
+  },
+  mainContentContainer: {
+    backgroundColor: '#181818',
+    borderRadius: 12,
+    margin: 9,
+    padding: 12,
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#2A2A2A',
+  },
+  scrollView: {
+    flex: 1,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.card,
   },
   loadingText: {
     marginTop: 10,
     fontSize: 16,
-    color: COLORS.text,
-  },
-  pageTitleContainer: {
-    backgroundColor: '#FFFFFF',
-    marginHorizontal: 16,
-    marginVertical: 24,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#E5E5E7',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  pageTitleContent: {
-    paddingHorizontal: 32,
-    paddingVertical: 28,
-    alignItems: 'center',
-  },
-  pageTitle: {
-    color: '#1A1A1E',
-    fontSize: 32,
-    fontWeight: '700',
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  pageSubtitle: {
-    color: '#6B7280',
-    fontSize: 18,
-    textAlign: 'center',
-    lineHeight: 24,
+    color: '#FFFFFF',
   },
   header: {
     flexDirection: 'row',
@@ -507,12 +398,12 @@ const styles = StyleSheet.create({
   backButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.primarySolid,
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 10,
     marginRight: 15,
-    shadowColor: COLORS.primary,
+    shadowColor: COLORS.primarySolid,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.3,
     shadowRadius: 6,
@@ -523,233 +414,202 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: COLORS.text,
+    color: '#FFFFFF',
   },
   balanceCard: {
-    backgroundColor: '#6366F1',
-    margin: 20,
-    padding: 20,
-    borderRadius: 15,
+    backgroundColor: COLORS.primarySolid,
+    margin: 12,
+    padding: 10,
+    borderRadius: 12,
     alignItems: 'center',
     position: 'relative',
-    shadowColor: '#6366F1',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  balanceHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 5,
   },
   balanceLabel: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    marginLeft: 5,
+    color: COLORS.white,
+    fontSize: 14,
+    marginBottom: 8,
+    fontFamily: 'Inter_18pt-Regular',
+    fontWeight: 'bold',
   },
   balanceAmount: {
-    color: '#FFFFFF',
-    fontSize: 32,
+    color: COLORS.white,
+    fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 10,
+    fontFamily: 'Inter_18pt-SemiBold',
   },
   refreshButton: {
     position: 'absolute',
-    top: 15,
-    right: 15,
-    padding: 5,
+    top: 12,
+    right: 12,
+    padding: 8,
   },
-  mainContent: {
-    paddingHorizontal: 16,
-    paddingBottom: 20,
-  },
-  sectionCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 15,
-    padding: 20,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: '#E5E5E7',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
+  section: {
+    margin: 12,
+    marginTop: 8,
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: 14,
     fontWeight: 'bold',
-    color: '#1A1A1E',
-    marginLeft: 10,
+    color: '#FFFFFF',
+    marginBottom: 8,
+    fontFamily: 'Inter_18pt-SemiBold',
   },
   sectionDescription: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginBottom: 20,
+    fontSize: 12,
+    color: '#B5B5B5',
+    marginBottom: 16,
     lineHeight: 20,
+    fontFamily: 'Inter_18pt-Regular',
   },
   amountGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
+    gap: 8,
   },
   amountButton: {
-    backgroundColor: '#F8FAFC',
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 10,
+    backgroundColor: '#0a0a0a',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 8,
     width: '48%',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#333',
   },
   amountText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1A1A1E',
-  },
-  customAmountContainer: {
-    marginBottom: 20,
-  },
-  inputLabel: {
     fontSize: 14,
-    color: '#6B7280',
-    marginBottom: 5,
-  },
-  amountInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-    paddingHorizontal: 15,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  currencySymbol: {
-    fontSize: 18,
     fontWeight: 'bold',
-    color: '#1A1A1E',
-    marginRight: 5,
+    color: '#FFFFFF',
+    fontFamily: 'Inter_18pt-SemiBold',
   },
-  amountInput: {
-    flex: 1,
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1A1A1E',
-    paddingVertical: 10,
-  },
-  withdrawButton: {
-    backgroundColor: COLORS.success,
+  connectButton: {
+    backgroundColor: '#f5f5f7',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 15,
-    borderRadius: 10,
-    marginTop: 10,
+    padding: 18,
+    borderRadius: 12,
+    marginTop: 12,
+  },
+  connectedButton: {
+    backgroundColor: '#f5f5f7',
+  },
+  connectButtonText: {
+    color: '#181818',
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginLeft: 10,
+    fontFamily: 'Inter_18pt-SemiBold',
+  },
+  connectedButtonText: {
+    color: '#181818',
+  },
+  withdrawButton: {
+    backgroundColor: '#181818',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 18,
+    borderRadius: 12,
+    marginBottom: 12,
   },
   withdrawButtonText: {
     color: COLORS.white,
     fontSize: 16,
     fontWeight: 'bold',
     marginLeft: 10,
+    fontFamily: 'Inter_18pt-SemiBold',
   },
-  quickAmountsContainer: {
-    marginTop: 15,
-  },
-  quickAmountsLabel: {
+  withdrawNote: {
+    color: COLORS.error,
     fontSize: 14,
-    color: '#6B7280',
-    marginBottom: 10,
+    textAlign: 'center',
+    fontStyle: 'italic',
+    fontFamily: 'Inter_18pt-Regular',
   },
-  quickAmountsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
+  infoSection: {
+    margin: 12,
+    marginTop: 16,
+    backgroundColor: '#1A1A1E',
+    padding: 20,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#333',
   },
-  quickAmountButton: {
-    backgroundColor: '#6366F1',
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 10,
-    width: '48%',
-    alignItems: 'center',
-  },
-  quickAmountText: {
-    color: COLORS.white,
+  infoTitle: {
     fontSize: 14,
     fontWeight: 'bold',
-  },
-  warningContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 15,
-    backgroundColor: '#FF9800',
-    padding: 10,
-    borderRadius: 8,
-  },
-  warningText: {
     color: '#FFFFFF',
-    fontSize: 14,
-    marginLeft: 5,
+    marginBottom: 16,
+    fontFamily: 'Inter_18pt-SemiBold',
   },
-  connectButton: {
-    backgroundColor: '#6366F1',
+  infoItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    padding: 15,
-    borderRadius: 10,
-    marginTop: 10,
+    marginBottom: 14,
   },
-  connectButtonText: {
-    color: COLORS.white,
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginLeft: 10,
-  },
-  addFundsButton: {
-    backgroundColor: '#6366F1',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 15,
-    borderRadius: 10,
-    marginTop: 10,
-  },
-  addFundsButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginLeft: 10,
-  },
-  stepsContainer: {
-    marginTop: 15,
-  },
-  stepItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  stepIcon: {
-    backgroundColor: '#6366F1',
-    borderRadius: 10,
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  stepText: {
-    color: '#1A1A1E',
-    fontSize: 14,
-    marginLeft: 10,
+  infoText: {
+    fontSize: 12,
+    color: '#B5B5B5',
+    marginLeft: 12,
     flex: 1,
     lineHeight: 20,
+    fontFamily: 'Inter_18pt-Regular',
+  },
+  customAmountSection: {
+    marginTop: 16,
+  },
+  customAmountLabel: {
+    fontSize: 14,
+    color: '#FFFFFF',
+    fontFamily: 'Inter_18pt-Medium',
+    marginBottom: 8,
+  },
+  customAmountContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  customInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#0A0A0A',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#333',
+    paddingHorizontal: 12,
+    flex: 1,
+  },
+  currencySymbol: {
+    fontSize: 14,
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    marginRight: 6,
+    fontFamily: 'Inter_18pt-SemiBold',
+  },
+  customAmountInput: {
+    flex: 1,
+    fontSize: 14,
+    color: '#FFFFFF',
+    paddingVertical: 12,
+    fontFamily: 'Inter_18pt-Regular',
+    ...(Platform.OS === 'web' && { outline: 'none' }),
+  },
+  addButton: {
+    backgroundColor: COLORS.primarySolid,
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    minWidth: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: 'bold',
+    fontFamily: 'Inter_18pt-SemiBold',
   },
 });
 

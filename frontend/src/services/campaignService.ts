@@ -6,6 +6,8 @@ export interface CreateCampaignData {
   title: string;
   description: string;
   imageUrl?: string;
+  platform?: 'twitch' | 'youtube';
+  platformLink?: string;
   criteria: {
     hashtags: string[];
     style: string;
@@ -15,6 +17,7 @@ export interface CreateCampaignData {
   budget: number;
   cpm: number;
   fanPageCpm: number | null;
+  fanAccountCpm: number | null;
 }
 
 export interface UpdateCampaignData {
@@ -29,7 +32,7 @@ export interface UpdateCampaignData {
   budget?: number;
   cpm?: number;
   fanPageCpm?: number | null;
-  status?: 'active' | 'paused' | 'completed';
+  status?: 'active' | 'paused' | 'completed' | 'pending_deletion';
 }
 
 export interface SubmitClipData {
@@ -53,6 +56,8 @@ class CampaignService {
         title: data.title,
         description: data.description,
         image_url: data.imageUrl,
+        platform: data.platform || 'twitch',
+        platform_link: data.platformLink,
         criteria: data.criteria,
         budget_total: data.budget,
         budget_remaining: data.budget,
@@ -599,9 +604,12 @@ class CampaignService {
       title: data.title,
       description: data.description,
       imageUrl: data.image_url,
+      platform: data.platform,
+      platformLink: data.platform_link,
       criteria: data.criteria,
       budget: data.budget_total || data.budget,
       cpm: data.cpm_rate || data.cpm,
+      fanPageCpm: data.fan_page_cpm,
       status: data.status,
       createdAt: new Date(data.created_at),
       totalViews: data.total_views || 0,
@@ -688,6 +696,61 @@ class CampaignService {
       console.log('✅ payClipper - Solde mis à jour:', newBalance, '€');
     } catch (error) {
       console.error('❌ payClipper - Erreur lors du paiement:', error);
+      throw error;
+    }
+  }
+
+  // Supprimer une campagne
+  async deleteCampaign(campaignId: string): Promise<void> {
+    try {
+      console.log('🔵 deleteCampaign - Suppression de la campagne:', campaignId);
+      
+      // Récupérer les informations de la campagne pour le remboursement
+      const { data: campaign, error: campaignError } = await supabase
+        .from('campaigns')
+        .select('*')
+        .eq('id', campaignId)
+        .single();
+
+      if (campaignError || !campaign) {
+        throw new Error('Campagne introuvable');
+      }
+
+      // Calculer le budget restant
+      const remainingBudget = campaign.budget - (campaign.total_spent || 0);
+
+      // Rembourser le streamer si nécessaire
+      if (remainingBudget > 0) {
+        const { data: streamer, error: streamerError } = await supabase
+          .from('users')
+          .select('balance')
+          .eq('id', campaign.streamer_id)
+          .single();
+
+        if (!streamerError && streamer) {
+          const newBalance = Number(streamer.balance || 0) + remainingBudget;
+          await supabase
+            .from('users')
+            .update({ balance: newBalance })
+            .eq('id', campaign.streamer_id);
+          
+          console.log('✅ deleteCampaign - Budget restant remboursé:', remainingBudget);
+        }
+      }
+
+      // Supprimer la campagne
+      const { error: deleteError } = await supabase
+        .from('campaigns')
+        .delete()
+        .eq('id', campaignId);
+
+      if (deleteError) {
+        throw deleteError;
+      }
+
+      console.log('✅ deleteCampaign - Campagne supprimée avec succès');
+    } catch (error) {
+      console.error('❌ deleteCampaign - Erreur lors de la suppression:', error);
       throw error;
     }
   }

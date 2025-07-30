@@ -105,6 +105,8 @@ const styles = StyleSheet.create({
     padding: 24,
     width: '100%',
     maxWidth: 450,
+    borderWidth: 1,
+    borderColor: '#555555',
     ...SHADOWS.lg,
   },
   header: {
@@ -200,7 +202,7 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     fontSize: 16,
     fontFamily: FONTS.medium,
-    color: COLORS.textSecondary,
+    color: '#d9d9d9',
   },
   addFundsButton: {
     flex: 2,

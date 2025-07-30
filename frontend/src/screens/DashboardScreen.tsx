@@ -20,10 +20,9 @@ import { useUserRole } from '../contexts/UserContext';
 import authService from '../services/authService';
 import { getTwitchDataFromUrl } from '../services/twitchService';
 import { StripeService } from '../services/stripeService';
-import AddFundsModal from '../components/AddFundsModal';
 import declarationsService, { Declaration } from '../services/viewsDeclarationService';
 import { supabase } from '../config/supabase';
-import AdminService from '../services/adminService';
+import { adminService } from '../services/adminService';
 import campaignService from '../services/campaignService';
 
 interface DashboardScreenProps {
@@ -57,10 +56,17 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
     followers: user.twitchFollowers || 0,
   });
   const [walletBalance, setWalletBalance] = useState(0);
-  const [showAddFundsModal, setShowAddFundsModal] = useState(false);
   const { userRole } = useUserRole();
   const [pendingDeclarations, setPendingDeclarations] = useState<Declaration[]>([]);
   const [loadingDeclarations, setLoadingDeclarations] = useState(false);
+  const [adminStats, setAdminStats] = useState({
+    totalDeclarations: 0,
+    totalPending: 0,
+    totalPaid: 0,
+    totalEarnings: 0,
+    totalClippers: 0,
+    totalCampaigns: 0,
+  });
 
   // Use the connected user's role instead of context
   const actualUserRole = user.role;
@@ -80,7 +86,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
         
         const submissions = await dashboardService.getClipperRecentSubmissions(user.id, 3);
         setRecentSubmissions(submissions);
-      } else {
+      } else if (actualUserRole === 'streamer') {
         const streamerStats = await dashboardService.getStreamerStats(user.id);
         setStats(streamerStats);
         
@@ -90,6 +96,13 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
         // Load all streamer campaigns for mission cards
         const allStreamerCampaigns = await campaignService.getStreamerCampaigns(user.id);
         setStreamerCampaigns(allStreamerCampaigns);
+      } else if (actualUserRole === 'admin') {
+        // Load admin stats
+        const adminStatsData = await adminService.getAdminStats();
+        setAdminStats(adminStatsData);
+        
+        // Load pending declarations
+        await loadPendingDeclarations();
       }
     } catch (error) {
       console.error('❌ Error loading dashboard stats:', error);
@@ -438,7 +451,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
               </View>
               <View style={styles.balanceRight}>
                 <TouchableOpacity 
-                  onPress={() => setShowAddFundsModal(true)}
+                  onPress={() => onTabChange('Payment')}
                 >
                   <LinearGradient
                     colors={['#4a5cf9', '#3c82f6']}
@@ -446,15 +459,15 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
                     end={{ x: 0, y: 1 }}
                     style={styles.addMoneyButton}
                   >
-                    <Ionicons name="add" size={16} color="#FFFFFF" />
-                    <Text style={styles.addMoneyText}>Add Money</Text>
+                    <Ionicons name="add" size={20} color="#FFFFFF" />
+                  <Text style={styles.addMoneyText}>Add Money</Text>
                   </LinearGradient>
                 </TouchableOpacity>
                 <TouchableOpacity 
                   style={styles.simpleActionButton}
                   onPress={() => onTabChange('Payment')}
                 >
-                  <Ionicons name="time" size={24} color="#89888d" />
+                  <Ionicons name="time" size={20} color="#89888d" />
                   <Text style={styles.simpleActionText}>History</Text>
                 </TouchableOpacity>
               </View>
@@ -496,6 +509,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
+      showsVerticalScrollIndicator={false}
     >
       {/* Section Solde */}
       <View style={styles.balanceTitleContainer}>
@@ -513,17 +527,23 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
               </View>
               <View style={styles.balanceRight}>
                 <TouchableOpacity 
-                  style={styles.simpleActionButton}
                   onPress={() => onTabChange('Payment')}
                 >
-                  <Ionicons name="arrow-down" size={36} color={COLORS.primarySolid} />
-                  <Text style={styles.simpleActionText}>Withdraw</Text>
+                  <LinearGradient
+                    colors={['#4a5cf9', '#3c82f6']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 0, y: 1 }}
+                    style={styles.addMoneyButton}
+                  >
+                    <Ionicons name="arrow-down" size={20} color="#FFFFFF" />
+                  <Text style={styles.addMoneyText}>Withdraw</Text>
+                  </LinearGradient>
                 </TouchableOpacity>
                 <TouchableOpacity 
                   style={styles.simpleActionButton}
                   onPress={() => onTabChange('Payment')}
                 >
-                  <Ionicons name="time" size={36} color={COLORS.primarySolid} />
+                  <Ionicons name="time" size={20} color="#89888d" />
                   <Text style={styles.simpleActionText}>History</Text>
                 </TouchableOpacity>
               </View>
@@ -535,26 +555,101 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
       {/* Grid de statistiques simplifiée */}
       <View style={styles.simpleStatsGrid}>
         <View style={[styles.simpleStatCard, styles.cardTopLeft]}>
-          <Ionicons name="cash" size={48} color="#0052FF" />
-          <Text style={styles.simpleStatValue}>$0.00</Text>
+          <Text style={styles.simpleStatValue}>{formatCurrency(stats.totalEarnings || 0)}</Text>
           <Text style={styles.simpleStatText}>Total Earnings</Text>
         </View>
         <View style={[styles.simpleStatCard, styles.cardTopRight]}>
-          <Ionicons name="eye" size={48} color="#00D4AA" />
-          <Text style={styles.simpleStatValue}>0</Text>
+          <Text style={styles.simpleStatValue}>{formatViews(stats.totalViews || 0)}</Text>
           <Text style={styles.simpleStatText}>Total Views</Text>
         </View>
         <View style={[styles.simpleStatCard, styles.cardBottomLeft]}>
-          <Ionicons name="videocam" size={48} color="#FF6B6B" />
-          <Text style={styles.simpleStatValue}>1</Text>
+          <Text style={styles.simpleStatValue}>{stats.activeCampaigns || 0}</Text>
           <Text style={styles.simpleStatText}>Available Missions</Text>
         </View>
         <View style={[styles.simpleStatCard, styles.cardBottomRight]}>
-          <Ionicons name="time" size={48} color="#FFA726" />
-          <Text style={styles.simpleStatValue}>1</Text>
+          <Text style={styles.simpleStatValue}>{stats.pendingSubmissions || 0}</Text>
           <Text style={styles.simpleStatText}>Pending</Text>
         </View>
       </View>
+    </ScrollView>
+  );
+
+  const renderAdminDashboard = () => (
+    <ScrollView
+      style={styles.scrollView}
+      contentContainerStyle={styles.scrollContent}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+      }
+      showsVerticalScrollIndicator={false}
+    >
+      {/* Section Solde */}
+      <View style={styles.balanceTitleContainer}>
+        <LinearGradient
+          colors={['#0A0A0A', '#0A0A0A']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
+          style={styles.balanceTitleGradient}
+        >
+          <View style={styles.balanceTitleContent}>
+            <View style={styles.balanceContentSection}>
+              <View style={styles.balanceLeft}>
+                <Text style={styles.balanceLabel}>Available Balance</Text>
+                <Text style={styles.balanceAmount}>{formatCurrency(walletBalance)}</Text>
+              </View>
+              <View style={styles.balanceRight}>
+                <TouchableOpacity 
+                  onPress={() => onTabChange('Payment')}
+                >
+                  <LinearGradient
+                    colors={['#4a5cf9', '#3c82f6']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 0, y: 1 }}
+                    style={styles.addMoneyButton}
+                  >
+                    <Ionicons name="add" size={20} color="#FFFFFF" />
+                  <Text style={styles.addMoneyText}>Add Money</Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={styles.simpleActionButton}
+                  onPress={() => onTabChange('Payment')}
+                >
+                  <Ionicons name="time" size={20} color="#89888d" />
+                  <Text style={styles.simpleActionText}>History</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </LinearGradient>
+      </View>
+
+      {/* Grid de statistiques simplifiée */}
+      <View style={styles.simpleStatsGrid}>
+        <View style={[styles.simpleStatCard, styles.cardTopLeft]}>
+          <Ionicons name="videocam" size={35} color="#dcdcdc" />
+          <Text style={styles.simpleStatValue}>{adminStats.totalDeclarations}</Text>
+          <Text style={styles.simpleStatText}>Total Clips</Text>
+        </View>
+        <View style={[styles.simpleStatCard, styles.cardTopRight]}>
+          <Ionicons name="cash" size={35} color="#dcdcdc" />
+          <Text style={styles.simpleStatValue}>{formatCurrency(adminStats.totalEarnings)}</Text>
+          <Text style={styles.simpleStatText}>Earnings</Text>
+        </View>
+        <View style={[styles.simpleStatCard, styles.cardBottomLeft]}>
+          <Ionicons name="people-circle" size={35} color="#dcdcdc" />
+          <Text style={styles.simpleStatValue}>{adminStats.totalCampaigns}</Text>
+          <Text style={styles.simpleStatText}>Total Streamers</Text>
+        </View>
+        <View style={[styles.simpleStatCard, styles.cardBottomRight]}>
+          <Ionicons name="people" size={35} color="#dcdcdc" />
+          <Text style={styles.simpleStatValue}>{adminStats.totalClippers}</Text>
+          <Text style={styles.simpleStatText}>Total Clippers</Text>
+        </View>
+      </View>
+
+      {/* Section des déclarations à vérifier */}
+      {renderDeclarationsToVerify()}
     </ScrollView>
   );
 
@@ -562,15 +657,13 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
     <View style={styles.container}>
       <Text style={styles.pageTitle}>Dashboard</Text>
       <View style={styles.mainContentContainer}>
-        {actualUserRole === 'streamer' ? renderStreamerDashboard() : renderClipperDashboard()}
+        {actualUserRole === 'streamer' 
+          ? renderStreamerDashboard() 
+          : actualUserRole === 'admin' 
+            ? renderAdminDashboard() 
+            : renderClipperDashboard()
+        }
       </View>
-      
-      <AddFundsModal
-        visible={showAddFundsModal}
-        onClose={() => setShowAddFundsModal(false)}
-        userId={user.id}
-        onSuccess={loadStats}
-      />
     </View>
   );
 };
@@ -586,29 +679,29 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_18pt-Medium',
     color: '#e0e0e0',
     textAlign: 'center',
-    marginTop: -28,
-    marginBottom: 8,
+    marginTop: -30,
+    marginBottom: 6,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 12, // Réduit de 24 à 12
-    paddingTop: 5, // Réduit de 10 à 5
-    paddingBottom: 25, // Réduit de 50 à 25
+    paddingHorizontal: 9,
+    paddingTop: 4,
+    paddingBottom: 19,
     flexGrow: 1,
   },
   mainContentContainer: {
-    backgroundColor: '#181818', // Grand conteneur Threads
-    borderRadius: 16,
-    margin: 12,
-    padding: 16,
+    backgroundColor: '#181818',
+    borderRadius: 12,
+    margin: 9,
+    padding: 12,
     flex: 1,
     borderWidth: 1,
     borderColor: '#2A2A2A',
   },
   header: {
-    marginBottom: 12, // Réduit de 24 à 12
+    marginBottom: 9,
   },
   headerTop: {
     flexDirection: 'row',
@@ -620,9 +713,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   profileImage: {
-    width: 30, // Réduit de 60 à 30
-    height: 30, // Réduit de 60 à 30
-    borderRadius: 15, // Réduit de 30 à 15
+    width: 23,
+    height: 23,
+    borderRadius: 11,
     marginRight: 8, // Réduit de 16 à 8
   },
   userTextInfo: {
@@ -1338,26 +1431,26 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: '#1A1A1E',
-    padding: 32,
-    marginBottom: 24,
-    borderRadius: 12,
+    padding: 24,
+    marginBottom: 18,
+    borderRadius: 9,
     width: '100%',
     borderWidth: 1,
     borderColor: '#333',
     ...SHADOWS.md,
-    minWidth: 300,
+    minWidth: 225,
     flexWrap: 'nowrap',
   },
   balanceLeft: {
     flex: 1,
-    minWidth: 250, // Largeur minimum pour éviter le wrap du texte
-    flexShrink: 0, // Empêche le rétrécissement
+    minWidth: 188,
+    flexShrink: 0,
     justifyContent: 'flex-start',
   },
   balanceHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   balanceRight: {
     flexDirection: 'row',
@@ -1366,21 +1459,21 @@ const styles = StyleSheet.create({
     minWidth: 'auto',
   },
   balanceLabel: {
-    fontSize: 18, // Réduit de 40 à 20
+    fontSize: 16,
     color: '#B5B5B5',
     fontFamily: 'Inter_18pt-Medium',
     flexShrink: 0,
     minWidth: 'auto',
     whiteSpace: 'nowrap',
     textAlign: 'left',
-    lineHeight: 20, // Réduit de 40 à 20
+    lineHeight: 15,
   },
   balanceAmount: {
-    fontSize: 20, // Réduit de 44 à 22
+    fontSize: 17,
     color: '#e0e0e0',
     fontFamily: 'Inter_18pt-SemiBold',
     fontWeight: 'semibold',
-    marginTop: 8,
+    marginTop: 6,
   },
   simpleActionButton: {
     flexDirection: 'row',
@@ -1422,7 +1515,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   addMoneyText: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#FFFFFF',
     fontFamily: 'Inter_18pt-SemiBold',
     fontWeight: 'semibold',
@@ -1442,23 +1535,22 @@ const styles = StyleSheet.create({
     borderColor: '#333333',
   },
   simpleCreateText: {
-    fontSize: 16, // Réduit de 30 à 15
+    fontSize: 13, // Réduit de 30 à 15
     color: '#0a0a0a',
     fontFamily: 'Inter_18pt-SemiBold',
   },
   simpleStatsGrid: {
-    height: 600, // Augmenté de 300 à 500
+    height: 460,
     position: 'relative',
     width: '100%',
-    marginBottom: 30, // Réduit de 60 à 30
-    marginTop: 15, // Réduit de 30 à 15
+    marginTop: 11,
   },
   simpleStatCard: {
     width: '48%',
     height: '48%',
     backgroundColor: '#0A0A0A',
-    padding: 32,
-    borderRadius: 20,
+    padding: 24,
+    borderRadius: 15,
     borderColor: '#2a2a2a',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1467,24 +1559,24 @@ const styles = StyleSheet.create({
     position: 'absolute',
   },
   simpleStatValue: {
-    fontSize: 24, // Réduit de 48 à 24
+    fontSize: 18,
     color: '#e0e0e0',
     fontFamily: 'Inter_18pt-SemiBold',
     textAlign: 'center',
-    marginVertical: 24,
+    marginVertical: 18,
     textShadowColor: 'rgba(255, 255, 255, 0.1)',
-    textShadowOffset: { width: 0.5, height: 0.5 }, // Réduit de 1 à 0.5
-    textShadowRadius: 1, // Réduit de 2 à 1
+    textShadowOffset: { width: 0.4, height: 0.4 },
+    textShadowRadius: 0.8,
   },
   simpleStatText: {
-    fontSize: 15, // Réduit de 30 à 15
+    fontSize: 13,
     color: '#B5B5B5',
     fontFamily: 'Inter_18pt-Medium',
     textAlign: 'center',
-    lineHeight: 11, // Réduit de 22 à 11
+    lineHeight: 8,
     textShadowColor: 'rgba(255, 255, 255, 0.05)',
-    textShadowOffset: { width: 0.25, height: 0.25 }, // Réduit de 0.5 à 0.25
-    textShadowRadius: 0.5, // Réduit de 1 à 0.5
+    textShadowOffset: { width: 0.2, height: 0.2 },
+    textShadowRadius: 0.4,
   },
   // Styles pour les positions des cartes
   cardTopLeft: {
@@ -1793,6 +1885,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
   },
-  });
+});
 
 export default DashboardScreen; 

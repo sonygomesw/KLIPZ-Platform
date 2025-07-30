@@ -194,6 +194,49 @@ const ProfileIcon: React.FC<{ isActive: boolean; size: number }> = ({ isActive, 
   );
 };
 
+// Composant ExploreIcon basé sur l'icône Instagram
+const ExploreIcon: React.FC<{
+  isActive: boolean;
+  size: number;
+}> = ({ isActive, size }) => {
+  const color = isActive ? '#f1f1f1' : '#b5b5b5';
+  
+  return (
+    <Svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+    >
+      <Polygon
+        points="13.941 13.953 7.581 16.424 10.06 10.056 16.42 7.585 13.941 13.953"
+        fill={isActive ? color : "none"}
+        stroke={color}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+      />
+      {isActive && (
+        <Polygon
+          fillRule="evenodd"
+          points="10.06 10.056 13.949 13.945 7.581 16.424 10.06 10.056"
+          fill={color}
+        />
+      )}
+      <Circle
+        cx="12.001"
+        cy="12.005"
+        r="10.5"
+        fill="none"
+        stroke={color}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+      />
+    </Svg>
+  );
+};
+
 interface ResponsiveLayoutProps {
   children: React.ReactNode;
   user: User;
@@ -243,10 +286,9 @@ const Sidebar: React.FC<{
             ]} 
             onPress={() => onTabChange('AvailableMissions')}
           >
-            <Ionicons 
-              name="megaphone-outline" 
-              size={30} 
-              color={activeTab === 'AvailableMissions' ? '#f1f1f1' : '#b5b5b5'} 
+            <ExploreIcon 
+              isActive={activeTab === 'AvailableMissions'}
+              size={25}
             />
           </TouchableOpacity>
         )}
@@ -266,20 +308,7 @@ const Sidebar: React.FC<{
           </TouchableOpacity>
         )}
         
-        {isClipper && (
-          <TouchableOpacity 
-            style={[
-              styles.navItem, 
-              activeTab === 'Campaigns' && styles.navItemActive
-            ]} 
-            onPress={() => onTabChange('Campaigns')}
-          >
-            <CampaignsIcon 
-              isActive={activeTab === 'Campaigns'}
-              size={25}
-            />
-          </TouchableOpacity>
-        )}
+
         
         {isClipper && (
           <TouchableOpacity 
@@ -433,8 +462,7 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     backgroundColor: '#0A0A0A',
-    height: '100vh',
-    overflow: 'hidden',
+    height: height,
     minWidth: 950,
   },
   sidebar: {
@@ -456,7 +484,7 @@ const styles = StyleSheet.create({
     width: 70,
     height: 70,
     borderRadius: 12,
-  },
+  } as any,
   welcomeContainer: {
     display: 'none',
   },
@@ -550,7 +578,7 @@ const styles = StyleSheet.create({
   mobileLogoImage: {
     width: 32,
     height: 32,
-  },
+  } as any,
   header: {
     paddingHorizontal: Platform.OS === 'web' ? 32 : 16,
     paddingVertical: 24,

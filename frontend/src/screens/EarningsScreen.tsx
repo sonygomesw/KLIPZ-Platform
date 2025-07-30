@@ -139,17 +139,17 @@ const EarningsScreen: React.FC<EarningsScreenProps> = ({ user, navigation }) => 
               <Ionicons name="information-circle" size={16} color="#FFFFFF" />
             </View>
             <TouchableOpacity style={styles.withdrawButtonInline} onPress={handleWithdraw}>
-              <Ionicons name="trending-up" size={24} color="#000000" />
+              <Ionicons name="trending-up" size={14} color="#000000" />
               <Text style={styles.withdrawButtonTextInline}>Withdraw</Text>
             </TouchableOpacity>
           </View>
           <View style={styles.dateFilterContainer}>
             <TouchableOpacity style={styles.dateFilter}>
               <Text style={styles.dateFilterText}>Last 7 days</Text>
-              <Ionicons name="chevron-down" size={24} color="#FFFFFF" />
+              <Ionicons name="chevron-down" size={14} color="#FFFFFF" />
             </TouchableOpacity>
             <View style={styles.dateRangeContainer}>
-              <Ionicons name="calendar" size={24} color="#FFFFFF" style={{ marginTop: 15 }} />
+              <Ionicons name="calendar" size={12} color="#FFFFFF" style={{ marginTop: 8 }} />
               <Text style={styles.dateRangeText}>19 - 25 Jul. 2025</Text>
             </View>
           </View>
@@ -163,9 +163,6 @@ const EarningsScreen: React.FC<EarningsScreenProps> = ({ user, navigation }) => 
     <View style={styles.tableSection}>
       <View style={styles.tableHeader}>
         <Text style={styles.tableTitle}>Your earnings by campaign</Text>
-        <TouchableOpacity style={styles.browseButton}>
-          <Text style={styles.browseButtonText}>Browse</Text>
-        </TouchableOpacity>
       </View>
       
       <View style={styles.tableContainer}>
@@ -181,7 +178,7 @@ const EarningsScreen: React.FC<EarningsScreenProps> = ({ user, navigation }) => 
           earningsData.campaignGroups.map((group, index) => (
             <View key={index} style={styles.tableRow}>
               <View style={styles.campaignCell}>
-                <Ionicons name="videocam" size={16} color="#6B7280" />
+                <Ionicons name="videocam" size={12} color="#8B8B8D" />
                 <Text style={styles.campaignName}>{group.campaignName}</Text>
               </View>
               <Text style={styles.tableCell}>{group.clipCount}</Text>
@@ -192,7 +189,7 @@ const EarningsScreen: React.FC<EarningsScreenProps> = ({ user, navigation }) => 
           ))
         ) : (
           <View style={styles.emptyState}>
-            <Ionicons name="videocam-outline" size={48} color="#9CA3AF" />
+            <Ionicons name="videocam-outline" size={32} color="#8B8B8D" />
             <Text style={styles.emptyTitle}>No earnings available</Text>
             <Text style={styles.emptyText}>
               You haven't created any clips yet. Start participating in campaigns to earn money.
@@ -270,37 +267,21 @@ const EarningsScreen: React.FC<EarningsScreenProps> = ({ user, navigation }) => 
 
   return (
     <View style={styles.container}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        <View style={styles.header}>
-          <View style={styles.titleContainer}>
-            <LinearGradient
-              colors={['#ffffff', '#ffffff']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 0, y: 1 }}
-              style={styles.titleGradient}
-            >
-              <View style={styles.titleContent}>
-                <Text style={styles.headerTitle}>My Earnings</Text>
-                <Text style={styles.description}>Track your clip earnings and manage your withdrawals seamlessly.</Text>
-              </View>
-            </LinearGradient>
-          </View>
-        </View>
-        
-        {renderTopMetrics()}
-        <View style={styles.sectionSpacer} />
-        {renderEarningsTable()}
-        <View style={styles.sectionSpacer} />
-        {renderWithdrawalHistory()}
-        <View style={styles.bottomSpacer} />
-      </ScrollView>
+      <Text style={styles.pageTitle}>My Earnings</Text>
+      <View style={styles.mainContentContainer}>
+        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+          {renderTopMetrics()}
+          {renderEarningsTable()}
+          {renderWithdrawalHistory()}
+        </ScrollView>
 
-      <BankAccountModal
-        visible={showBankAccountModal}
-        onClose={() => setShowBankAccountModal(false)}
-        onBankAccountSelected={handleBankAccountSelected}
-        user={user}
-      />
+        <BankAccountModal
+          visible={showBankAccountModal}
+          onClose={() => setShowBankAccountModal(false)}
+          onBankAccountSelected={handleBankAccountSelected}
+          user={user}
+        />
+      </View>
     </View>
   );
 };
@@ -308,29 +289,49 @@ const EarningsScreen: React.FC<EarningsScreenProps> = ({ user, navigation }) => 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#0A0A0A', // Thème sombre comme Dashboard
+  },
+  pageTitle: {
+    fontSize: 14,
+    fontFamily: 'Inter_18pt-Medium',
+    color: '#e0e0e0',
+    textAlign: 'center',
+    marginTop: -30,
+    marginBottom: 2,
+  },
+  mainContentContainer: {
+    backgroundColor: '#181818',
+    borderRadius: 16,
+    margin: 16,
+    padding: 20,
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#2A2A2A',
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: SIZES.spacing.xl,
-    paddingBottom: 50,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 24,
+    flexGrow: 1,
   },
   header: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 40,
-    marginBottom: SIZES.spacing.xl,
+    paddingVertical: 10,
+    marginBottom: 8,
+    marginTop: 8,
   },
 
   headerTitle: {
-    fontSize: 40,
-    fontFamily: FONTS.bold,
+    fontSize: 18,
+    fontFamily: 'Inter_18pt-SemiBold',
     fontWeight: '600',
-    color: '#363636',
+    color: '#FFFFFF',
     textAlign: 'center',
-    lineHeight: 36,
+    lineHeight: 22,
   },
   titleContainer: {
     alignSelf: 'stretch',
@@ -389,20 +390,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 10,
     marginLeft: 24,
-    borderWidth: 1,
-    borderColor: '#FFFFFF',
-    shadowColor: '#FFFFFF',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 4,
   },
   withdrawButtonTextInline: {
-    fontSize: 24,
+    fontSize: 12,
     fontFamily: FONTS.medium,
     fontWeight: '600',
     color: '#000000',
-    marginLeft: 6,
+    marginLeft: 3,
   },
   scrollView: {
     flex: 1,
@@ -411,37 +405,36 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#0A0A0A',
   },
   loadingText: {
-    fontSize: 42,
-    fontFamily: FONTS.medium,
-    color: '#6B7280',
-    marginTop: 16,
+    fontSize: 14,
+    fontFamily: 'Inter_18pt-Medium',
+    color: '#FFFFFF',
+    marginTop: 8,
   },
   topMetricsSection: {
     paddingHorizontal: 0,
     paddingVertical: 0,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'transparent',
   },
   mainEarningsCard: {
-    padding: 40,
-    borderRadius: 20,
-    backgroundColor: '#000000',
+    padding: 20,
+    borderRadius: 12,
+    backgroundColor: '#1C1C1E',
     borderWidth: 1,
-    borderColor: '#333333',
+    borderColor: '#38383A',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 10,
-    marginBottom: 24,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+    marginBottom: 16,
   },
   mainEarningsHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 24,
   },
   mainEarningsTitleContainer: {
     flexDirection: 'row',
@@ -450,7 +443,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   mainEarningsTitle: {
-    fontSize: 28,
+    fontSize: 16,
     fontFamily: FONTS.bold,
     fontWeight: '600',
     color: '#FFFFFF',
@@ -467,137 +460,138 @@ const styles = StyleSheet.create({
   dateFilter: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 13,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
     borderWidth: 1,
     borderColor: '#444444',
-    borderRadius: 8,
+    borderRadius: 10,
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
   },
   dateFilterText: {
-    fontSize: 24,
+    fontSize: 12,
     fontFamily: FONTS.medium,
     color: '#FFFFFF',
-    marginRight: 4,
+    marginRight: 2,
   },
   dateRangeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 4,
   },
   dateRangeText: {
-    fontSize: 24,
+    fontSize: 12,
     fontFamily: FONTS.regular,
     color: 'rgba(255, 255, 255, 0.8)',
-    marginTop: 15,
+    marginTop: 8,
   },
   mainEarningsValue: {
-    fontSize: 48,
+    fontSize: 22,
     fontFamily: FONTS.bold,
     color: '#FFFFFF',
     textAlign: 'left',
-    marginTop: 16,
   },
   tableSection: {
-    paddingHorizontal: 24,
-    paddingVertical: 24,
-    backgroundColor: '#FFFFFF',
-    marginBottom: 0,
+    paddingHorizontal: 0,
+    paddingVertical: 16,
+    backgroundColor: 'transparent',
+    marginBottom: 16,
   },
   tableHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 16,
+    paddingHorizontal: 4,
   },
   tableTitle: {
-    fontSize: 24,
+    fontSize: 18,
     fontFamily: FONTS.bold,
     fontWeight: '600',
-    color: '#374151',
+    color: '#FFFFFF',
   },
   browseButton: {
     backgroundColor: '#4a5cf9',
-    paddingVertical: 14,
-    paddingHorizontal: 30,
-    borderRadius: 15,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
   },
   browseButtonText: {
-    fontSize: 24,
+    fontSize: 12,
     fontFamily: FONTS.medium,
     color: '#FFFFFF',
   },
   tableContainer: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    borderWidth: 0,
+    backgroundColor: '#1C1C1E',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#38383A',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 6,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
     overflow: 'hidden',
   },
   tableRow: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: '#38383A',
   },
   tableCell: {
     flex: 1,
-    paddingVertical: 20,
-    paddingHorizontal: 20,
-    fontSize: 24,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    fontSize: 12,
     fontWeight: '600',
     fontFamily: FONTS.medium,
-    color: '#374151',
+    color: '#FFFFFF',
   },
   tableHeaderCell: {
-    backgroundColor: '#F9FAFB',
-    fontSize: 22,
+    backgroundColor: '#2A2A2E',
+    fontSize: 11,
     fontFamily: FONTS.bold,
-    color: '#6B7280',
+    color: '#8B8B8D',
     textTransform: 'uppercase',
-    letterSpacing: 1.2,
-    paddingVertical: 16,
-    paddingHorizontal: 20,
+    letterSpacing: 0.6,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
     fontWeight: '600',
   },
   campaignCell: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 28,
-    paddingHorizontal: 24,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
   },
   campaignName: {
-    fontSize: 24,
+    fontSize: 12,
     fontFamily: FONTS.medium,
     fontWeight: '600',
-    color: '#374151',
-    marginLeft: 8,
+    color: '#FFFFFF',
+    marginLeft: 4,
   },
   statusCell: {
     fontFamily: FONTS.medium,
   },
   emptyState: {
     alignItems: 'center',
-    padding: 48,
-    marginTop: 24,
+    padding: 32,
+    marginTop: 16,
   },
   emptyTitle: {
-    fontSize: 42,
+    fontSize: 16,
     fontFamily: FONTS.bold,
-    color: '#374151',
-    marginTop: 16,
-    marginBottom: 12,
+    color: '#FFFFFF',
+    marginTop: 12,
+    marginBottom: 8,
   },
   emptyText: {
-    fontSize: 36,
+    fontSize: 14,
     fontFamily: FONTS.regular,
-    color: '#6B7280',
+    color: '#8B8B8D',
     textAlign: 'center',
-    lineHeight: 44,
+    lineHeight: 18,
   },
   earningsGlow: {
     position: 'absolute',
@@ -610,11 +604,11 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   sectionSpacer: {
-    height: 24,
-    backgroundColor: '#FFFFFF',
+    height: 16,
+    backgroundColor: 'transparent',
   },
   bottomSpacer: {
-    height: 24,
+    height: 16,
   },
 });
 

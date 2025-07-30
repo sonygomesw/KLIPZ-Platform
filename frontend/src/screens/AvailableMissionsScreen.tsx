@@ -9,11 +9,15 @@ import {
   Alert,
   Image,
   Dimensions,
+  Modal,
+  TextInput,
+  Animated,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { Picker } from '@react-native-picker/picker';
 import { COLORS, SIZES, SHADOWS, FONTS } from '../constants';
-import { User, Campaign } from '../types';
+import { User, Campaign, CampaignFilters } from '../types';
 import campaignService from '../services/campaignService';
 
 interface AvailableMissionsScreenProps {
@@ -47,10 +51,24 @@ const AvailableMissionsScreen: React.FC<AvailableMissionsScreenProps> = ({
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [numColumns, setNumColumns] = useState(3);
+  
+  // États pour les filtres comme dans CampaignsListScreen
+  const [filters, setFilters] = useState<CampaignFilters>({
+    sortBy: 'new',
+  });
+  const [selectedPlatform, setSelectedPlatform] = useState<'twitch' | 'youtube'>('twitch');
+  
+  // États pour le modal de soumission de clip
+  const [showClipModal, setShowClipModal] = useState(false);
+  const [selectedMission, setSelectedMission] = useState<Campaign | null>(null);
+  const [clipUrl, setClipUrl] = useState('');
+  const [modalVisible, setModalVisible] = useState(false);
+  const scaleAnim = useState(new Animated.Value(0.8))[0];
+  const opacityAnim = useState(new Animated.Value(0))[0];
 
   useEffect(() => {
     loadAvailableMissions();
-  }, []);
+  }, [filters]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -77,9 +95,9 @@ const AvailableMissionsScreen: React.FC<AvailableMissionsScreenProps> = ({
       setLoading(true);
       console.log('🔍 Loading available missions...');
       
-      // Retrieve all active campaigns from database
-      const campaigns = await campaignService.getCampaigns();
-      console.log('🔍 Available Missions retrieved:', campaigns.length);
+      // Retrieve all active campaigns from database with filters
+      const campaigns = await campaignService.getCampaigns(filters);
+      console.log('🔍 Available Missions retrieved with filters:', campaigns.length);
       
       // Add test data to see the design
       const mockCampaigns: Campaign[] = [
@@ -311,11 +329,24 @@ const AvailableMissionsScreen: React.FC<AvailableMissionsScreenProps> = ({
   };
 
   const handleOpenMissionDetails = (campaign: Campaign) => {
-    if (onMissionSelect) {
-      onMissionSelect(campaign);
-    } else {
-      navigation?.navigate('MissionDetail', { campaign });
-    }
+    setSelectedMission(campaign);
+    setShowClipModal(true);
+    setModalVisible(true);
+    
+    // Animation d'entrée : vient vers nous avec un zoom
+    Animated.parallel([
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        tension: 300,
+        friction: 10,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start();
   };
 
   const handleCloseMissionDetails = () => {
@@ -323,11 +354,37 @@ const AvailableMissionsScreen: React.FC<AvailableMissionsScreenProps> = ({
   };
 
   const handleSubmitClip = () => {
+    if (!clipUrl.trim()) {
+      Alert.alert('Error', 'Please enter your clip URL');
+      return;
+    }
+    
     Alert.alert(
-      'Soumettre un clip',
-      'Fonctionnalité de soumission de clip à implémenter',
-      [{ text: 'OK' }]
+      'Clip Submitted!',
+      `Your clip has been submitted for mission: ${selectedMission?.title}`,
+      [{ text: 'OK', onPress: handleCloseModal }]
     );
+  };
+
+  const handleCloseModal = () => {
+    // Animation de sortie : disparaît en s'éloignant
+    Animated.parallel([
+      Animated.timing(scaleAnim, {
+        toValue: 0.8,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: 0,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setShowClipModal(false);
+      setModalVisible(false);
+      setClipUrl('');
+      setSelectedMission(null);
+    });
   };
 
   const formatCurrency = (amount: number) => {
@@ -345,8 +402,8 @@ const AvailableMissionsScreen: React.FC<AvailableMissionsScreenProps> = ({
 
   const getCardWidth = () => {
     if (numColumns === 1) return '100%'; // 1 colonne : pleine largeur
-    if (numColumns === 2) return '48%'; // 2 colonnes : 48% pour laisser de l'espace
-    return '31%'; // 3 colonnes : 31% pour laisser de l'espace
+    if (numColumns === 2) return '50%'; // 2 colonnes : 50% pour plus de largeur
+    return '33%'; // 3 colonnes : 33% pour plus de largeur
   };
 
   const getNameMaxWidth = () => {
@@ -355,14 +412,14 @@ const AvailableMissionsScreen: React.FC<AvailableMissionsScreenProps> = ({
     return 180;
   };
 
-  const getCardPaddingHorizontal = () => {
-    if (numColumns === 1) return 32;
-    if (numColumns === 2) return 28;
-    return 24;
+  const getCardPaddingHorizontal = (): number => {
+    if (numColumns === 1) return 16;
+    if (numColumns === 2) return 14;
+    return 12;
   };
 
-  const getCardMaxWidth = () => {
-    if (numColumns === 1) return 600;
+  const getCardMaxWidth = (): number | 'none' => {
+    if (numColumns === 1) return 350;
     return 'none';
   };
 
@@ -373,7 +430,7 @@ const AvailableMissionsScreen: React.FC<AvailableMissionsScreenProps> = ({
         styles.missionCard,
         {
           width: getCardWidth(),
-          ...(typeof getCardMaxWidth() === 'number' ? { maxWidth: getCardMaxWidth() } : {}),
+          ...(typeof getCardMaxWidth() === 'number' ? { maxWidth: getCardMaxWidth() as number } : {}),
           paddingHorizontal: getCardPaddingHorizontal(),
           alignSelf: numColumns === 1 ? 'center' : 'stretch',
         }
@@ -415,15 +472,29 @@ const AvailableMissionsScreen: React.FC<AvailableMissionsScreenProps> = ({
             {campaign.streamerFollowers ? `${(campaign.streamerFollowers / 1000000).toFixed(1)}M followers` : 'Followers'}
           </Text>
         </View>
-        {/* Price gradient bleu moderne à droite, aligné avec l'avatar */}
+        {/* Add a clip button à droite, aligné avec l'avatar */}
+        <TouchableOpacity 
+          style={styles.participateButton}
+          onPress={(e) => {
+            e.stopPropagation();
+            handleOpenMissionDetails(campaign);
+          }}
+        >
         <LinearGradient
-          colors={['#4a5cf9', '#3c82f6']}
+            colors={['#ffffff', '#ffffff']}
           start={{ x: 0, y: 0 }}
           end={{ x: 0, y: 1 }}
-          style={styles.priceContainerRefactored}
-        >
-          <Text style={[styles.priceText, { color: '#FFFFFF' }]}>${(campaign.cpm / 10).toFixed(2)} / 1K</Text>
+            style={styles.participateGradient}
+          >
+            <View style={styles.participateButtonContent}>
+              <Image 
+                source={require('../../assets/tiktok-logo.png')} 
+                style={styles.twitchLogoButton}
+              />
+              <Text style={[styles.participateText, { color: '#363636' }]}>Add a clip</Text>
+            </View>
         </LinearGradient>
+        </TouchableOpacity>
       </View>
 
       {/* Mission thumbnail */}
@@ -462,35 +533,20 @@ const AvailableMissionsScreen: React.FC<AvailableMissionsScreenProps> = ({
         <View style={styles.statsRow}>
           <View style={styles.statItem}>
             <Text style={styles.statLabel}>Min view / video</Text>
-            <Text style={styles.statValue}>{formatViews(campaign.minViewsPerVideo || 10000)}</Text>
+            <Text style={styles.statValue}>{formatViews(campaign.criteria.minViews || 10000)}</Text>
           </View>
           <View style={styles.statItem}>
             <Text style={styles.statLabel}>Views</Text>
             <Text style={styles.statValue}>{formatViews(campaign.totalViews || 0)}</Text>
           </View>
-          <TouchableOpacity 
-            style={styles.participateButton}
-            onPress={(e) => {
-              e.stopPropagation();
-              handleOpenMissionDetails(campaign);
-            }}
-          >
             <LinearGradient
-              colors={['#ffffff', '#ffffff']}
+            colors={['#4a5cf9', '#3c82f6']}
               start={{ x: 0, y: 0 }}
               end={{ x: 0, y: 1 }}
-              style={styles.participateGradient}
-            >
-              <View style={styles.participateButtonContent}>
-                <Image 
-                  source={require('../../assets/twitch-logo.jpg')} 
-                  style={styles.twitchLogoButton}
-                />
-                <Text style={[styles.participateText, { color: '#363636' }]}>Add a clip</Text>
-                <Ionicons name="add" size={45} color="#363636" style={{ marginLeft: 10 }} />
-              </View>
+            style={styles.priceContainerRefactored}
+          >
+            <Text style={[styles.priceText, { color: '#FFFFFF' }]}>${(campaign.cpm / 10).toFixed(2)} / 1K</Text>
             </LinearGradient>
-          </TouchableOpacity>
         </View>
       </View>
     </TouchableOpacity>
@@ -505,32 +561,266 @@ const AvailableMissionsScreen: React.FC<AvailableMissionsScreenProps> = ({
     );
   }
 
-  return (
-    <View style={styles.container}>
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-      >
-        <View style={styles.header}>
-          <View style={styles.titleContainer}>
+  const renderClipModal = () => (
+    <Modal
+      visible={showClipModal}
+      transparent={true}
+      animationType="fade"
+      onRequestClose={handleCloseModal}
+    >
+      <Animated.View style={[styles.modalOverlay, { opacity: opacityAnim }]}>
+        <Animated.View style={[
+          styles.modalContainer,
+          {
+            transform: [{ scale: scaleAnim }],
+            opacity: opacityAnim,
+          }
+        ]}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Submit Your Clip</Text>
+            <TouchableOpacity onPress={handleCloseModal} style={styles.closeButton}>
+              <Ionicons name="close" size={24} color="#8B8B8D" />
+            </TouchableOpacity>
+          </View>
+          
+          {selectedMission && (
+            <View style={styles.missionInfo}>
+              {/* Header de la mission */}
+              <View style={styles.missionHeaderModal}>
+                {selectedMission.streamerAvatar ? (
+                  <Image 
+                    source={{ uri: selectedMission.streamerAvatar }} 
+                    style={styles.modalAvatar}
+                  />
+                ) : (
+                  <View style={styles.modalAvatarPlaceholder}>
+                    <Ionicons name="person" size={15} color="#FFFFFF" />
+                  </View>
+                )}
+                <View style={styles.missionDetails}>
+                  <Text style={styles.modalStreamerName}>{selectedMission.streamerName}</Text>
+                  <Text style={styles.modalMissionTitle}>{selectedMission.title}</Text>
+                </View>
+                <View style={styles.modalPriceContainer}>
+                  <Text style={styles.modalPriceText}>${(selectedMission.cpm / 10).toFixed(2)} / 1K</Text>
+                </View>
+              </View>
+
+              {/* Description de la mission */}
+              <View style={styles.missionDescriptionSection}>
+                <Text style={styles.missionDescriptionText}>{selectedMission.description}</Text>
+              </View>
+
+              {/* Progress bar du budget */}
+              <View style={styles.budgetProgressSection}>
+                <View style={styles.budgetProgressHeader}>
+                  <Text style={styles.budgetProgressTitle}>Budget Progress</Text>
+                  <Text style={styles.budgetProgressAmount}>${selectedMission.totalSpent.toFixed(2)} / ${selectedMission.budget.toFixed(2)}</Text>
+                </View>
+                <View style={styles.progressBarContainer}>
+                  <View style={styles.progressBarBackground}>
+                    <View 
+                      style={[
+                        styles.progressBarFill, 
+                        { width: `${Math.min((selectedMission.totalSpent / selectedMission.budget) * 100, 100)}%` }
+                      ]} 
+                    />
+                  </View>
+                  <Text style={styles.progressPercentageText}>
+                    {Math.round((selectedMission.totalSpent / selectedMission.budget) * 100)}%
+                  </Text>
+                </View>
+              </View>
+
+              {/* TikTok Clips Requirements */}
+              <View style={styles.requirementsSection}>
+                <Text style={styles.requirementsSectionTitle}>TikTok Clips Requirements</Text>
+                
+                <View style={styles.tiktokRequirementsContainer}>
+                  <Text style={styles.tiktokRequirementsText}>
+                    {selectedMission.criteria.style || "Create funny, engaging clips from the stream highlights. Focus on the most exciting moments and add trending music. Keep it authentic to my brand and make sure to capture the energy of the stream!"}
+                  </Text>
+                </View>
+
+                <View style={styles.technicalRequirementsSection}>
+                  <Text style={styles.technicalRequirementsTitle}>Technical Requirements</Text>
+                  
+                  <View style={styles.requirementRow}>
+                    <Ionicons name="eye-outline" size={14} color="#8B8B8D" />
+                    <Text style={styles.requirementLabel}>Min Views per Video:</Text>
+                    <Text style={styles.requirementValue}>{(selectedMission.criteria.minViews / 1000).toFixed(0)}K</Text>
+                  </View>
+
+                  <View style={styles.requirementRow}>
+                    <Ionicons name="cash-outline" size={14} color="#8B8B8D" />
+                    <Text style={styles.requirementLabel}>Min Payout:</Text>
+                    <Text style={styles.requirementValue}>${(selectedMission.cpm / 10 * selectedMission.criteria.minViews / 1000).toFixed(2)}</Text>
+                  </View>
+
+                  <View style={styles.requirementRow}>
+                    <Ionicons name="trending-up-outline" size={14} color="#8B8B8D" />
+                    <Text style={styles.requirementLabel}>Max Payout:</Text>
+                    <Text style={styles.requirementValue}>${selectedMission.budget.toFixed(2)}</Text>
+                  </View>
+
+                  <View style={styles.requirementRow}>
+                    <Ionicons name="time-outline" size={14} color="#8B8B8D" />
+                    <Text style={styles.requirementLabel}>Duration:</Text>
+                    <Text style={styles.requirementValue}>{selectedMission.criteria.duration}s</Text>
+                  </View>
+
+                  {selectedMission.platformLink && (
+                    <View style={styles.requirementRow}>
+                      <Ionicons name="link-outline" size={14} color="#8B8B8D" />
+                      <Text style={styles.requirementLabel}>Source Link:</Text>
+                      <TouchableOpacity onPress={() => Alert.alert('Link', selectedMission.platformLink || '')}>
+                        <Text style={styles.requirementLink}>View Source</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+
+                  {selectedMission.criteria.hashtags && selectedMission.criteria.hashtags.length > 0 && (
+                    <View style={styles.hashtagsSection}>
+                      <Text style={styles.hashtagsTitle}>Required Hashtags:</Text>
+                      <View style={styles.hashtagsContainer}>
+                        {selectedMission.criteria.hashtags.map((hashtag, index) => (
+                          <View key={index} style={styles.hashtagBadge}>
+                            <Text style={styles.hashtagText}>#{hashtag}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    </View>
+                  )}
+                </View>
+              </View>
+            </View>
+          )}
+          
+          <View style={styles.inputSection}>
+            <Text style={styles.inputLabel}>TikTok Clip URL</Text>
+            <TextInput
+              style={styles.urlInput}
+              value={clipUrl}
+              onChangeText={setClipUrl}
+              placeholder="https://tiktok.com/@username/video/..."
+              placeholderTextColor="#8B8B8D"
+              multiline={false}
+              autoCapitalize="none"
+            />
+          </View>
+          
+          <View style={styles.modalButtons}>
+            <TouchableOpacity style={styles.cancelButton} onPress={handleCloseModal}>
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.submitButton} onPress={handleSubmitClip}>
             <LinearGradient
-              colors={['#ffffff', '#ffffff']}
+                colors={['#4a5cf9', '#3c82f6']}
               start={{ x: 0, y: 0 }}
               end={{ x: 0, y: 1 }}
-              style={styles.titleGradient}
-            >
-                             <View style={styles.titleContent}>
-                 <Text style={styles.title}>Find missions. Clip. Earn.</Text>
-                 <Text style={styles.description}>Post Twitch clips on TikTok and earn money for the views you make.</Text>
-               </View>
+                style={styles.submitButtonGradient}
+              >
+                <Ionicons name="add" size={16} color="#FFFFFF" style={{ marginRight: 4 }} />
+                <Text style={styles.submitButtonText}>Submit Clip</Text>
             </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
+      </Animated.View>
+    </Modal>
+  );
+
+  return (
+    <View style={styles.container}>
+      <Text style={styles.pageTitle}>Explore</Text>
+      <View style={styles.mainContentContainer}>
+        <View style={styles.header}>
+          <View style={styles.allButtonsContainer}>
+            {/* Platform buttons */}
+            <View style={styles.platformButtonsContainer}>
+              <TouchableOpacity
+                style={[
+                  styles.platformButton,
+                  selectedPlatform === 'twitch' && styles.platformButtonActive,
+                ]}
+                onPress={() => {
+                  setSelectedPlatform('twitch');
+                  console.log('Twitch selected');
+                }}
+              >
+                <Ionicons 
+                  name="logo-twitch" 
+                  size={24} 
+                  color={selectedPlatform === 'twitch' ? "#FFFFFF" : "#8B8B8D"}
+                />
+                <Text style={[
+                  styles.platformButtonText,
+                  { color: selectedPlatform === 'twitch' ? '#FFFFFF' : '#8B8B8D' }
+                ]}>
+                  Twitch
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[
+                  styles.platformButton,
+                  selectedPlatform === 'youtube' && styles.platformButtonActiveYoutube,
+                ]}
+                onPress={() => {
+                  setSelectedPlatform('youtube');
+                  console.log('Youtube selected');
+                }}
+              >
+                <Ionicons 
+                  name="logo-youtube" 
+                  size={24} 
+                  color={selectedPlatform === 'youtube' ? "#FFFFFF" : "#8B8B8D"}
+                />
+                <Text style={[
+                  styles.platformButtonText,
+                  { color: selectedPlatform === 'youtube' ? '#FFFFFF' : '#8B8B8D' }
+                ]}>
+                  Youtube
+                </Text>
+              </TouchableOpacity>
+        </View>
+
+            {/* Sort picker */}
+            <View style={styles.sortPickerContainer}>
+              <Ionicons 
+                name="time-outline" 
+                size={15} 
+                color="#8B8B8D" 
+              />
+              <Picker
+                selectedValue={filters.sortBy}
+                onValueChange={(itemValue) => setFilters({ ...filters, sortBy: itemValue })}
+                style={styles.sortPicker}
+              >
+                <Picker.Item label="Most Recent" value="new" />
+                <Picker.Item label="Most Views" value="popular" />
+                <Picker.Item label="Most Budget" value="budget" />
+              </Picker>
+            </View>
+            
+            {/* Missions count */}
+            <Text style={styles.missionsCountText}>
+              {(() => {
+                const filteredCount = missions.filter(campaign => {
+                  const campaignPlatform = (campaign as any).platform || 'twitch';
+                  return campaignPlatform === selectedPlatform && campaign.status !== 'pending_deletion';
+                }).length;
+                return `${filteredCount} mission${filteredCount > 1 ? 's' : ''} found`;
+              })()}
+            </Text>
           </View>
         </View>
 
-        {missions.length === 0 ? (
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <Text style={styles.loadingText}>Loading missions...</Text>
+          </View>
+        ) : missions.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="megaphone-outline" size={80} color="#9ca3af" />
             <Text style={styles.emptyTitle}>No missions available</Text>
@@ -539,6 +829,13 @@ const AvailableMissionsScreen: React.FC<AvailableMissionsScreenProps> = ({
             </Text>
           </View>
         ) : (
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            }
+          >
           <View style={[
             styles.missionsList,
             {
@@ -546,10 +843,19 @@ const AvailableMissionsScreen: React.FC<AvailableMissionsScreenProps> = ({
               gap: numColumns === 1 ? 20 : 16,
             }
           ]}>
-            {missions.map(renderMissionCard)}
+              {missions
+                .filter(campaign => {
+                  // Filtrer par plateforme et exclure les missions en suppression
+                  const campaignPlatform = (campaign as any).platform || 'twitch';
+                  return campaignPlatform === selectedPlatform && campaign.status !== 'pending_deletion';
+                })
+                .map(renderMissionCard)}
           </View>
-        )}
       </ScrollView>
+        )}
+      </View>
+      
+      {renderClipModal()}
     </View>
   );
 };
@@ -557,45 +863,136 @@ const AvailableMissionsScreen: React.FC<AvailableMissionsScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: '#0A0A0A',
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
     paddingHorizontal: SIZES.spacing.xl,
-    paddingBottom: 50,
+    paddingTop: 20,
+    paddingBottom: 25,
   },
   header: {
-    marginBottom: SIZES.spacing.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 19,
+    marginBottom: 4,
+    marginTop: 4,
+  },
+  pageTitle: {
+    fontSize: 14,
+    fontFamily: 'Inter_18pt-Medium',
+    color: '#e0e0e0',
+    textAlign: 'center',
+    marginTop: -28,
+    marginBottom: 8,
+  },
+  mainContentContainer: {
+    backgroundColor: '#181818',
+    borderRadius: 20,
+    margin: 9,
+    padding: 12,
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#2A2A2A',
+  },
+  allButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+    paddingHorizontal: 12,
+  },
+  platformButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+    position: 'absolute',
+    left: 0,
+    right: 0,
+  },
+  platformButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#2A2A2E',
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#3A3A3E',
+    gap: 3,
+  },
+  platformButtonActive: {
+    backgroundColor: '#9146FF',
+    borderColor: '#9146FF',
+  },
+  platformButtonActiveYoutube: {
+    backgroundColor: '#FF0000',
+    borderColor: '#FF0000',
+  },
+  platformButtonText: {
+    fontSize: 11,
+    fontFamily: 'Inter_18pt-Medium',
+    color: '#FFFFFF',
+    fontWeight: '500',
+  },
+  sortPickerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1C1C1E',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#38383A',
+    paddingHorizontal: 12,
+    paddingVertical: 2,
+    gap: 6,
+    minWidth: 140,
+    maxWidth: 200,
+    overflow: 'hidden',
+  },
+  sortPicker: {
+    color: '#FFFFFF',
+    backgroundColor: 'transparent',
+    flex: 1,
+    borderWidth: 0,
+    fontSize: 13,
+    fontFamily: 'Inter_18pt-Medium',
+    minHeight: 32,
+  },
+  missionsCountText: {
+    fontSize: 14,
+    color: '#8B8B8D',
+    fontFamily: 'Inter_18pt-Medium',
   },
   title: {
-    fontSize: 40,
+    fontSize: 20,
     fontFamily: FONTS.bold,
     fontWeight: '600',
     color: '#363636',
     textAlign: 'center',
-    lineHeight: 36,
+    lineHeight: 18,
   },
   titleContainer: {
     alignSelf: 'stretch',
-    marginHorizontal: 20,
+    marginHorizontal: 10,
     shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 6,
-    borderRadius: 30,
+    shadowRadius: 4,
+    elevation: 3,
+    borderRadius: 15,
     overflow: 'hidden',
     marginBottom: SIZES.spacing.xl,
   },
   titleGradient: {
-    paddingHorizontal: 40,
-    paddingVertical: 30,
-    borderRadius: 30,
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderRadius: 15,
     borderWidth: 1,
     borderColor: '#e5e5e5',
-    borderBottomWidth: 3,
+    borderBottomWidth: 1.5,
     borderBottomColor: '#d0d0d0',
   },
   titleContent: {
@@ -604,25 +1001,25 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   description: {
-    fontSize: 24,
+    fontSize: 12,
     fontFamily: FONTS.regular,
     color: '#6b7280',
     textAlign: 'center',
-    lineHeight: 22,
-    marginTop: 20,
+    lineHeight: 11,
+    marginTop: 10,
     flexShrink: 1,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: COLORS.background,
+    backgroundColor: '#0A0A0A',
   },
   loadingText: {
-    fontSize: 24,
-    color: '#6b7280',
+    fontSize: 12,
+    color: '#8B8B8D',
     fontFamily: FONTS.medium,
-    marginTop: SIZES.spacing.md,
+    marginTop: SIZES.spacing.base,
   },
   emptyState: {
     flex: 1,
@@ -631,18 +1028,18 @@ const styles = StyleSheet.create({
     paddingVertical: SIZES.spacing.xl * 2,
   },
   emptyTitle: {
-    fontSize: 32,
-    color: '#111827',
+    fontSize: 16,
+    color: '#FFFFFF',
     fontFamily: FONTS.bold,
     marginTop: SIZES.spacing.lg,
     marginBottom: SIZES.spacing.sm,
   },
   emptyText: {
-    fontSize: 22,
-    color: '#6b7280',
+    fontSize: 11,
+    color: '#8B8B8D',
     fontFamily: FONTS.regular,
     textAlign: 'center',
-    lineHeight: 28,
+    lineHeight: 14,
     paddingHorizontal: SIZES.spacing.xl,
   },
   missionsList: {
@@ -651,27 +1048,27 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     width: '100%',
-    paddingHorizontal: 16,
+    paddingHorizontal: 8,
     minWidth: 0,
   },
   missionCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 30,
-    padding: 28,
+    backgroundColor: '#2A2A2E',
+    borderRadius: 20,
+    padding: 11,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
-    minHeight: 450,
-    marginBottom: 24,
+    borderColor: '#4A4A4E',
+    minHeight: 225,
+    marginBottom: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
-    shadowRadius: 20,
-    elevation: 12,
-    transform: [{ translateY: -2 }],
+    shadowRadius: 10,
+    elevation: 6,
+    transform: [{ translateY: -1 }],
     overflow: 'hidden',
   },
   cardHeader: {
-    marginBottom: 16,
+    marginBottom: 8,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
@@ -679,35 +1076,35 @@ const styles = StyleSheet.create({
   streamerInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 8,
   },
   avatarPlaceholder: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: '#f3f4f6',
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#2A2A2E',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 20,
+    marginRight: 10,
     flexShrink: 0,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
+    shadowOffset: { width: 0, height: 1.5 },
     shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 4,
-    borderWidth: 2,
-    borderColor: '#ffffff',
+    shadowRadius: 3,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#3A3A3E',
     overflow: 'hidden',
   },
   avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 100,
-    marginRight: 20,
+    width: 50,
+    height: 50,
+    borderRadius: 50,
+    marginRight: 10,
     flexShrink: 0,
-    elevation: 4,
-    borderWidth: 2,
-    borderColor: '#ffffff',
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#3A3A3E',
     overflow: 'hidden',
   },
   streamerTextContainer: {
@@ -718,240 +1115,240 @@ const styles = StyleSheet.create({
   nameAndBadgeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 2,
+    marginBottom: 1,
   },
   streamerName: {
-    fontSize: 30,
-    color: '#000',
+    fontSize: 15,
+    color: '#FFFFFF',
     fontFamily: FONTS.bold,
-    maxWidth: 300,
+    maxWidth: 150,
     overflow: 'hidden',
     flexShrink: 1,
   },
   streamerFollowers: {
-    fontSize: 24,
-    color: '#6b7280',
+    fontSize: 12,
+    color: '#8B8B8D',
     fontFamily: FONTS.regular,
   },
   twitchBadge: {
-    width: 24,
-    height: 24,
-    marginLeft: 8,
+    width: 12,
+    height: 12,
+    marginLeft: 4,
   },
   priceContainer: {
     backgroundColor: '#3B82F6',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 6,
     alignSelf: 'flex-start',
-    minWidth: 80,
+    minWidth: 40,
   },
   priceText: {
     color: '#FFFFFF',
-    fontSize: 26,
+    fontSize: 13,
     fontFamily: FONTS.bold,
     fontWeight: '500',
     textAlign: 'center',
     flexShrink: 0, // empêche le rétrécissement du texte
   },
   thumbnailContainer: {
-    marginBottom: 16,
+    marginBottom: 8,
   },
   thumbnail: {
     width: '100%',
-    height: 250,
-    backgroundColor: '#f9fafb',
-    borderRadius: 12,
+    height: 125,
+    backgroundColor: '#1A1A1E',
+    borderRadius: 6,
     overflow: 'hidden',
   },
   thumbnailImage: {
     width: '100%',
     height: '100%',
-    borderRadius: 8,
+    borderRadius: 4,
   },
   thumbnailPlaceholder: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f3f4f6',
+    backgroundColor: '#2A2A2E',
   },
   thumbnailText: {
-    fontSize: 18,
-    color: '#6b7280',
+    fontSize: 9,
+    color: '#8B8B8D',
     fontFamily: FONTS.regular,
-    marginTop: 4,
+    marginTop: 2,
   },
   missionTitle: {
-    fontSize: 26,
-    color: '#111827',
+    fontSize: 13,
+    color: '#FFFFFF',
     fontFamily: FONTS.bold,
-    marginBottom: 12,
-    lineHeight: 32,
+    marginBottom: 6,
+    lineHeight: 16,
   },
   missionDescription: {
-    fontSize: 20,
-    color: '#6b7280',
+    fontSize: 10,
+    color: '#8B8B8D',
     fontFamily: FONTS.regular,
-    lineHeight: 26,
-    marginBottom: 20,
+    lineHeight: 13,
+    marginBottom: 10,
   },
   paymentSection: {
     marginTop: 'auto',
   },
   paymentTitle: {
-    fontSize: 28,
-    color: '#111827',
+    fontSize: 14,
+    color: '#FFFFFF',
     fontFamily: FONTS.bold,
-    marginBottom: 14,
+    marginBottom: 7,
   },
   paymentDetails: {
-    gap: 10,
+    gap: 5,
   },
   paymentAmount: {
-    fontSize: 26,
-    color: '#374151',
+    fontSize: 13,
+    color: '#FFFFFF',
     fontFamily: FONTS.medium,
   },
   paymentRequirement: {
-    fontSize: 22,
-    color: '#6b7280',
+    fontSize: 11,
+    color: '#8B8B8D',
     fontFamily: FONTS.regular,
-    lineHeight: 28,
+    lineHeight: 14,
   },
   progressSection: {
-    marginTop: 10,
-    marginBottom: 10,
+    marginTop: 5,
+    marginBottom: 5,
   },
   progressHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 6,
   },
   budgetText: {
-    fontSize: 26,
+    fontSize: 13,
     fontFamily: FONTS.medium,
     fontWeight: 'bold',
-    color: '#374151',
+    color: '#FFFFFF',
   },
   progressContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 6,
   },
   progressBackground: {
     flex: 1,
-    height: 20,
+    height: 10,
     backgroundColor: '#E5E7EB',
-    borderRadius: 10,
+    borderRadius: 5,
     overflow: 'hidden',
   },
   progressBar: {
     height: '100%',
     backgroundColor: '#3B82F6',
-    borderRadius: 10,
+    borderRadius: 5,
   },
   progressPercentage: {
-    fontSize: 26,
+    fontSize: 13,
     fontFamily: FONTS.bold,
     fontWeight: 'bold',
-    color: '#374151',
+    color: '#FFFFFF',
     textAlign: 'right',
   },
   statsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 16,
-    paddingTop: 16,
+    marginTop: 8,
+    paddingTop: 8,
   },
   statItem: {
     flex: 1,
   },
   statLabel: {
-    fontSize: 26,
+    fontSize: 13,
     fontFamily: FONTS.medium,
     fontWeight: 'semibold',
-    color: '#6B7280',
-    marginBottom: 4,
+    color: '#8B8B8D',
+    marginBottom: 2,
   },
   statValue: {
-    fontSize: 26,
+    fontSize: 13,
     fontFamily: FONTS.bold,
     fontWeight: 'bold',
-    color: '#374151',
+    color: '#FFFFFF',
   },
   participateButton: {
     shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 6,
-    borderRadius: 30,
+    shadowRadius: 4,
+    elevation: 3,
+    borderRadius: 15,
     overflow: 'hidden',
   },
   participateGradient: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 30,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 15,
     borderWidth: 1,
     borderColor: '#e5e5e5',
-    borderBottomWidth: 3,
+    borderBottomWidth: 1.5,
     borderBottomColor: '#d0d0d0',
   },
   participateText: {
-    fontSize: 24,
+    fontSize: 12,
     fontFamily: FONTS.bold,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
     textAlign: 'center',
   },
   participateButtonContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 8,
+    paddingHorizontal: 4,
   },
   twitchLogoButton: {
-    width: 70,
-    height: 70,
-    marginRight: 8,
+    width: 25,
+    height: 25,
+    marginRight: 4,
     resizeMode: 'contain',
   },
   cardHeaderRefactored: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 8,
   },
   streamerColumn: {
     flex: 1,
-    marginLeft: 20,
+    marginLeft: 10,
   },
   nameAndBadgeContainerRefactored: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 2,
+    marginBottom: 1,
   },
   priceContainerRefactored: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 16,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 8,
     alignSelf: 'center',
-    minWidth: 130,
+    minWidth: 65,
     flexShrink: 0,
     justifyContent: 'center',
     alignItems: 'center',
   },
   streamerFollowersRefactored: {
-    fontSize: 24,
-    color: '#6b7280',
+    fontSize: 12,
+    color: '#8B8B8D',
     fontFamily: FONTS.regular,
     alignSelf: 'flex-start',
   },
   cardHeaderKaiLayout: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 8,
   },
   centerNameBadge: {
     flex: 1,
@@ -961,18 +1358,18 @@ const styles = StyleSheet.create({
   rightPriceFollowers: {
     alignItems: 'flex-end',
     justifyContent: 'center',
-    minWidth: 130,
+    minWidth: 65,
   },
   cardHeaderTwitchLike: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 8,
   },
   centerNameFollowersBlockk: {
     flex: 1,
     flexDirection: 'column',
     justifyContent: 'center',
-    marginLeft: 16,
+    marginLeft: 8,
     minWidth: 0,
   },
   rowNameAndPrice: {
@@ -980,7 +1377,277 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     minWidth: 0,
-    gap: 32, // beaucoup plus d'espace pour éviter tout contact
+    gap: 16, // beaucoup plus d'espace pour éviter tout contact
+  },
+  
+  // Styles pour le modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    backgroundColor: '#181818',
+    borderRadius: 12,
+    padding: 20,
+    margin: 20,
+    maxWidth: 400,
+    width: '90%',
+    borderWidth: 1,
+    borderColor: '#2A2A2A',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontFamily: 'Inter_18pt-SemiBold',
+    color: '#FFFFFF',
+  },
+  closeButton: {
+    padding: 4,
+  },
+  missionInfo: {
+    backgroundColor: '#0A0A0A',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#2A2A2E',
+  },
+  missionHeaderModal: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  modalAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 12,
+  },
+  modalAvatarPlaceholder: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#2A2A2E',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  missionDetails: {
+    flex: 1,
+  },
+  modalStreamerName: {
+    fontSize: 14,
+    fontFamily: 'Inter_18pt-SemiBold',
+    color: '#FFFFFF',
+    marginBottom: 2,
+  },
+  modalMissionTitle: {
+    fontSize: 12,
+    color: '#8B8B8D',
+    fontFamily: 'Inter_18pt-Regular',
+  },
+  modalPriceContainer: {
+    backgroundColor: '#4a5cf9',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  modalPriceText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontFamily: 'Inter_18pt-SemiBold',
+  },
+  inputSection: {
+    marginBottom: 20,
+  },
+  inputLabel: {
+    fontSize: 14,
+    color: '#FFFFFF',
+    fontFamily: 'Inter_18pt-Medium',
+    marginBottom: 8,
+  },
+  urlInput: {
+    backgroundColor: '#0A0A0A',
+    borderWidth: 1,
+    borderColor: '#2A2A2E',
+    borderRadius: 8,
+    padding: 12,
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontFamily: 'Inter_18pt-Regular',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  cancelButton: {
+    flex: 1,
+    backgroundColor: '#2A2A2E',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    color: '#e3e3e3',
+    fontSize: 14,
+    fontFamily: 'Inter_18pt-Medium',
+  },
+  submitButton: {
+    flex: 1,
+  },
+  submitButtonGradient: {
+    flexDirection: 'row',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  submitButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontFamily: 'Inter_18pt-SemiBold',
+  },
+  
+  // Nouveaux styles pour les sections du modal
+  missionDescriptionSection: {
+    marginBottom: 16,
+  },
+  missionDescriptionText: {
+    fontSize: 12,
+    color: '#8B8B8D',
+    fontFamily: 'Inter_18pt-Regular',
+    lineHeight: 16,
+  },
+  budgetProgressSection: {
+    marginBottom: 16,
+  },
+  budgetProgressHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  budgetProgressTitle: {
+    fontSize: 14,
+    color: '#FFFFFF',
+    fontFamily: 'Inter_18pt-Medium',
+  },
+  budgetProgressAmount: {
+    fontSize: 12,
+    color: '#8B8B8D',
+    fontFamily: 'Inter_18pt-Regular',
+  },
+  progressBarContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  progressBarBackground: {
+    flex: 1,
+    height: 8,
+    backgroundColor: '#2A2A2E',
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    backgroundColor: '#4a5cf9',
+    borderRadius: 4,
+  },
+  progressPercentageText: {
+    fontSize: 12,
+    color: '#FFFFFF',
+    fontFamily: 'Inter_18pt-Medium',
+    minWidth: 30,
+    textAlign: 'right',
+  },
+  requirementsSection: {
+    marginBottom: 8,
+  },
+  requirementsSectionTitle: {
+    fontSize: 14,
+    color: '#FFFFFF',
+    fontFamily: 'Inter_18pt-SemiBold',
+    marginBottom: 12,
+  },
+  requirementRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    gap: 8,
+  },
+  requirementLabel: {
+    flex: 1,
+    fontSize: 12,
+    color: '#8B8B8D',
+    fontFamily: 'Inter_18pt-Regular',
+  },
+  requirementValue: {
+    fontSize: 12,
+    color: '#FFFFFF',
+    fontFamily: 'Inter_18pt-Medium',
+  },
+  requirementLink: {
+    fontSize: 12,
+    color: '#4a5cf9',
+    fontFamily: 'Inter_18pt-Medium',
+    textDecorationLine: 'underline',
+  },
+  hashtagsSection: {
+    marginTop: 8,
+  },
+  hashtagsTitle: {
+    fontSize: 12,
+    color: '#8B8B8D',
+    fontFamily: 'Inter_18pt-Regular',
+    marginBottom: 6,
+  },
+  hashtagsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 4,
+  },
+  hashtagBadge: {
+    backgroundColor: '#2A2A2E',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  hashtagText: {
+    fontSize: 10,
+    color: '#4a5cf9',
+    fontFamily: 'Inter_18pt-Medium',
+  },
+  
+  // Styles pour les TikTok requirements
+  tiktokRequirementsContainer: {
+    backgroundColor: '#2A2A2E',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+    borderLeftWidth: 3,
+    borderLeftColor: '#4a5cf9',
+  },
+  tiktokRequirementsText: {
+    fontSize: 12,
+    color: '#FFFFFF',
+    fontFamily: 'Inter_18pt-Regular',
+    lineHeight: 16,
+  },
+  technicalRequirementsSection: {
+    marginTop: 8,
+  },
+  technicalRequirementsTitle: {
+    fontSize: 13,
+    color: '#8B8B8D',
+    fontFamily: 'Inter_18pt-Medium',
+    marginBottom: 8,
   },
 });
 

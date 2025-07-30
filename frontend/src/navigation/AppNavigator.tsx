@@ -56,7 +56,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: SIZES.spacing.xl,
-    fontSize: 32,
+    fontSize: 18,
     color: COLORS.text,
     fontFamily: FONTS.bold,
     fontWeight: '600',
@@ -166,7 +166,7 @@ const AppNavigator: React.FC = () => {
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size={80} color={COLORS.primarySolid} />
+        <ActivityIndicator size={24} color={COLORS.primarySolid} />
         <Text style={styles.loadingText}>Loading...</Text>
       </View>
     );

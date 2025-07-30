@@ -10,6 +10,7 @@ import {
   Image,
   TextInput,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -40,6 +41,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ user, onLogout }) => {
   });
   const [isSaving, setIsSaving] = useState(false);
   const [selectedCountry, setSelectedCountry] = useState('US');
+  const [showSavedPopup, setShowSavedPopup] = useState(false);
 
   // Initialize country and phone number
   useEffect(() => {
@@ -466,17 +468,26 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ user, onLogout }) => {
       });
 
       if (result.success) {
-        Alert.alert('Success', 'Profile updated successfully!');
+        // Attendre un peu avant de montrer "Saved!"
+        setTimeout(() => {
+          setIsSaving(false);
+          setShowSavedPopup(true);
+          
+          // Cacher "Saved!" après 3 secondes
+          setTimeout(() => {
+            setShowSavedPopup(false);
+          }, 3000);
+        }, 800);
         // Reload user data if needed
         // You could add a callback to refresh the data
       } else {
+        setIsSaving(false);
         Alert.alert('Error', result.error || 'Unable to update profile');
       }
     } catch (error) {
       console.error('Error during save:', error);
-      Alert.alert('Error', 'An error occurred during save');
-    } finally {
       setIsSaving(false);
+      Alert.alert('Error', 'An error occurred during save');
     }
   };
 
@@ -540,7 +551,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ user, onLogout }) => {
             </Picker>
           </View>
           <TextInput
-            style={[styles.textInput, styles.phoneInput]}
+            style={styles.phoneInput}
             value={profileData.phone}
             onChangeText={(text) => setProfileData({...profileData, phone: text})}
             placeholder="Phone number"
@@ -567,13 +578,16 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ user, onLogout }) => {
             {isSaving ? (
               <ActivityIndicator size="small" color="#FFFFFF" />
             ) : (
-              <Ionicons name="checkmark" size={24} color="#FFFFFF" />
+              <Ionicons name="checkmark" size={18} color="#FFFFFF" />
             )}
             <Text style={styles.saveButtonText}>
               {isSaving ? 'Saving...' : 'Save Changes'}
             </Text>
           </LinearGradient>
         </TouchableOpacity>
+        {showSavedPopup && (
+          <Text style={styles.savedText}>Saved!</Text>
+        )}
       </View>
     </View>
   );
@@ -584,14 +598,14 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ user, onLogout }) => {
     <View>
       <View style={styles.securityItem}>
         <View style={styles.securityInfo}>
-          <Ionicons name="lock-closed" size={30} color="#4a5cf9" />
+          <Ionicons name="lock-closed" size={20} color="#4a5cf9" />
           <View style={styles.securityDetails}>
             <Text style={styles.securityName}>Password</Text>
             <Text style={styles.securityDescription}>Change your password</Text>
           </View>
         </View>
         <TouchableOpacity style={styles.actionButton}>
-          <Ionicons name="pencil" size={24} color="#FFFFFF" style={{marginLeft: -8}} />
+          <Ionicons name="pencil" size={14} color="#FFFFFF" style={{marginLeft: -8}} />
           <Text style={styles.actionButtonText}>Edit</Text>
         </TouchableOpacity>
       </View>
@@ -608,60 +622,26 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ user, onLogout }) => {
 
   return (
     <View style={styles.container}>
-      <ScrollView 
-        style={styles.scrollView} 
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        <View style={styles.header}>
-          <View style={styles.headerTitleContainer}>
-            <LinearGradient
-              colors={['#ffffff', '#ffffff']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 0, y: 1 }}
-              style={styles.headerTitleGradient}
-            >
-              <View style={styles.headerTitleContent}>
-                <Text style={styles.headerTitle}>Profile</Text>
-                <Text style={styles.headerDescription}>Manage your account settings and personal information.</Text>
-              </View>
-            </LinearGradient>
-          </View>
-        </View>
+      <Text style={styles.pageTitle}>Profile</Text>
+      <View style={styles.mainContentContainer}>
+        <ScrollView style={styles.scrollView}>
         
-        <View style={styles.mainCard}>
-          <View style={styles.tableHeader}>
-            <View style={styles.titleContainer}>
-              <View style={styles.titleWithIcon}>
-                <Text style={styles.tableTitle}>Personal Information</Text>
-                <View style={styles.infoIconContainer}>
-                  <Ionicons name="person" size={24} color="#FFFFFF" />
-                </View>
-              </View>
-            </View>
+        <View style={styles.sectionsContainer}>
+          <View style={styles.leftSection}>
+            <Text style={styles.sectionTitle}>Personal Information</Text>
+            {renderGeneralSection()}
           </View>
-          {renderGeneralSection()}
-        </View>
-        
-        <View style={styles.sectionSpacer} />
-        
-        <View style={styles.mainCard}>
-          <View style={styles.tableHeader}>
-            <View style={styles.titleContainer}>
-              <View style={styles.titleWithIcon}>
-                <Text style={styles.tableTitle}>Security & Privacy</Text>
-                <View style={styles.infoIconContainer}>
-                  <Ionicons name="shield-checkmark" size={24} color="#FFFFFF" />
-                </View>
-              </View>
-            </View>
+          
+          <View style={styles.rightSection}>
+            <Text style={styles.sectionTitle}>Security & Privacy</Text>
+            {renderSecuritySection()}
           </View>
-          {renderSecuritySection()}
         </View>
         
         <View style={styles.bottomSpacer} />
-      </ScrollView>
-
+        </ScrollView>
+      </View>
+      
 
     </View>
   );
@@ -670,14 +650,40 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ user, onLogout }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.card,
+    width: '100%',
+    backgroundColor: '#0A0A0A',
+  },
+  pageTitle: {
+    fontSize: 14,
+    fontFamily: 'Inter_18pt-Medium',
+    color: '#e0e0e0',
+    textAlign: 'center',
+    marginTop: -30,
+    marginBottom: 6,
+  },
+  mainContentContainer: {
+    backgroundColor: '#181818',
+    borderRadius: 12,
+    margin: 9,
+    padding: 12,
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#2A2A2A',
   },
   scrollView: {
     flex: 1,
   },
-  scrollContent: {
-    paddingHorizontal: SIZES.spacing.xl,
-    paddingBottom: 50,
+  sectionsContainer: {
+    flexDirection: 'row',
+    gap: 24,
+  },
+  leftSection: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  rightSection: {
+    flex: 1,
+    marginRight: 12,
   },
   header: {
     alignItems: 'center',
@@ -729,18 +735,15 @@ const styles = StyleSheet.create({
     marginTop: 20,
     flexShrink: 1,
   },
-  mainCard: {
-    backgroundColor: '#1A1A1E',
-    marginBottom: 24,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#333',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 6,
-    overflow: 'hidden',
+
+
+  sectionTitle: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginBottom: 30,
+    marginTop: 20,
+    fontFamily: 'Inter_18pt-SemiBold',
   },
   tableHeader: {
     flexDirection: 'row',
@@ -768,14 +771,13 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   tableTitle: {
-    fontSize: 28,
-    fontFamily: FONTS.bold,
+    fontSize: 14,
+    fontFamily: 'Inter_18pt-SemiBold',
     fontWeight: '600',
     color: '#FFFFFF',
   },
   sectionSpacer: {
-    height: 24,
-    backgroundColor: COLORS.card,
+    height: 32,
   },
   bottomSpacer: {
     height: 24,
@@ -828,34 +830,25 @@ const styles = StyleSheet.create({
     padding: 32,
   },
   inputGroup: {
-    marginBottom: 24,
-    paddingHorizontal: 24,
-    paddingVertical: 8,
+    marginBottom: 15,
   },
   inputLabel: {
-    fontSize: 22,
-    fontFamily: FONTS.bold,
-    fontWeight: '600',
+    fontSize: 13,
     color: '#FFFFFF',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   textInput: {
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: '#333',
-    borderRadius: 12,
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    fontSize: 20,
-    fontFamily: FONTS.medium,
-    fontWeight: '600',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 12,
+    fontFamily: 'Inter_18pt-Regular',
     color: '#FFFFFF',
-    backgroundColor: '#1A1A1E',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-    marginBottom: 4,
+    backgroundColor: '#0A0A0A',
+    marginBottom: 8,
+    ...(Platform.OS === 'web' && { outline: 'none' }),
   },
   textArea: {
     height: 100,
@@ -864,20 +857,18 @@ const styles = StyleSheet.create({
   phoneInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: '#333',
-    borderRadius: 12,
-    backgroundColor: '#1A1A1E',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    borderRadius: 8,
+    backgroundColor: '#0A0A0A',
+    marginBottom: 8,
   },
   countryPickerContainer: {
     borderRightWidth: 1,
     borderRightColor: '#333',
     minWidth: 120,
+    paddingHorizontal: 12,
+    paddingVertical: 14,
   },
   countryPicker: {
     color: '#FFFFFF',
@@ -885,33 +876,34 @@ const styles = StyleSheet.create({
   },
   phoneInput: {
     flex: 1,
-    marginLeft: 0,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 14,
+    fontFamily: 'Inter_18pt-Regular',
+    color: '#FFFFFF',
+    backgroundColor: 'transparent',
+    ...(Platform.OS === 'web' && { outline: 'none' }),
   },
   saveButtonContainer: {
     paddingHorizontal: 24,
-    paddingTop: 32,
-    paddingBottom: 16,
+    paddingTop: 10,
+    paddingBottom: 10,
     marginTop: 8,
   },
   saveButton: {
     borderRadius: 12,
-    shadowColor: '#E65100',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
   },
   saveButtonGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 24,
+    paddingVertical: 12,
+    paddingHorizontal: 26,
     borderRadius: 12,
     gap: 8,
   },
   saveButtonText: {
-    fontSize: 24,
+    fontSize: 13,
     fontFamily: FONTS.bold,
     fontWeight: '600',
     color: '#FFFFFF',
@@ -926,30 +918,26 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   disabledNote: {
-    fontSize: 14,
-    fontFamily: FONTS.medium,
+    fontSize: 12,
     color: '#B5B5B5',
-    marginTop: 6,
+    marginTop: 4,
+    marginBottom: 4,
     fontStyle: 'italic',
-    paddingHorizontal: 4,
-    opacity: 0.6,
+    fontFamily: 'Inter_18pt-Regular',
   },
-  sectionTitle: {
-    fontSize: 24,
-    fontFamily: FONTS.bold,
-    color: '#FFFFFF',
-    marginBottom: 8,
-    marginLeft: 20,
-  },
+
 
   securityItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: 20,
-    paddingHorizontal: 24,
-    borderBottomWidth: 1,
-    borderBottomColor: '#333',
+    paddingHorizontal: 12,
+    marginBottom: 16,
+    backgroundColor: '#0A0A0A',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#333',
   },
   securityInfo: {
     flexDirection: 'row',
@@ -957,40 +945,34 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   securityDetails: {
-    marginLeft: 16,
+    marginLeft: 12,
     flex: 1,
   },
   securityName: {
-    fontSize: 28,
-    fontFamily: FONTS.medium,
-    fontWeight: '600',
+    fontSize: 13,
+    fontFamily: 'Inter_18pt-Medium',
     color: '#FFFFFF',
     marginBottom: 4,
   },
   securityDescription: {
-    fontSize: 20,
-    fontFamily: FONTS.regular,
+    fontSize: 12,
+    fontFamily: 'Inter_18pt-Regular',
     color: '#B5B5B5',
   },
   actionButton: {
     backgroundColor: '#4a5cf9',
-    paddingVertical: 16,
-    paddingHorizontal: 30,
-    borderRadius: 8,
-    shadowColor: '#4a5cf9',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
   },
   actionButtonText: {
-    fontSize: 24,
-    fontFamily: FONTS.medium,
-    fontWeight: '600',
     color: '#FFFFFF',
+    fontSize: 13,
+    marginLeft: 8,
+    fontFamily: 'Inter_18pt-Medium',
   },
   paymentItem: {
     flexDirection: 'row',
@@ -1020,7 +1002,7 @@ const styles = StyleSheet.create({
     color: '#B5B5B5',
   },
   addButton: {
-    backgroundColor: '#10B981',
+    backgroundColor: '#d9d9d9',
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 6,
@@ -1028,7 +1010,18 @@ const styles = StyleSheet.create({
   addButtonText: {
     fontSize: 14,
     fontFamily: FONTS.medium,
-    color: '#FFFFFF',
+    color: '#0a0a0a',
+  },
+  savedText: {
+    fontSize: 14,
+    fontFamily: 'Inter_18pt-SemiBold',
+    color: '#10B981',
+    textAlign: 'center',
+    marginTop: 8,
+    opacity: 1,
+    ...(Platform.OS === 'web' && {
+      transition: 'opacity 0.3s ease-in-out',
+    }),
   },
 
 });

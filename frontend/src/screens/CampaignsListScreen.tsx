@@ -50,6 +50,9 @@ const CampaignsListScreen: React.FC<CampaignsListScreenProps> = ({
   // État pour la plateforme sélectionnée
   const [selectedPlatform, setSelectedPlatform] = useState<'twitch' | 'youtube'>('twitch');
   
+  // État pour le statut sélectionné
+  const [selectedStatus, setSelectedStatus] = useState<'active' | 'completed' | 'pending_deletion'>('active');
+  
   // État pour le dropdown de tri
 
 
@@ -60,6 +63,26 @@ const CampaignsListScreen: React.FC<CampaignsListScreenProps> = ({
   useEffect(() => {
     loadCampaigns();
   }, [filters]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const width = Dimensions.get('window').width;
+      let newColumns = 3;
+      if (width < 1600) {
+        newColumns = 1;
+      } else if (width < 2200) {
+        newColumns = 2;
+      } else {
+        newColumns = 3;
+      }
+      if (newColumns !== numColumns) {
+        setNumColumns(newColumns);
+      }
+    };
+    handleResize();
+    const subscription = Dimensions.addEventListener('change', handleResize);
+    return () => subscription?.remove();
+  }, [numColumns]);
 
   const loadCampaigns = async () => {
     try {
@@ -102,8 +125,13 @@ const CampaignsListScreen: React.FC<CampaignsListScreenProps> = ({
     setSelectedCampaign(campaign);
   };
 
-  const handleBackToCampaigns = () => {
+  const handleBackToCampaigns = async () => {
     setSelectedCampaign(null);
+    // Déclencher un refresh visuel
+    setRefreshing(true);
+    // Recharger les campagnes pour voir les changements
+    await loadCampaigns();
+    setRefreshing(false);
   };
 
   const handleCreateCampaign = () => {
@@ -135,8 +163,8 @@ const CampaignsListScreen: React.FC<CampaignsListScreenProps> = ({
   // Fonctions pour calculer la largeur des cartes (comme dans AvailableMissionsScreen)
   const getCardWidth = () => {
     if (numColumns === 1) return '100%'; // 1 colonne : pleine largeur
-    if (numColumns === 2) return '48%'; // 2 colonnes : 48% pour laisser de l'espace
-    return '31%'; // 3 colonnes : 31% pour laisser de l'espace
+    if (numColumns === 2) return '50%'; // 2 colonnes : 50% pour laisser de l'espace
+    return '33%'; // 3 colonnes : 33% pour laisser de l'espace
   };
 
   const getNameMaxWidth = () => {
@@ -152,7 +180,7 @@ const CampaignsListScreen: React.FC<CampaignsListScreenProps> = ({
   };
 
   const getCardMaxWidth = () => {
-    if (numColumns === 1) return 600;
+    if (numColumns === 1) return 350;
     return 'none';
   };
 
@@ -162,11 +190,11 @@ const CampaignsListScreen: React.FC<CampaignsListScreenProps> = ({
         styles.missionCard,
         {
           width: getCardWidth(),
-          ...(typeof getCardMaxWidth() === 'number' ? { maxWidth: getCardMaxWidth() } : {}),
+          ...(typeof getCardMaxWidth() === 'number' ? { maxWidth: getCardMaxWidth() as number } : {}),
           paddingHorizontal: getCardPaddingHorizontal(),
           alignSelf: numColumns === 1 ? 'center' : 'stretch',
           marginTop: 12 // Toutes les cartes ont maintenant le même marginTop
-        }
+        } as any
       ]}
       onPress={() => handleCampaignPress(item)}
       activeOpacity={0.8}
@@ -174,10 +202,10 @@ const CampaignsListScreen: React.FC<CampaignsListScreenProps> = ({
       {/* Header with avatar à gauche, nom+badge+followers au centre, prix bleu à droite aligné avec l'avatar */}
       <View style={styles.cardHeaderTwitchLike}>
         {/* Avatar on the left */}
-        {item.streamerAvatar || user?.profileImage ? (
+        {item.streamerAvatar ? (
           <Image 
-            source={{ uri: item.streamerAvatar || user?.profileImage }} 
-            style={styles.avatar}
+            source={{ uri: item.streamerAvatar }} 
+            style={styles.avatar as any}
           />
         ) : (
           <View style={styles.avatarPlaceholder}>
@@ -192,7 +220,7 @@ const CampaignsListScreen: React.FC<CampaignsListScreenProps> = ({
               numberOfLines={1}
               ellipsizeMode="tail"
             >
-              {item.title}
+              {item.streamerName}
             </Text>
             <Image 
               source={require('../../assets/twitch-badge.png')} 
@@ -203,15 +231,39 @@ const CampaignsListScreen: React.FC<CampaignsListScreenProps> = ({
             {item.status === 'active' ? 'Active Campaign' : 'Completed'}
           </Text>
         </View>
-        {/* Price gradient bleu moderne à droite */}
-        <LinearGradient
-          colors={['#4a5cf9', '#3c82f6']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 0, y: 1 }}
-          style={styles.priceContainerRefactored}
+        {/* Manage button à droite */}
+        <TouchableOpacity 
+          style={styles.participateButton}
+          onPress={(e) => {
+            e.stopPropagation();
+            handleCampaignPress(item);
+          }}
         >
-          <Text style={[styles.priceText, { color: '#FFFFFF' }]}>${(item.cpm / 10).toFixed(2)} / 1K</Text>
-        </LinearGradient>
+          <View style={styles.participateGradient}>
+            <View style={styles.participateButtonContent}>
+              {(() => {
+                const campaignPlatform = (item as any).platform || 'twitch';
+                if (campaignPlatform === 'youtube') {
+                  return (
+                    <Ionicons 
+                      name="logo-youtube" 
+                      size={16} 
+                      color="#ffffff" 
+                    />
+                  );
+                } else {
+                  return (
+                    <Image 
+                      source={require('../../assets/twitch-logo.jpg')} 
+                      style={styles.twitchLogoButton}
+                    />
+                  );
+                }
+              })()}
+              <Text style={[styles.participateText, { color: '#ffffff' }]}>Manage</Text>
+            </View>
+          </View>
+        </TouchableOpacity>
       </View>
 
       {/* Mission thumbnail */}
@@ -234,6 +286,8 @@ const CampaignsListScreen: React.FC<CampaignsListScreenProps> = ({
 
       {/* Budget et progression */}
       <View style={styles.progressSection}>
+        {/* Nom de la mission */}
+        <Text style={styles.missionTitle}>{item.title}</Text>
         <View style={styles.progressHeader}>
           <Text style={styles.budgetText}>
             ${(item.totalSpent || 0).toFixed(2)} of ${item.budget.toFixed(2)}
@@ -249,31 +303,21 @@ const CampaignsListScreen: React.FC<CampaignsListScreenProps> = ({
         </View>
         <View style={styles.statsRow}>
           <View style={styles.statItem}>
-            <Text style={styles.statLabel}>Min view / video</Text>
-            <Text style={styles.statValue}>{formatViews(item.minViewsPerVideo || 10000)}</Text>
+            <Text style={styles.statLabel}>Min views / video</Text>
+            <Text style={styles.statValue}>{formatViews(item.criteria.minViews || 10000)}</Text>
           </View>
           <View style={styles.statItem}>
             <Text style={styles.statLabel}>Views</Text>
             <Text style={styles.statValue}>{formatViews(item.totalViews || 0)}</Text>
           </View>
-          <TouchableOpacity 
-            style={styles.participateButton}
-            onPress={(e) => {
-              e.stopPropagation();
-              handleCampaignPress(item);
-            }}
+          <LinearGradient
+            colors={['#4a5cf9', '#3c82f6']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            style={styles.priceContainerRefactored}
           >
-            <View style={styles.participateGradient}>
-              <View style={styles.participateButtonContent}>
-                <Image 
-                  source={require('../../assets/twitch-logo.jpg')} 
-                  style={styles.twitchLogoButton}
-                />
-                <Text style={[styles.participateText, { color: '#ffffff' }]}>Manage</Text>
-                <Ionicons name="pencil-outline" size={15} color="#ffffff" style={{ marginLeft: 10 }} />
-              </View>
-            </View>
-          </TouchableOpacity>
+            <Text style={[styles.priceText, { color: '#FFFFFF' }]}>${(item.cpm / 10).toFixed(2)} / 1K</Text>
+          </LinearGradient>
         </View>
       </View>
     </TouchableOpacity>
@@ -333,27 +377,54 @@ const CampaignsListScreen: React.FC<CampaignsListScreenProps> = ({
           </TouchableOpacity>
         </View>
 
-        {/* Sort picker */}
-        <View style={styles.sortPickerContainer}>
-          <Ionicons 
-            name="time-outline" 
-            size={15} 
-            color="#8B8B8D" 
-          />
-          <Picker
-            selectedValue={filters.sortBy}
-            onValueChange={(itemValue) => setFilters({ ...filters, sortBy: itemValue })}
-            style={styles.sortPicker}
-          >
-            <Picker.Item label="Most Recent" value="new" />
-            <Picker.Item label="Most Views" value="popular" />
-            <Picker.Item label="Most Budget" value="budget" />
-          </Picker>
+        {/* Filter group container for both sort and status */}
+        <View style={styles.filtersGroupContainer}>
+          {/* Sort picker */}
+          <View style={styles.sortPickerContainer}>
+            <Ionicons 
+              name="time-outline" 
+              size={15} 
+              color="#8B8B8D" 
+            />
+            <Picker
+              selectedValue={filters.sortBy}
+              onValueChange={(itemValue) => setFilters({ ...filters, sortBy: itemValue })}
+              style={styles.sortPicker}
+            >
+              <Picker.Item label="Most Recent" value="new" />
+              <Picker.Item label="Most Views" value="popular" />
+              <Picker.Item label="Most Budget" value="budget" />
+            </Picker>
+          </View>
+
+          {/* Status filter */}
+          <View style={styles.statusFilterContainer}>
+            <Ionicons 
+              name="checkmark-circle-outline" 
+              size={15} 
+              color="#8B8B8D" 
+            />
+            <Picker
+              selectedValue={selectedStatus}
+              onValueChange={(itemValue) => setSelectedStatus(itemValue)}
+              style={styles.statusPicker}
+            >
+                          <Picker.Item label="Active missions" value="active" />
+            <Picker.Item label="Completed missions" value="completed" />
+            <Picker.Item label="Pending deletion" value="pending_deletion" />
+            </Picker>
+          </View>
         </View>
         
         {/* Missions count - positioned at far right */}
         <Text style={styles.missionsCountText}>
-          {campaigns.length} mission{campaigns.length > 1 ? 's' : ''} found
+          {(() => {
+            const filteredCount = campaigns.filter(campaign => {
+              const campaignPlatform = (campaign as any).platform || 'twitch';
+              return campaignPlatform === selectedPlatform && campaign.status === selectedStatus;
+            }).length;
+            return `${filteredCount} mission${filteredCount > 1 ? 's' : ''} found`;
+          })()}
         </Text>
       </View>
       
@@ -393,33 +464,57 @@ const CampaignsListScreen: React.FC<CampaignsListScreenProps> = ({
     </View>
   );
 
-  const renderEmptyState = () => (
-    <View style={styles.emptyState}>
-      <View style={styles.emptyIconContainer}>
-      <Ionicons 
-        name={user.role === 'streamer' ? 'megaphone-outline' : 'search-outline'} 
-        size={64} 
-        color={COLORS.textLight} 
-      />
+  const renderEmptyState = () => {
+    // Messages spécifiques selon le statut sélectionné
+    const getEmptyStateContent = () => {
+      if (selectedStatus === 'pending_deletion') {
+        return {
+          icon: 'trash-outline',
+          title: 'No missions pending deletion',
+          text: 'No missions are currently scheduled for deletion. Missions appear here when they have pending submissions and need to wait before being permanently deleted.'
+        };
+      } else if (selectedStatus === 'completed') {
+        return {
+          icon: 'checkmark-circle-outline',
+          title: 'No completed missions',
+          text: user.role === 'streamer' 
+            ? 'No missions have been completed yet. Missions appear here once they reach their funding goal or deadline.'
+            : 'No completed missions available. Check back later for finished campaigns.'
+        };
+      } else {
+        return {
+          icon: user.role === 'streamer' ? 'megaphone-outline' : 'search-outline',
+          title: user.role === 'streamer' ? 'No active campaigns' : 'No active missions',
+          text: user.role === 'streamer' 
+            ? 'Create your first campaign to start attracting clippers'
+            : 'No active missions available. Try checking other platforms or statuses.'
+        };
+      }
+    };
+
+    const { icon, title, text } = getEmptyStateContent();
+
+    return (
+      <View style={styles.emptyState}>
+        <View style={styles.emptyIconContainer}>
+          <Ionicons 
+            name={icon as any} 
+            size={64} 
+            color={COLORS.textLight} 
+          />
+        </View>
+        <Text style={styles.emptyTitle}>{title}</Text>
+        <Text style={styles.emptyText}>{text}</Text>
+        {user.role === 'streamer' && selectedStatus === 'active' && (
+          <Button
+            title="Create Campaign"
+            onPress={handleCreateCampaign}
+            style={styles.createButton}
+          />
+        )}
       </View>
-      <Text style={styles.emptyTitle}>
-        {user.role === 'streamer' ? 'No campaigns created' : 'No missions available'}
-      </Text>
-      <Text style={styles.emptyText}>
-        {user.role === 'streamer' 
-          ? 'Create your first campaign to start attracting clippers'
-          : 'No missions match your current criteria. Try modifying your filters.'
-        }
-      </Text>
-      {user.role === 'streamer' && (
-        <Button
-          title="Create Campaign"
-          onPress={handleCreateCampaign}
-          style={styles.createButton}
-        />
-      )}
-    </View>
-  );
+    );
+  };
 
   const renderFiltersModal = () => (
     <Modal
@@ -550,7 +645,13 @@ const CampaignsListScreen: React.FC<CampaignsListScreenProps> = ({
                 gap: numColumns === 1 ? 20 : 16,
               }
             ]}>
-              {campaigns.map((campaign, index) => renderModernCampaignCard({ item: campaign, index }))}
+              {campaigns
+                .filter(campaign => {
+                  // Filtrer par plateforme et statut
+                  const campaignPlatform = (campaign as any).platform || 'twitch';
+                  return campaignPlatform === selectedPlatform && campaign.status === selectedStatus;
+                })
+                .map((campaign, index) => renderModernCampaignCard({ item: campaign, index }))}
             </View>
           </ScrollView>
         </>
@@ -605,9 +706,9 @@ const styles = StyleSheet.create({
   },
   mainContentContainer: {
     backgroundColor: '#181818',
-    borderRadius: 16,
-    margin: 12,
-    padding: 16,
+    borderRadius: 12,
+    margin: 9,
+    padding: 12,
     flex: 1,
     borderWidth: 1,
     borderColor: '#2A2A2A',
@@ -615,16 +716,21 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 25,
-    marginBottom: 5,
-    marginTop: 5,
+    paddingVertical: 19,
+    marginBottom: 4,
+    marginTop: 4,
   },
   allButtonsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     width: '100%',
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
+  },
+  filtersGroupContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
 
   headerTitleContainer: {
@@ -702,12 +808,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#2A2A2E',
-    paddingHorizontal: 20, // Réduit de 24 à 12
-    paddingVertical: 10, // Réduit de 12 à 6
-    borderRadius: 8, // Réduit de 16 à 8
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: '#3A3A3E',
-    gap: 4, // Réduit de 8 à 4
+    gap: 3,
   },
   platformButtonActive: {
     backgroundColor: '#9146FF', // Couleur Twitch par défaut
@@ -718,7 +824,7 @@ const styles = StyleSheet.create({
     borderColor: '#FF0000',
   },
   platformButtonText: {
-    fontSize: 14, // Réduit de 20 à 10
+    fontSize: 11,
     fontFamily: 'Inter_18pt-Medium',
     color: '#FFFFFF',
     fontWeight: '500',
@@ -1117,18 +1223,18 @@ const styles = StyleSheet.create({
   // Mission Cards Styles (same as DashboardScreen)
   missionCard: {
     backgroundColor: '#2A2A2E',
-    borderRadius: 15, // Réduit de 30 à 15
-    padding: 14, // Réduit de 28 à 14
+    borderRadius: 20,
+    padding: 11,
     borderWidth: 1,
-    borderColor: '#3A3A3E',
-    minHeight: 225, // Réduit de 450 à 225
-    marginBottom: 12, // Réduit de 24 à 12
+    borderColor: '#4A4A4E',
+    minHeight: 169,
+    marginBottom: 9,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 }, // Réduit de 8 à 4
+    shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.25,
-    shadowRadius: 10, // Réduit de 20 à 10
-    elevation: 6, // Réduit de 12 à 6
-    transform: [{ translateY: -1 }], // Réduit de -2 à -1
+    shadowRadius: 8,
+    elevation: 5,
+    transform: [{ translateY: -1 }],
     overflow: 'hidden',
   },
   cardHeaderTwitchLike: {
@@ -1151,7 +1257,7 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'column',
     justifyContent: 'center',
-    marginLeft: 8, // Réduit de 16 à 8
+    marginLeft: 0, // Réduit de 16 à 8
     minWidth: 0,
   },
   nameAndBadgeContainerRefactored: {
@@ -1161,7 +1267,7 @@ const styles = StyleSheet.create({
   },
   streamerFollowersRefactored: {
     fontSize: 12, // Réduit de 24 à 12
-    color: '#8B8B8D',
+    color: '#afafaf',
     fontFamily: 'Inter_18pt-Regular',
     alignSelf: 'flex-start',
   },
@@ -1238,15 +1344,17 @@ const styles = StyleSheet.create({
   },
   progressBackground: {
     flex: 1,
-    height: 10, // Réduit de 20 à 10
-    backgroundColor: '#2A2A2E',
-    borderRadius: 5, // Réduit de 10 à 5
+    height: 6,
+    backgroundColor: '#3A3A3E',
+    borderRadius: 3,
     overflow: 'hidden',
+    marginVertical: 8,
   },
   progressBar: {
     height: '100%',
-    backgroundColor: '#3B82F6',
-    borderRadius: 5, // Réduit de 10 à 5
+    backgroundColor: '#4F46E5',
+    borderRadius: 3,
+    minWidth: 2, // Assure une largeur minimale visible
   },
   progressPercentage: {
     fontSize: 13, // Réduit de 26 à 13
@@ -1280,11 +1388,12 @@ const styles = StyleSheet.create({
   },
   participateButton: {
     overflow: 'hidden',
+    marginLeft: 8,
   },
   participateGradient: {
     paddingHorizontal: 8, // Réduit de 16 à 8
     paddingVertical: 6, // Réduit de 12 à 6
-    borderRadius: 6, // Réduit de 12 à 6
+    borderRadius: 10, // Réduit de 12 à 6
     borderWidth: 1,
     borderColor: '#4A4A4E',
     backgroundColor: '#3A3A3E',
@@ -1328,8 +1437,39 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     width: '100%',
-    paddingHorizontal: 16,
+    paddingHorizontal: 8,
     minWidth: 0,
+  },
+  missionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    marginBottom: 8,
+    fontFamily: 'Inter_18pt-SemiBold',
+  },
+  
+  // Styles pour les filtres de statut (identique à sortPickerContainer)
+  statusFilterContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1C1C1E',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#38383A',
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    gap: 6,
+    minWidth: 140,
+    maxWidth: 200,
+    overflow: 'hidden',
+  },
+  statusPicker: {
+    color: '#FFFFFF',
+    backgroundColor: 'transparent',
+    flex: 1,
+    borderWidth: 0,
+    fontSize: 13,
+    fontFamily: 'Inter_18pt-Medium',
   },
 });
 

@@ -614,8 +614,8 @@ const styles = StyleSheet.create({
   },
   headerContainer: {
     alignItems: 'center',
-    marginBottom: 35,
-    marginTop: 18,
+    marginBottom: 31.5, // Reduced by 10% from 35
+    marginTop: 16.2, // Reduced by 10% from 18
   },
   logoContainer: {
     backgroundColor: '#0052FF',
@@ -632,107 +632,109 @@ const styles = StyleSheet.create({
     elevation: 13,
   },
   logoImage: {
-    width: 110,
-    height: 110,
-    marginBottom: 35,
+    width: 80, // Reduced by 10% from 110
+    height: 80, // Reduced by 10% from 110
+    marginBottom: 31.5, // Reduced by 10% from 35
+    borderRadius: 16,
   },
   authLogoImage: {
-    width: 59,
-    height: 59,
-    marginBottom: 20,
+    width: 65, // Reduced by 10% from 59
+    height: 65, // Reduced by 10% from 59
+    marginBottom: 18, // Reduced by 10% from 20
+    borderRadius: 16,
   },
       title: {
-      fontSize: 24,
+      fontSize: 21.6, // Reduced by 10% from 24
       fontFamily: 'Inter_18pt-SemiBold',
       color: '#FFFFFF',
       textAlign: 'center',
-      marginTop: 8,
-      marginBottom: 8,
+      marginTop: 7.2, // Reduced by 10% from 8
+      marginBottom: 7.2, // Reduced by 10% from 8
       fontWeight: '700',
     },
   subtitle: {
-    fontSize: 12,
+    fontSize: 10.8, // Reduced by 10% from 12
     color: '#8B8B8D',
     textAlign: 'center',
-    lineHeight: 15,
-    maxWidth: 277,
-    marginBottom: -8,
+    lineHeight: 13.5, // Reduced by 10% from 15
+    maxWidth: 249.3, // Reduced by 10% from 277
+    marginBottom: -7.2, // Reduced by 10% from -8
   },
   userTypeContainer: {
     width: '100%',
-    marginBottom: 24,
+    marginBottom: 21.6, // Reduced by 10% from 24
     flexDirection: 'column',
-    gap: 14,
+    gap: 12.6, // Reduced by 10% from 14
   },
   userTypeCard: {
     backgroundColor: '#1A1A1E',
-    borderRadius: 12,
-    padding: 22,
+    borderRadius: 16, // Reduced by 10% from 12
+    padding: 19.8, // Reduced by 10% from 22
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#2A2A2E',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 3.6 }, // Reduced by 10% from 4
     shadowOpacity: 0.3,
-    shadowRadius: 10,
+    shadowRadius: 9, // Reduced by 10% from 10
     elevation: 6,
-    minHeight: 145,
+    minHeight: 200, // Increased from 130.5 to 150
     justifyContent: 'center',
     width: '100%',
   },
   selectedCard: {
     borderColor: '#0052FF',
-    borderWidth: 3,
+    borderWidth: 2.7, // Reduced by 10% from 3
     backgroundColor: '#2A2A2E',
     shadowColor: '#0052FF',
     shadowOpacity: 0.3,
   },
   iconContainer: {
-    width: 62,
-    height: 62,
-    borderRadius: 15,
+    width: 55.8, // Reduced by 10% from 62
+    height: 55.8, // Reduced by 10% from 62
+    borderRadius: 13.5, // Reduced by 10% from 15
     backgroundColor: '#2A2A2E',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 9, // Reduced by 10% from 10
   },
   platformLogosContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 9,
-    gap: 14,
+    marginBottom: 8.1, // Reduced by 10% from 9
+    gap: 12.6, // Reduced by 10% from 14
   },
   platformLogo: {
-    width: 36,
-    height: 36,
-    borderRadius: 9,
+    width: 32.4, // Reduced by 10% from 36
+    height: 32.4, // Reduced by 10% from 36
+    borderRadius: 8.1, // Reduced by 10% from 9
   },
   selectedIconContainer: {
     backgroundColor: '#0052FF',
   },
   userTypeTitle: {
-    fontSize: 19,
+    fontSize: 17.1, // Reduced by 10% from 19
     fontFamily: 'Inter_18pt-SemiBold',
     color: '#FFFFFF',
-    marginTop: 15,
-    marginBottom: 15,
+    marginTop: 13.5, // Reduced by 10% from 15
+    marginBottom: 13.5, // Reduced by 10% from 15
     fontWeight: '600',
   },
   selectedText: {
     color: '#0052FF',
   },
   userTypeDescription: {
-    fontSize: 11,
+    fontSize: 9.9, // Reduced by 10% from 11
     color: '#8B8B8D',
     textAlign: 'center',
-    lineHeight: 14,
-    maxWidth: 155,
+    lineHeight: 12.6, // Reduced by 10% from 14
+    maxWidth: 139.5, // Reduced by 10% from 155
   },
   continueButton: {
-    marginTop: 14,
+    marginTop: 12.6, // Reduced by 10% from 14
     width: '100%',
-    maxWidth: 149,
+    maxWidth: 134.1, // Reduced by 10% from 149
   },
   formContainer: {
     flex: 1,
@@ -758,6 +760,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     backgroundColor: '#1A1A1E',
     minHeight: 31,
+    ...(Platform.OS === 'web' && { outline: 'none' }),
   },
   authButton: {
     marginTop: 20,

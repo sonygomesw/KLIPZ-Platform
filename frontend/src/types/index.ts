@@ -1,7 +1,7 @@
 export interface User {
   id: string;
   email: string;
-  role: 'streamer' | 'clipper';
+  role: 'streamer' | 'clipper' | 'admin';
   twitchUrl?: string;
   tiktokUsername?: string;
   balance: number;
@@ -17,6 +17,8 @@ export interface Campaign {
   title: string;
   description: string;
   imageUrl?: string; // URL de l'image/thumbnail de la campagne
+  platform?: 'twitch' | 'youtube';
+  platformLink?: string;
   criteria: {
     hashtags: string[];
     style: string;
@@ -26,7 +28,7 @@ export interface Campaign {
   budget: number;
   cpm: number; // coût pour 1000 vues
   fanPageCpm: number | null; // coût pour 1000 vues sur fan page
-  status: 'active' | 'paused' | 'completed';
+  status: 'active' | 'paused' | 'completed' | 'pending_deletion';
   createdAt: Date;
   totalViews: number;
   totalSpent: number;

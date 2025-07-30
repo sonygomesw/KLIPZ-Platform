@@ -10,6 +10,7 @@ import {
   Platform,
   TouchableOpacity,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -49,6 +50,7 @@ const CreateCampaignScreen: React.FC<CreateCampaignScreenProps> = ({
   const [tiktokRequirements, setTiktokRequirements] = useState('');
   const [enableFanPage, setEnableFanPage] = useState(false);
   const [fanPageCpm, setFanPageCpm] = useState('0.5');
+  const [enableFanAccount, setEnableFanAccount] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [showInsufficientBalanceModal, setShowInsufficientBalanceModal] = useState(false);
@@ -57,6 +59,7 @@ const CreateCampaignScreen: React.FC<CreateCampaignScreenProps> = ({
   const [showNotification, setShowNotification] = useState(false);
   const [notificationMessage, setNotificationMessage] = useState('');
   const [notificationType, setNotificationType] = useState<'success' | 'error'>('success');
+  const [selectedPlatform, setSelectedPlatform] = useState<'twitch' | 'youtube'>('twitch');
 
   const handleCreateCampaign = async () => {
     console.log('🔵 Début création campagne...');
@@ -114,7 +117,7 @@ const CreateCampaignScreen: React.FC<CreateCampaignScreenProps> = ({
     }
     if (!twitchLink.trim()) {
       console.log('❌ Lien Twitch manquant');
-      setNotificationMessage('Twitch rediffusion link is required');
+              setNotificationMessage(selectedPlatform === 'twitch' ? 'Twitch rediffusion link is required' : 'YouTube video link is required');
       setNotificationType('error');
       setShowNotification(true);
       return;
@@ -147,6 +150,8 @@ const CreateCampaignScreen: React.FC<CreateCampaignScreenProps> = ({
         title: title.trim(),
         description: description.trim(),
         imageUrl: selectedImage || imageUrl.trim() || undefined,
+        platform: selectedPlatform,
+        platformLink: twitchLink.trim(),
         criteria: {
           hashtags: [], // On utilise les requirements TikTok à la place
           style: tiktokRequirements.trim(),
@@ -156,6 +161,7 @@ const CreateCampaignScreen: React.FC<CreateCampaignScreenProps> = ({
         budget: Number(budget),
         cpm: Number(cpm),
         fanPageCpm: enableFanPage ? Number(fanPageCpm) : null,
+        fanAccountCpm: enableFanAccount ? 1.0 : null,
       };
 
       console.log('🔵 Données de campagne préparées:', campaignData);
@@ -176,11 +182,11 @@ const CreateCampaignScreen: React.FC<CreateCampaignScreenProps> = ({
     } catch (error: any) {
       console.error('❌ Error creating campaign:', error);
       console.error('❌ Message d\'erreur:', error.message);
-      setNotificationMessage(error.message || 'Failed to create campaign');
+      setNotificationMessage(error.message || 'Failed to create mission');
       setNotificationType('error');
       setShowNotification(true);
     } finally {
-      console.log('🔵 Fin de la création de campagne');
+      console.log('🔵 Fin de la création de la mission');
       setIsLoading(false);
     }
   };
@@ -258,21 +264,10 @@ const CreateCampaignScreen: React.FC<CreateCampaignScreenProps> = ({
   };
 
   return (
-    <View style={styles.rootContainer}>
-      <SafeAreaView style={styles.safeArea}>
-        <KeyboardAvoidingView
-          style={styles.container}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        >
-        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-          {/* Page Title Header */}
-          <View style={styles.pageTitleContainer}>
-            <View style={styles.pageTitleContent}>
+    <View style={styles.container}>
                       <Text style={styles.pageTitle}>Create Mission</Text>
-        <Text style={styles.pageSubtitle}>Set up your mission and start attracting talented clippers</Text>
-            </View>
-          </View>
-
+      <View style={styles.mainContentContainer}>
+        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           <View style={styles.mainContent}>
             {/* Left Side - Form */}
             <View style={styles.leftSide}>
@@ -282,6 +277,55 @@ const CreateCampaignScreen: React.FC<CreateCampaignScreenProps> = ({
                   <View style={styles.helpIcon}>
                     <Ionicons name="help-circle-outline" size={24} color={COLORS.textSecondary} />
                   </View>
+                </View>
+
+                {/* Platform buttons */}
+                <View style={styles.platformButtonsContainer}>
+                  <TouchableOpacity
+                    style={[
+                      styles.platformButton,
+                      selectedPlatform === 'twitch' && styles.platformButtonActive,
+                    ]}
+                    onPress={() => {
+                      setSelectedPlatform('twitch');
+                      console.log('Twitch selected');
+                    }}
+                  >
+                    <Ionicons 
+                      name="logo-twitch" 
+                      size={24} 
+                      color={selectedPlatform === 'twitch' ? "#FFFFFF" : "#8B8B8D"} 
+                    />
+                    <Text style={[
+                      styles.platformButtonText,
+                      { color: selectedPlatform === 'twitch' ? '#FFFFFF' : '#8B8B8D' }
+                    ]}>
+                      Twitch
+                    </Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity
+                    style={[
+                      styles.platformButton,
+                      selectedPlatform === 'youtube' && styles.platformButtonActiveYoutube,
+                    ]}
+                    onPress={() => {
+                      setSelectedPlatform('youtube');
+                      console.log('Youtube selected');
+                    }}
+                  >
+                    <Ionicons 
+                      name="logo-youtube" 
+                      size={24} 
+                      color={selectedPlatform === 'youtube' ? "#FFFFFF" : "#8B8B8D"} 
+                    />
+                    <Text style={[
+                      styles.platformButtonText,
+                      { color: selectedPlatform === 'youtube' ? '#FFFFFF' : '#8B8B8D' }
+                    ]}>
+                      Youtube
+                    </Text>
+                  </TouchableOpacity>
                 </View>
 
                 {/* Title Input */}
@@ -344,13 +388,7 @@ const CreateCampaignScreen: React.FC<CreateCampaignScreenProps> = ({
                    </View>
                  </View>
 
-                {/* Funding Notice */}
-                <View style={styles.fundingNotice}>
-                  <Ionicons name="information-circle" size={20} color="#4F46E5" />
-                  <Text style={styles.fundingText}>
-                    You will be prompted to top up ${budget || '10,000'}.00 in the next step
-                  </Text>
-                </View>
+
 
                 {/* Reward Rate Section */}
                 <View style={styles.rewardSection}>
@@ -417,14 +455,19 @@ const CreateCampaignScreen: React.FC<CreateCampaignScreenProps> = ({
                <View style={styles.previewCard}>
                  <Text style={styles.previewTitle}>Mission Setup</Text>
                  
-                 {/* Twitch Rediffusion Link */}
+                 {/* Platform Link */}
                  <View style={styles.modernInputGroup}>
-                   <Text style={styles.modernLabel}>Twitch Rediffusion Link *</Text>
+                   <Text style={styles.modernLabel}>
+                     {selectedPlatform === 'twitch' ? 'Twitch Rediffusion Link *' : 'YouTube Video *'}
+                   </Text>
                    <TextInput
                      style={styles.modernInput}
                      value={twitchLink}
                      onChangeText={setTwitchLink}
-                     placeholder="https://www.twitch.tv/videos/..."
+                     placeholder={selectedPlatform === 'twitch' 
+                       ? "https://www.twitch.tv/videos/..." 
+                       : "https://www.youtube.com/watch?v=..."
+                     }
                      placeholderTextColor={COLORS.textLight}
                      autoCapitalize="none"
                      autoCorrect={false}
@@ -447,7 +490,7 @@ const CreateCampaignScreen: React.FC<CreateCampaignScreenProps> = ({
                          pickImage();
                        }}
                      >
-                       <Ionicons name="cloud-upload-outline" size={32} color="#4F46E5" />
+                       <Ionicons name="cloud-upload-outline" size={30} color="#4F46E5" />
                        <Text style={styles.imageUploadText}>Upload Image</Text>
                        <Text style={styles.imageUploadSubtext}>Click to select and crop an image</Text>
                      </TouchableOpacity>
@@ -484,27 +527,58 @@ const CreateCampaignScreen: React.FC<CreateCampaignScreenProps> = ({
                      multiline
                      numberOfLines={4}
                      maxLength={500}
+                     value={tiktokRequirements}
+                     onChangeText={setTiktokRequirements}
                    />
+                 </View>
+
+                 {/* Fan Account Option */}
+                 <View style={styles.fanAccountContainer}>
+                   <TouchableOpacity 
+                     style={styles.fanAccountOption}
+                     onPress={() => setEnableFanAccount(!enableFanAccount)}
+                   >
+                     <View style={styles.fanAccountCheckbox}>
+                       {enableFanAccount && (
+                         <Ionicons name="checkmark" size={12} color="#ffffff" />
+                       )}
+                     </View>
+                     <View style={styles.fanAccountTextContainer}>
+                       <Text style={styles.fanAccountTitle}>
+                         Fan Account Pay - $1.00 per video
+                       </Text>
+                       <Text style={styles.fanAccountDescription}>
+                         Clippers must use a fan account with your username (e.g., @{user?.twitchUrl?.split('/').pop() || 'username'}fan) to post clips
+                       </Text>
+                     </View>
+                   </TouchableOpacity>
+                 </View>
+
+                 {/* Create Button */}
+                 <View style={styles.createButtonContainer}>
+                   <TouchableOpacity 
+                     style={[styles.createButton, isLoading && styles.createButtonDisabled]} 
+                     onPress={() => {
+                       console.log('🔵 Bouton Create Mission cliqué');
+                       handleCreateCampaign();
+                     }}
+                     disabled={isLoading}
+                   >
+                     {isLoading ? (
+                       <ActivityIndicator size="small" color="#FFFFFF" />
+                     ) : (
+                       <Ionicons name="add" size={18} color="#FFFFFF" />
+                     )}
+                     <Text style={styles.createButtonText}>
+                       {isLoading ? 'Creating...' : 'Create Mission'}
+                     </Text>
+                   </TouchableOpacity>
                  </View>
                </View>
              </View>
            </View>
-           
-           {/* Create Button - Inside scroll, after content */}
-           <View style={styles.createButtonContainer}>
-             <TouchableOpacity 
-               style={styles.createButton} 
-               onPress={() => {
-                 console.log('🔵 Bouton Create Campaign cliqué');
-                 handleCreateCampaign();
-               }}
-             >
-               <Text style={styles.createButtonText}>Create Campaign</Text>
-             </TouchableOpacity>
-           </View>
         </ScrollView>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
+      </View>
 
       {/* Insufficient Balance Modal */}
       <InsufficientBalanceModal
@@ -534,9 +608,24 @@ const CreateCampaignScreen: React.FC<CreateCampaignScreenProps> = ({
             styles.notificationContainer,
             notificationType === 'success' ? styles.notificationSuccess : styles.notificationError
           ]}>
+            {notificationType === 'success' ? (
+              <View style={styles.notificationIconContainer}>
+                <Ionicons name="checkmark-circle" size={48} color="#10B981" />
+              </View>
+            ) : (
+              <View style={styles.notificationIconContainer}>
+                <Ionicons name="close-circle" size={48} color="#EF4444" />
+              </View>
+            )}
+            <Text style={styles.notificationTitle}>
+              {notificationType === 'success' ? 'Success!' : 'Error'}
+            </Text>
             <Text style={styles.notificationText}>{notificationMessage}</Text>
             <TouchableOpacity 
-              style={styles.notificationButton}
+              style={[
+                styles.notificationButton,
+                notificationType === 'success' ? styles.notificationButtonSuccess : styles.notificationButtonError
+              ]}
               onPress={() => setShowNotification(false)}
             >
               <Text style={styles.notificationButtonText}>OK</Text>
@@ -568,14 +657,25 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    backgroundColor: '#0A0A0B',
     width: '100%',
-    height: '100%',
+    backgroundColor: '#0A0A0A',
+  },
+  pageTitle: {
+    fontSize: 14,
+    fontFamily: 'Inter_18pt-Medium',
+    color: '#e0e0e0',
+    textAlign: 'center',
+    marginTop: -28,
+  },
+  mainContentContainer: {
+    backgroundColor: '#0A0A0B',
+    borderRadius: 7,
+    margin: 5,
+    padding: 7,
+    flex: 1,
   },
   scrollView: {
     flex: 1,
-    backgroundColor: '#0A0A0B',
-    width: '100%',
   },
   pageTitleContainer: {
     backgroundColor: '#1A1A1E',
@@ -595,13 +695,7 @@ const styles = StyleSheet.create({
     paddingVertical: 28,
     alignItems: 'center',
   },
-  pageTitle: {
-    color: '#FFFFFF',
-    fontSize: 32,
-    fontWeight: '700',
-    textAlign: 'center',
-    marginBottom: 8,
-  },
+
   pageSubtitle: {
     color: '#8B8B8D',
     fontSize: 18,
@@ -610,9 +704,9 @@ const styles = StyleSheet.create({
   },
   mainContent: {
     flexDirection: 'row',
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    gap: 24,
+    paddingVertical: 7,
+    paddingHorizontal: 7,
+    gap: 11,
     backgroundColor: '#0A0A0B',
     width: '100%',
     flex: 1,
@@ -631,7 +725,7 @@ const styles = StyleSheet.create({
   setupCard: {
     backgroundColor: '#1A1A1E',
     borderRadius: 24,
-    padding: 48,
+    padding: 20,
     borderWidth: 1,
     borderColor: '#2A2A2E',
     flex: 1,
@@ -641,53 +735,54 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 40,
+    marginBottom: 17,
   },
   setupTitle: {
     color: '#FFFFFF',
-    fontSize: 32,
+    fontSize: 14,
     fontWeight: '600',
   },
   helpIcon: {
     padding: 4,
   },
   modernInputGroup: {
-    marginBottom: 32,
+    marginBottom: 14,
   },
   modernLabel: {
     color: '#E5E5E7',
-    fontSize: 22,
+    fontSize: 11,
     fontWeight: '500',
-    marginBottom: 12,
+    marginBottom: 5,
   },
   modernInput: {
     backgroundColor: '#2A2A2E',
-    borderRadius: 16,
-    paddingHorizontal: 24,
-    paddingVertical: 20,
-    fontSize: 20,
+    borderRadius: 7,
+    paddingHorizontal: 11,
+    paddingVertical: 8,
+    fontSize: 11,
     color: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#3A3A3E',
+    ...(Platform.OS === 'web' && { outline: 'none' }),
   },
   textArea: {
-    height: 120,
+    height: 51,
     textAlignVertical: 'top',
-    paddingTop: 20,
+    paddingTop: 8,
   },
   doubleRow: {
     flexDirection: 'row',
-    gap: 24,
-    marginBottom: 32,
+    gap: 11,
+    marginBottom: 14,
   },
   doubleRowItem: {
     flex: 1,
   },
   modernDropdown: {
     backgroundColor: '#2A2A2E',
-    borderRadius: 16,
-    paddingHorizontal: 24,
-    paddingVertical: 20,
+    borderRadius: 7,
+    paddingHorizontal: 11,
+    paddingVertical: 8,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -696,7 +791,7 @@ const styles = StyleSheet.create({
   },
   dropdownText: {
     color: '#FFFFFF',
-    fontSize: 20,
+    fontSize: 11,
   },
   budgetContainer: {
     flexDirection: 'row',
@@ -704,46 +799,47 @@ const styles = StyleSheet.create({
   },
   budgetInput: {
     backgroundColor: '#2A2A2E',
-    borderRadius: 16,
-    paddingHorizontal: 24,
-    paddingVertical: 20,
-    fontSize: 20,
+    borderRadius: 7,
+    paddingHorizontal: 11,
+    paddingVertical: 8,
+    fontSize: 11,
     color: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#3A3A3E',
     flex: 1,
-    marginRight: 12,
+    marginRight: 5,
+    ...(Platform.OS === 'web' && { outline: 'none' }),
   },
   currencySelector: {
     backgroundColor: '#2A2A2E',
-    borderRadius: 16,
-    paddingHorizontal: 24,
-    paddingVertical: 20,
+    borderRadius: 7,
+    paddingHorizontal: 11,
+    paddingVertical: 8,
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#3A3A3E',
-    minWidth: 100,
+    minWidth: 42,
   },
   currencyText: {
     color: '#FFFFFF',
-    fontSize: 20,
-    marginRight: 4,
+    fontSize: 11,
+    marginRight: 1,
   },
   fundingNotice: {
     backgroundColor: '#1E1F47',
-    borderRadius: 16,
-    padding: 24,
+    borderRadius: 7,
+    padding: 11,
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 14,
     borderWidth: 1,
     borderColor: '#4F46E5',
   },
   fundingText: {
     color: '#A5B4FC',
-    fontSize: 20,
-    marginLeft: 12,
+    fontSize: 11,
+    marginLeft: 5,
     flex: 1,
   },
   rewardSection: {
@@ -751,121 +847,160 @@ const styles = StyleSheet.create({
   },
   rewardRateContainer: {
     backgroundColor: '#2A2A2E',
-    borderRadius: 14,
-    padding: 20,
+    borderRadius: 8,
+    padding: 11,
     borderWidth: 1,
     borderColor: '#3A3A3E',
   },
   rateInputGroup: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
+    gap: 9,
   },
   rateLabel: {
     color: '#E5E5E7',
-    fontSize: 20,
+    fontSize: 11,
     fontWeight: '500',
   },
   rateInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#1A1A1E',
-    borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    borderRadius: 6,
+    paddingHorizontal: 9,
+    paddingVertical: 7,
     borderWidth: 1,
     borderColor: '#3A3A3E',
   },
   dollarSign: {
     color: '#E5E5E7',
-    fontSize: 20,
-    marginRight: 6,
+    fontSize: 11,
+    marginRight: 3,
   },
   rateInput: {
     color: '#FFFFFF',
-    fontSize: 20,
-    minWidth: 50,
+    fontSize: 11,
+    minWidth: 29,
+    ...(Platform.OS === 'web' && { outline: 'none' }),
   },
   perText: {
     color: '#E5E5E7',
-    fontSize: 20,
+    fontSize: 11,
     fontWeight: '500',
   },
   viewsContainer: {
     backgroundColor: '#4F46E5',
-    borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    borderRadius: 6,
+    paddingHorizontal: 9,
+    paddingVertical: 7,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 3,
   },
   viewsText: {
     color: '#FFFFFF',
-    fontSize: 20,
+    fontSize: 11,
     fontWeight: '500',
   },
   viewsNumber: {
     color: '#FFFFFF',
-    fontSize: 20,
+    fontSize: 11,
     fontWeight: '600',
   },
   payoutContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#2A2A2E',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    borderRadius: 7,
+    paddingHorizontal: 9,
+    paddingVertical: 9,
     borderWidth: 1,
     borderColor: '#3A3A3E',
   },
   payoutInput: {
     color: '#FFFFFF',
-    fontSize: 20,
+    fontSize: 11,
     flex: 1,
+    ...(Platform.OS === 'web' && { outline: 'none' }),
   },
   createButtonContainer: {
-    backgroundColor: '#0A0A0B',
-    paddingVertical: 50,
-    paddingHorizontal: 32,
+    paddingVertical: 14,
     alignItems: 'center',
   },
   createButton: {
     backgroundColor: '#4F46E5',
-    borderRadius: 16,
-    paddingVertical: 20,
-    paddingHorizontal: 72,
+    borderRadius: 9,
+    paddingVertical: 11,
+    paddingHorizontal: 41,
     alignItems: 'center',
-    minWidth: 320,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+    minWidth: 180,
     shadowColor: '#4F4506E5',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    shadowRadius: 5,
+    elevation: 5,
+    marginTop: 10,
+  },
+  createButtonDisabled: {
+    opacity: 0.6,
   },
   createButtonText: {
     color: '#FFFFFF',
-    fontSize: 26,
+    fontSize: 14,
     fontWeight: '600',
+  },
+  platformButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 10,
+  },
+  platformButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#2A2A2E',
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#3A3A3E',
+    gap: 3,
+  },
+  platformButtonActive: {
+    backgroundColor: '#9146FF',
+    borderColor: '#9146FF',
+  },
+  platformButtonActiveYoutube: {
+    backgroundColor: '#FF0000',
+    borderColor: '#FF0000',
+  },
+  platformButtonText: {
+    fontSize: 11,
+    fontFamily: 'Inter_18pt-Medium',
+    color: '#FFFFFF',
+    fontWeight: '500',
   },
   autoApproveText: {
     color: '#8B8B8D',
     fontSize: 12,
     textAlign: 'center',
-    marginTop: 8,
+    marginTop: 30,
   },
   previewCard: {
     backgroundColor: '#1A1A1E',
     borderRadius: 24,
-    padding: 48,
+    padding: 25,
     borderWidth: 1,
     borderColor: '#2A2A2E',
     flex: 1,
   },
   previewTitle: {
     color: '#FFFFFF',
-    fontSize: 26,
+    fontSize: 15,
     fontWeight: '600',
     marginBottom: 32,
   },
@@ -893,7 +1028,7 @@ const styles = StyleSheet.create({
   },
   uploadDescription: {
     color: '#8B8B8D',
-    fontSize: 14,
+    fontSize: 11,
     marginBottom: 16,
     lineHeight: 20,
   },
@@ -913,12 +1048,12 @@ const styles = StyleSheet.create({
   },
   imageUploadText: {
     color: '#4F46E5',
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
   },
   imageUploadSubtext: {
     color: '#8B8B8D',
-    fontSize: 14,
+    fontSize: 13,
   },
   selectedImageContainer: {
     position: 'relative',
@@ -1096,17 +1231,29 @@ const styles = StyleSheet.create({
   },
   notificationContainer: {
     backgroundColor: '#1A1A1E',
-    borderRadius: 16,
-    padding: 24,
+    borderRadius: 20,
+    padding: 32,
     marginHorizontal: 32,
     maxWidth: 400,
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: '#2A2A2E',
     shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 12,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.4,
+    shadowRadius: 20,
+    elevation: 16,
+    alignItems: 'center',
+  },
+  notificationIconContainer: {
+    marginBottom: 16,
+  },
+  notificationTitle: {
+    color: '#FFFFFF',
+    fontSize: 20,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 12,
+    fontFamily: 'Inter_18pt-SemiBold',
   },
   notificationSuccess: {
     borderColor: '#10B981',
@@ -1123,17 +1270,64 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
   notificationButton: {
-    backgroundColor: '#6366F1',
     borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
+    paddingVertical: 14,
+    paddingHorizontal: 32,
     alignSelf: 'center',
+    minWidth: 120,
+  },
+  notificationButtonSuccess: {
+    backgroundColor: '#10B981',
+  },
+  notificationButtonError: {
+    backgroundColor: '#EF4444',
   },
   notificationButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
     textAlign: 'center',
+  },
+  
+  // Fan Account styles
+  fanAccountContainer: {
+    marginBottom: 0,
+  },
+  fanAccountOption: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    padding: 16,
+    backgroundColor: '#2A2A2E',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#3A3A3E',
+  },
+  fanAccountCheckbox: {
+    width: 15,
+    height: 15,
+    borderRadius: 4,
+    borderWidth: 2,
+    borderColor: '#4a5cf9',
+    backgroundColor: 'transparent',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+    marginTop: 2,
+  },
+  fanAccountTextContainer: {
+    flex: 1,
+  },
+  fanAccountTitle: {
+    fontSize: 12,
+    color: '#FFFFFF',
+    fontFamily: 'Inter_18pt-Regular',
+    marginBottom: 4,
+  },
+  fanAccountDescription: {
+    fontSize: 11,
+    color: '#8B8B8D',
+    fontFamily: 'Inter_18pt-Regular',
+    lineHeight: 18,
   },
 });
 
