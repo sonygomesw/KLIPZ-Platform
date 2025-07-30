@@ -905,8 +905,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 2,
     gap: 6,
-    minWidth: 140,
-    maxWidth: 200,
+    minWidth: 120,
+    maxWidth: 160,
     overflow: 'hidden',
   },
   sortPicker: {
@@ -1459,8 +1459,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 9,
     gap: 6,
-    minWidth: 140,
-    maxWidth: 200,
+    minWidth: 120,
+    maxWidth: 160,
     overflow: 'hidden',
   },
   statusPicker: {
