@@ -1,0 +1,13 @@
+{
+  "name": "klipz-platform",
+  "version": "1.0.0",
+  "description": "Platform de clips pour streamers et clippers",
+  "scripts": {
+    "start": "cd frontend && npm run start",
+    "frontend": "cd frontend && npm run start",
+    "backend": "cd backend && npm run start",
+    "install": "cd frontend && npm install"
+  },
+  "author": "KLIPZ Team",
+  "license": "MIT"
+} 
