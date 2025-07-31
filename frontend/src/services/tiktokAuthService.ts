@@ -1,6 +1,6 @@
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
-import { TIKTOK_CONFIG, TikTokAuthResponse, TikTokUserInfo, TIKTOK_ERRORS } from '../config/tiktok';
+import { TIKTOK_CONFIG, TikTokAuthResponse, TikTokUserInfo, TikTokVideoInfo, TikTokVideoMetrics, TIKTOK_ERRORS } from '../config/tiktok';
 import { supabase } from '../config/supabase';
 
 class TikTokAuthService {
@@ -221,6 +221,112 @@ class TikTokAuthService {
     } catch (error) {
       console.error('❌ TikTok Auth - Error extraction ID vidéo:', error);
       return null;
+    }
+  }
+
+  // Récupérer les métriques d'une vidéo spécifique via l'API TikTok
+  async getVideoMetrics(videoUrl: string): Promise<TikTokVideoMetrics | null> {
+    try {
+      if (!this.accessToken) {
+        throw new Error('Token d\'accès TikTok requis');
+      }
+
+      const videoId = this.extractVideoId(videoUrl);
+      if (!videoId) {
+        throw new Error('ID vidéo introuvable dans l\'URL');
+      }
+
+      console.log('🔵 TikTok Auth - Récupération métriques vidéo:', videoId);
+
+      const response = await fetch(TIKTOK_CONFIG.VIDEO_QUERY_URL, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          filters: {
+            video_ids: [videoId]
+          },
+          fields: ['id', 'like_count', 'comment_count', 'share_count', 'view_count']
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('❌ TikTok Auth - Error métriques vidéo:', errorData);
+        throw new Error(errorData.error?.message || 'Erreur récupération métriques');
+      }
+
+      const data = await response.json();
+      const videoData = data.data?.videos?.[0];
+
+      if (!videoData) {
+        throw new Error('Vidéo non trouvée ou pas accessible');
+      }
+
+      console.log('✅ TikTok Auth - Métriques récupérées:', videoData);
+
+      return {
+        video_id: videoData.id,
+        view_count: videoData.view_count || 0,
+        like_count: videoData.like_count || 0,
+        comment_count: videoData.comment_count || 0,
+        share_count: videoData.share_count || 0,
+        play_count: videoData.view_count || 0 // play_count = view_count pour TikTok
+      };
+
+    } catch (error) {
+      console.error('❌ TikTok Auth - Error métriques vidéo:', error);
+      return null;
+    }
+  }
+
+  // Récupérer toutes les vidéos d'un utilisateur avec leurs métriques
+  async getUserVideos(cursor?: string): Promise<{ videos: TikTokVideoInfo[], has_more: boolean, cursor?: string }> {
+    try {
+      if (!this.accessToken) {
+        throw new Error('Token d\'accès TikTok requis');
+      }
+
+      console.log('🔵 TikTok Auth - Récupération vidéos utilisateur...');
+
+      const body: any = {
+        fields: ['id', 'create_time', 'cover_image_url', 'share_url', 'video_description', 'duration', 'height', 'width', 'title', 'like_count', 'comment_count', 'share_count', 'view_count'],
+        max_count: 20
+      };
+
+      if (cursor) {
+        body.cursor = cursor;
+      }
+
+      const response = await fetch(TIKTOK_CONFIG.VIDEO_LIST_URL, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('❌ TikTok Auth - Error liste vidéos:', errorData);
+        throw new Error(errorData.error?.message || 'Erreur récupération vidéos');
+      }
+
+      const data = await response.json();
+      console.log('✅ TikTok Auth - Vidéos récupérées:', data.data?.videos?.length || 0);
+
+      return {
+        videos: data.data?.videos || [],
+        has_more: data.data?.has_more || false,
+        cursor: data.data?.cursor
+      };
+
+    } catch (error) {
+      console.error('❌ TikTok Auth - Error vidéos utilisateur:', error);
+      return { videos: [], has_more: false };
     }
   }
 }
