@@ -5,6 +5,37 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Limites Stripe (en centimes)
+const STRIPE_LIMITS = {
+  MIN_AMOUNT: 100, // 1 EUR minimum
+  MAX_AMOUNT: 99999999, // 999,999.99 EUR maximum (limite Stripe)
+  RECOMMENDED_MAX: 1000000, // 10,000 EUR recommandé
+};
+
+function validateAmount(amount: number): { isValid: boolean; error?: string } {
+  const amountInCents = Math.round(amount * 100);
+  
+  if (amountInCents < STRIPE_LIMITS.MIN_AMOUNT) {
+    return { 
+      isValid: false, 
+      error: `Le montant minimum est ${STRIPE_LIMITS.MIN_AMOUNT / 100} EUR` 
+    };
+  }
+  
+  if (amountInCents > STRIPE_LIMITS.MAX_AMOUNT) {
+    return { 
+      isValid: false, 
+      error: `Le montant maximum est ${STRIPE_LIMITS.MAX_AMOUNT / 100} EUR` 
+    };
+  }
+  
+  if (amountInCents > STRIPE_LIMITS.RECOMMENDED_MAX) {
+    console.warn(`⚠️ Montant élevé détecté: ${amount} EUR`);
+  }
+  
+  return { isValid: true };
+}
+
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -33,6 +64,15 @@ Deno.serve(async (req) => {
 
     if (!amount || !streamerId) {
       return new Response(JSON.stringify({ error: "Amount and streamerId are required" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
+    // Valider le montant
+    const validation = validateAmount(amount);
+    if (!validation.isValid) {
+      return new Response(JSON.stringify({ error: validation.error }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
