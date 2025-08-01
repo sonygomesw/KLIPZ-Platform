@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Alert,
   Linking,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -43,47 +44,59 @@ const TikTokLoginModal: React.FC<TikTokLoginModalProps> = ({
       if (hasConnected) {
         const data = await tiktokLoginService.getTikTokData(user.id);
         setTiktokData(data);
+      } else {
+        setTiktokData(null);
       }
     } catch (error) {
-      console.error('❌ Erreur vérification TikTok:', error);
+      console.error('Erreur lors de la vérification TikTok:', error);
     }
   };
 
   const handleTikTokLogin = async () => {
     try {
       setIsLoading(true);
-      console.log('🔗 Début connexion TikTok...');
-
-      // Générer l'URL de connexion TikTok
       const authUrl = await tiktokLoginService.initiateTikTokLogin();
       
-      // Ouvrir l'URL dans le navigateur
+      // Ouvrir l'URL TikTok dans le navigateur
       const supported = await Linking.canOpenURL(authUrl);
       if (supported) {
         await Linking.openURL(authUrl);
       } else {
-        Alert.alert('Erreur', 'Impossible d\'ouvrir TikTok Login');
+        Alert.alert('Erreur', 'Impossible d\'ouvrir le navigateur');
       }
     } catch (error) {
-      console.error('❌ Erreur connexion TikTok:', error);
-      Alert.alert('Erreur', 'Impossible de se connecter à TikTok');
+      console.error('Erreur lors de la connexion TikTok:', error);
+      Alert.alert('Erreur', 'Impossible de démarrer la connexion TikTok');
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleDisconnect = async () => {
-    try {
-      setIsLoading(true);
-      await tiktokLoginService.disconnectTikTok(user.id);
-      setTiktokData(null);
-      Alert.alert('Succès', 'Compte TikTok déconnecté');
-    } catch (error) {
-      console.error('❌ Erreur déconnexion TikTok:', error);
-      Alert.alert('Erreur', 'Impossible de déconnecter le compte TikTok');
-    } finally {
-      setIsLoading(false);
-    }
+    Alert.alert(
+      'Déconnecter TikTok',
+      'Êtes-vous sûr de vouloir déconnecter votre compte TikTok ?',
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Déconnecter',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setIsLoading(true);
+              await tiktokLoginService.disconnectTikTok(user.id);
+              setTiktokData(null);
+              Alert.alert('Succès', 'Compte TikTok déconnecté');
+            } catch (error) {
+              console.error('Erreur lors de la déconnexion:', error);
+              Alert.alert('Erreur', 'Impossible de déconnecter le compte');
+            } finally {
+              setIsLoading(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleCallback = async (code: string, state: string) => {
@@ -91,18 +104,17 @@ const TikTokLoginModal: React.FC<TikTokLoginModalProps> = ({
       setIsLoading(true);
       const response = await tiktokLoginService.handleTikTokCallback(code, state);
       
-      if (response.success && response.userData) {
+      if (response.success) {
         await tiktokLoginService.saveTikTokData(user.id, response.userData);
         setTiktokData(response.userData);
         onSuccess(response.userData);
         Alert.alert('Succès', 'Compte TikTok connecté avec succès !');
-        onClose();
       } else {
-        Alert.alert('Erreur', response.error || 'Erreur de connexion TikTok');
+        Alert.alert('Erreur', response.error || 'Échec de la connexion TikTok');
       }
     } catch (error) {
-      console.error('❌ Erreur callback TikTok:', error);
-      Alert.alert('Erreur', 'Erreur lors de la connexion TikTok');
+      console.error('Erreur lors du callback TikTok:', error);
+      Alert.alert('Erreur', 'Impossible de finaliser la connexion TikTok');
     } finally {
       setIsLoading(false);
     }
@@ -123,92 +135,83 @@ const TikTokLoginModal: React.FC<TikTokLoginModalProps> = ({
           >
             {/* Header */}
             <View style={styles.header}>
-              <Text style={styles.title}>Connexion TikTok</Text>
+              <View style={styles.headerContent}>
+                <Ionicons name="logo-tiktok" size={28} color="#ff0050" />
+                <Text style={styles.headerTitle}>TikTok Account</Text>
+              </View>
               <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-                <Ionicons name="close" size={24} color={COLORS.text} />
+                <Ionicons name="close" size={24} color="#666" />
               </TouchableOpacity>
             </View>
 
-            {/* Content */}
-            <View style={styles.content}>
-              {tiktokData ? (
-                // Compte TikTok connecté
-                <View style={styles.connectedContainer}>
-                  <View style={styles.profileSection}>
-                    <View style={styles.avatarContainer}>
-                      <Ionicons name="person-circle" size={60} color="#ff0050" />
-                    </View>
-                    <Text style={styles.username}>{tiktokData.nickname}</Text>
-                    <Text style={styles.handle}>@{tiktokData.custom_username}</Text>
+            {isLoading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#ff0050" />
+                <Text style={styles.loadingText}>Connexion en cours...</Text>
+              </View>
+            ) : tiktokData ? (
+              // Compte TikTok connecté
+              <View style={styles.connectedContainer}>
+                <View style={styles.profileSection}>
+                  <View style={styles.profileImageContainer}>
+                    <Ionicons name="person" size={40} color="#ff0050" />
                   </View>
+                  <Text style={styles.profileName}>{tiktokData.nickname}</Text>
+                  <Text style={styles.profileHandle}>@{tiktokData.custom_username}</Text>
+                </View>
 
-                  <View style={styles.statsContainer}>
-                    <View style={styles.statItem}>
-                      <Text style={styles.statNumber}>{tiktokData.follower_count.toLocaleString()}</Text>
-                      <Text style={styles.statLabel}>Abonnés</Text>
-                    </View>
-                    <View style={styles.statItem}>
-                      <Text style={styles.statNumber}>{tiktokData.video_count.toLocaleString()}</Text>
-                      <Text style={styles.statLabel}>Vidéos</Text>
-                    </View>
-                    <View style={styles.statItem}>
-                      <Text style={styles.statNumber}>{tiktokData.likes_count.toLocaleString()}</Text>
-                      <Text style={styles.statLabel}>J'aime</Text>
-                    </View>
+                <View style={styles.statsContainer}>
+                  <View style={styles.statItem}>
+                    <Text style={styles.statNumber}>{tiktokData.follower_count.toLocaleString()}</Text>
+                    <Text style={styles.statLabel}>Followers</Text>
                   </View>
+                  <View style={styles.statItem}>
+                    <Text style={styles.statNumber}>{tiktokData.video_count.toLocaleString()}</Text>
+                    <Text style={styles.statLabel}>Videos</Text>
+                  </View>
+                  <View style={styles.statItem}>
+                    <Text style={styles.statNumber}>{tiktokData.likes_count.toLocaleString()}</Text>
+                    <Text style={styles.statLabel}>Likes</Text>
+                  </View>
+                </View>
 
+                <View style={styles.actionButtons}>
                   <TouchableOpacity
                     style={styles.disconnectButton}
                     onPress={handleDisconnect}
-                    disabled={isLoading}
                   >
-                    <Ionicons name="log-out-outline" size={20} color="#ffffff" />
-                    <Text style={styles.disconnectButtonText}>Déconnecter</Text>
+                    <Ionicons name="log-out-outline" size={20} color="#ff4757" />
+                    <Text style={styles.disconnectText}>Disconnect</Text>
                   </TouchableOpacity>
                 </View>
-              ) : (
-                // Pas de compte TikTok connecté
-                <View style={styles.notConnectedContainer}>
-                  <View style={styles.iconContainer}>
-                    <Ionicons name="logo-tiktok" size={80} color="#ff0050" />
-                  </View>
-                  
-                  <Text style={styles.description}>
-                    Connectez votre compte TikTok pour accéder à toutes les fonctionnalités de KLIPZ
-                  </Text>
-
-                  <View style={styles.benefitsContainer}>
-                    <View style={styles.benefitItem}>
-                      <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
-                      <Text style={styles.benefitText}>Accès à vos statistiques TikTok</Text>
-                    </View>
-                    <View style={styles.benefitItem}>
-                      <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
-                      <Text style={styles.benefitText}>Soumission automatique de clips</Text>
-                    </View>
-                    <View style={styles.benefitItem}>
-                      <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
-                      <Text style={styles.benefitText}>Suivi de vos performances</Text>
-                    </View>
-                  </View>
-
-                  <TouchableOpacity
-                    style={styles.connectButton}
-                    onPress={handleTikTokLogin}
-                    disabled={isLoading}
-                  >
-                    {isLoading ? (
-                      <ActivityIndicator color="#ffffff" size="small" />
-                    ) : (
-                      <>
-                        <Ionicons name="logo-tiktok" size={20} color="#ffffff" />
-                        <Text style={styles.connectButtonText}>Se connecter avec TikTok</Text>
-                      </>
-                    )}
-                  </TouchableOpacity>
+              </View>
+            ) : (
+              // Compte TikTok non connecté
+              <View style={styles.notConnectedContainer}>
+                <View style={styles.iconContainer}>
+                  <Ionicons name="logo-tiktok" size={60} color="#ff0050" />
                 </View>
-              )}
-            </View>
+                
+                <Text style={styles.title}>Connect Your TikTok Account</Text>
+                <Text style={styles.description}>
+                  Connect your TikTok account to submit clips and track your performance. 
+                  We'll only access your public profile information.
+                </Text>
+
+                <TouchableOpacity
+                  style={styles.connectButton}
+                  onPress={handleTikTokLogin}
+                  disabled={isLoading}
+                >
+                  <Ionicons name="logo-tiktok" size={24} color="#ffffff" />
+                  <Text style={styles.connectButtonText}>Connect TikTok Account</Text>
+                </TouchableOpacity>
+
+                <Text style={styles.privacyText}>
+                  By connecting, you agree to our Terms of Service and Privacy Policy
+                </Text>
+              </View>
+            )}
           </LinearGradient>
         </View>
       </View>
@@ -231,45 +234,61 @@ const styles = StyleSheet.create({
     ...SHADOWS.large,
   },
   modalContent: {
-    padding: 0,
+    padding: 24,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e5e5',
+    marginBottom: 24,
   },
-  title: {
-    fontSize: 24,
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: 20,
     fontFamily: FONTS.bold,
     color: COLORS.text,
+    marginLeft: 12,
   },
   closeButton: {
-    padding: 5,
+    padding: 4,
   },
-  content: {
-    padding: 20,
+  loadingContainer: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    fontFamily: FONTS.medium,
+    color: COLORS.textSecondary,
   },
   connectedContainer: {
     alignItems: 'center',
   },
   profileSection: {
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 24,
   },
-  avatarContainer: {
-    marginBottom: 10,
+  profileImageContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#f0f0f0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
   },
-  username: {
-    fontSize: 20,
+  profileName: {
+    fontSize: 18,
     fontFamily: FONTS.bold,
     color: COLORS.text,
-    marginBottom: 5,
+    marginBottom: 4,
   },
-  handle: {
-    fontSize: 16,
+  profileHandle: {
+    fontSize: 14,
     fontFamily: FONTS.medium,
     color: COLORS.textSecondary,
   },
@@ -277,7 +296,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     width: '100%',
-    marginBottom: 20,
+    marginBottom: 24,
   },
   statItem: {
     alignItems: 'center',
@@ -291,64 +310,70 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: FONTS.regular,
     color: COLORS.textSecondary,
+    marginTop: 4,
+  },
+  actionButtons: {
+    width: '100%',
   },
   disconnectButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ff4757',
-    paddingHorizontal: 20,
+    justifyContent: 'center',
+    backgroundColor: '#fff5f5',
+    borderWidth: 1,
+    borderColor: '#ff4757',
     paddingVertical: 12,
-    borderRadius: 10,
+    paddingHorizontal: 24,
+    borderRadius: 12,
   },
-  disconnectButtonText: {
-    color: '#ffffff',
+  disconnectText: {
+    marginLeft: 8,
     fontSize: 16,
     fontFamily: FONTS.medium,
-    marginLeft: 8,
+    color: '#ff4757',
   },
   notConnectedContainer: {
     alignItems: 'center',
   },
   iconContainer: {
-    marginBottom: 20,
+    marginBottom: 24,
+  },
+  title: {
+    fontSize: 20,
+    fontFamily: FONTS.bold,
+    color: COLORS.text,
+    textAlign: 'center',
+    marginBottom: 12,
   },
   description: {
-    fontSize: 16,
+    fontSize: 14,
     fontFamily: FONTS.regular,
     color: COLORS.textSecondary,
     textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: 20,
-  },
-  benefitsContainer: {
-    width: '100%',
-    marginBottom: 30,
-  },
-  benefitItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  benefitText: {
-    fontSize: 14,
-    fontFamily: FONTS.regular,
-    color: COLORS.text,
-    marginLeft: 10,
+    lineHeight: 20,
+    marginBottom: 32,
   },
   connectButton: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#ff0050',
-    paddingHorizontal: 30,
-    paddingVertical: 15,
-    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    borderRadius: 16,
+    marginBottom: 16,
     ...SHADOWS.medium,
   },
   connectButtonText: {
-    color: '#ffffff',
+    marginLeft: 12,
     fontSize: 16,
     fontFamily: FONTS.medium,
-    marginLeft: 8,
+    color: '#ffffff',
+  },
+  privacyText: {
+    fontSize: 12,
+    fontFamily: FONTS.regular,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
   },
 });
 
