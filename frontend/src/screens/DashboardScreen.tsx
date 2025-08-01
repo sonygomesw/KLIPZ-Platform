@@ -24,6 +24,8 @@ import declarationsService, { Declaration } from '../services/viewsDeclarationSe
 import { supabase } from '../config/supabase';
 import { adminService } from '../services/adminService';
 import campaignService from '../services/campaignService';
+import TikTokLoginModal from '../components/TikTokLoginModal';
+import { tiktokLoginService, TikTokUserData } from '../services/tiktokLoginService';
 
 interface DashboardScreenProps {
   user: User;
@@ -67,6 +69,8 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
     totalClippers: 0,
     totalCampaigns: 0,
   });
+  const [showTikTokModal, setShowTikTokModal] = useState(false);
+  const [tiktokData, setTiktokData] = useState<TikTokUserData | null>(null);
 
   // Use the connected user's role instead of context
   const actualUserRole = user.role;
@@ -86,6 +90,13 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
         
         const submissions = await dashboardService.getClipperRecentSubmissions(user.id, 3);
         setRecentSubmissions(submissions);
+
+        // Charger les données TikTok si connecté
+        const hasTikTokConnected = await tiktokLoginService.hasTikTokConnected(user.id);
+        if (hasTikTokConnected) {
+          const tiktokUserData = await tiktokLoginService.getTikTokData(user.id);
+          setTiktokData(tiktokUserData);
+        }
       } else if (actualUserRole === 'streamer') {
         const streamerStats = await dashboardService.getStreamerStats(user.id);
         setStats(streamerStats);
@@ -552,6 +563,59 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
         </LinearGradient>
       </View>
 
+      {/* Section TikTok Connection */}
+      <View style={styles.tiktokSection}>
+        <LinearGradient
+          colors={['#ffffff', '#f8f9fa']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
+          style={styles.tiktokCard}
+        >
+          <View style={styles.tiktokHeader}>
+            <Ionicons name="logo-tiktok" size={24} color="#ff0050" />
+            <Text style={styles.tiktokTitle}>TikTok Account</Text>
+          </View>
+          
+          {tiktokData ? (
+            <View style={styles.tiktokConnected}>
+              <View style={styles.tiktokProfile}>
+                <Text style={styles.tiktokUsername}>{tiktokData.nickname}</Text>
+                <Text style={styles.tiktokHandle}>@{tiktokData.custom_username}</Text>
+              </View>
+              <View style={styles.tiktokStats}>
+                <View style={styles.tiktokStat}>
+                  <Text style={styles.tiktokStatNumber}>{tiktokData.follower_count.toLocaleString()}</Text>
+                  <Text style={styles.tiktokStatLabel}>Followers</Text>
+                </View>
+                <View style={styles.tiktokStat}>
+                  <Text style={styles.tiktokStatNumber}>{tiktokData.video_count.toLocaleString()}</Text>
+                  <Text style={styles.tiktokStatLabel}>Videos</Text>
+                </View>
+              </View>
+              <TouchableOpacity 
+                style={styles.tiktokManageButton}
+                onPress={() => setShowTikTokModal(true)}
+              >
+                <Text style={styles.tiktokManageText}>Manage Account</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.tiktokNotConnected}>
+              <Text style={styles.tiktokDescription}>
+                Connect your TikTok account to submit clips and track your performance
+              </Text>
+              <TouchableOpacity 
+                style={styles.tiktokConnectButton}
+                onPress={() => setShowTikTokModal(true)}
+              >
+                <Ionicons name="logo-tiktok" size={20} color="#ffffff" />
+                <Text style={styles.tiktokConnectText}>Connect TikTok</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </LinearGradient>
+      </View>
+
       {/* Grid de statistiques simplifiée */}
       <View style={styles.simpleStatsGrid}>
         <View style={[styles.simpleStatCard, styles.cardTopLeft]}>
@@ -664,6 +728,17 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
             : renderClipperDashboard()
         }
       </View>
+      
+      {/* TikTok Login Modal */}
+      <TikTokLoginModal
+        visible={showTikTokModal}
+        onClose={() => setShowTikTokModal(false)}
+        onSuccess={(userData) => {
+          setTiktokData(userData);
+          setShowTikTokModal(false);
+        }}
+        user={user}
+      />
     </View>
   );
 };
@@ -1884,6 +1959,103 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     width: '100%',
+  },
+  // TikTok Section Styles
+  tiktokSection: {
+    marginBottom: 16,
+    marginHorizontal: 20,
+  },
+  tiktokCard: {
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: '#e5e5e5',
+    ...SHADOWS.medium,
+  },
+  tiktokHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  tiktokTitle: {
+    fontSize: 18,
+    fontFamily: FONTS.bold,
+    color: COLORS.text,
+    marginLeft: 8,
+  },
+  tiktokConnected: {
+    alignItems: 'center',
+  },
+  tiktokProfile: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  tiktokUsername: {
+    fontSize: 16,
+    fontFamily: FONTS.bold,
+    color: COLORS.text,
+    marginBottom: 4,
+  },
+  tiktokHandle: {
+    fontSize: 14,
+    fontFamily: FONTS.medium,
+    color: COLORS.textSecondary,
+  },
+  tiktokStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    width: '100%',
+    marginBottom: 16,
+  },
+  tiktokStat: {
+    alignItems: 'center',
+  },
+  tiktokStatNumber: {
+    fontSize: 16,
+    fontFamily: FONTS.bold,
+    color: COLORS.text,
+  },
+  tiktokStatLabel: {
+    fontSize: 12,
+    fontFamily: FONTS.regular,
+    color: COLORS.textSecondary,
+  },
+  tiktokManageButton: {
+    backgroundColor: '#ff4757',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  tiktokManageText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontFamily: FONTS.medium,
+  },
+  tiktokNotConnected: {
+    alignItems: 'center',
+  },
+  tiktokDescription: {
+    fontSize: 14,
+    fontFamily: FONTS.regular,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 16,
+  },
+  tiktokConnectButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ff0050',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 12,
+    ...SHADOWS.medium,
+  },
+  tiktokConnectText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontFamily: FONTS.medium,
+    marginLeft: 8,
   },
 });
 
