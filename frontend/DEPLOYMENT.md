@@ -1,70 +1,118 @@
-# 🚀 Déploiement KLIPZ sur Vercel
+# 🚀 Guide de Déploiement KLIPZ sur Vercel
 
 ## Prérequis
 
-1. **Compte Vercel** : [vercel.com](https://vercel.com)
-2. **Variables d'environnement** configurées
-3. **Repository GitHub** connecté
+- Compte Vercel
+- Compte GitHub avec le repository KLIPZ
+- Comptes Supabase et Stripe configurés
 
-## Variables d'environnement à configurer
+## 📋 Étapes de Déploiement
 
-Dans le dashboard Vercel, ajoutez ces variables :
+### 1. Préparation du Repository
 
+Assurez-vous que tous les fichiers sont committés :
 ```bash
-# Supabase
-EXPO_PUBLIC_SUPABASE_URL=your_supabase_url_here
-EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key_here
-SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key_here
-
-# Stripe
-EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key_here
-
-# TikTok Scraper
-EXPO_PUBLIC_TIKTOK_SCRAPER_URL=your_tiktok_scraper_url_here
-EXPO_PUBLIC_TIKTOK_SCRAPER_API_KEY=your_tiktok_scraper_api_key_here
+git add .
+git commit -m "Prepare for Vercel deployment"
+git push origin main
 ```
 
-## Étapes de déploiement
+### 2. Configuration Vercel
 
-### 1. **Connecter le repository GitHub**
-- Allez sur [vercel.com](https://vercel.com)
-- Cliquez sur "New Project"
-- Importez votre repository GitHub `sonygomesw/KLIPZ-Platform`
+1. Connectez-vous à [Vercel](https://vercel.com)
+2. Cliquez sur "New Project"
+3. Importez votre repository GitHub KLIPZ
+4. Configurez les paramètres :
 
-### 2. **Configurer le projet**
-- **Framework Preset** : `Expo`
-- **Root Directory** : `frontend`
-- **Build Command** : `npm run build`
-- **Output Directory** : `dist`
+**Framework Preset:** Create React App  
+**Root Directory:** `frontend`  
+**Build Command:** `npm run web`  
+**Output Directory:** `web-build`  
+**Install Command:** `npm install`
 
-### 3. **Ajouter les variables d'environnement**
-- Dans les paramètres du projet Vercel
-- Onglet "Environment Variables"
-- Ajoutez toutes les variables listées ci-dessus
+> 📁 **Note:** Les fichiers `vercel.json` et `DEPLOYMENT.md` sont maintenant dans le dossier `frontend/` pour une meilleure organisation.  
 
-### 4. **Déployer**
-- Cliquez sur "Deploy"
-- Vercel va automatiquement construire et déployer l'application
+### 3. Variables d'Environnement
 
-## Configuration automatique
+Dans les settings de votre projet Vercel, ajoutez ces variables :
 
-Le fichier `vercel.json` est déjà configuré pour :
-- ✅ **Build automatique** avec Expo
-- ✅ **CORS headers** pour les API
-- ✅ **Routing** pour SPA
-- ✅ **Environment variables** support
+```
+EXPO_PUBLIC_SUPABASE_URL=your_supabase_project_url
+EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key
+```
 
-## URLs de déploiement
+### 4. Déploiement
 
-- **Production** : `https://klipz-platform.vercel.app`
-- **Preview** : `https://klipz-platform-git-feature-branch.vercel.app`
+1. Cliquez sur "Deploy"
+2. Attendez que le build se termine
+3. Votre site sera disponible sur l'URL fournie par Vercel
 
-## Monitoring
+## 🔧 Configuration Avancée
 
-- **Logs** : Dashboard Vercel → Functions
-- **Performance** : Analytics intégrés
-- **Errors** : Error tracking automatique
+### Domaine Personnalisé
 
-## Mise à jour
+1. Allez dans Settings > Domains
+2. Ajoutez votre domaine personnalisé
+3. Configurez les DNS selon les instructions Vercel
 
-Chaque push sur `main` déclenche automatiquement un nouveau déploiement. 
+### Variables d'Environnement par Environnement
+
+- **Production:** Variables pour le site live
+- **Preview:** Variables pour les branches de feature
+- **Development:** Variables pour les tests locaux
+
+## 🚨 Troubleshooting
+
+### Build Errors
+
+Si le build échoue :
+
+1. Vérifiez que toutes les dépendances sont installées
+2. Assurez-vous que les variables d'environnement sont correctes
+3. Consultez les logs de build dans Vercel
+
+### Runtime Errors
+
+Si l'application ne fonctionne pas en production :
+
+1. Vérifiez la console du navigateur
+2. Assurez-vous que Supabase est accessible
+3. Vérifiez que les clés Stripe sont correctes
+
+## 📱 Test de l'Application
+
+Après déploiement, testez :
+
+- ✅ Chargement de la page d'accueil
+- ✅ Navigation entre les pages
+- ✅ Responsive design sur mobile/desktop
+- ✅ Connexion/inscription
+- ✅ Fonctionnalités principales
+
+## 🔄 Déploiement Automatique
+
+Vercel déploie automatiquement :
+- **main branch** → Production
+- **autres branches** → Preview deployments
+
+## 📊 Monitoring
+
+Surveillez votre application avec :
+- Analytics Vercel
+- Logs de runtime
+- Performance metrics
+
+## 🛠️ Commandes Utiles
+
+```bash
+# Build local pour tester
+cd frontend
+npm run build:vercel
+
+# Preview local
+npm run preview
+
+# Déploiement manuel via CLI
+npx vercel --prod
+``` 

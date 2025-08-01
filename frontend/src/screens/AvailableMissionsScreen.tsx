@@ -19,6 +19,8 @@ import { Picker } from '@react-native-picker/picker';
 import { COLORS, SIZES, SHADOWS, FONTS } from '../constants';
 import { User, Campaign, CampaignFilters } from '../types';
 import campaignService from '../services/campaignService';
+import ResponsiveGrid from '../components/ResponsiveGrid';
+import { useResponsive, GRID_CONFIG } from '../hooks/useResponsive';
 
 interface AvailableMissionsScreenProps {
   user: User;
@@ -50,7 +52,9 @@ const AvailableMissionsScreen: React.FC<AvailableMissionsScreenProps> = ({
   const [missions, setAvailableMissions] = useState<Campaign[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [numColumns, setNumColumns] = useState(3);
+  
+  // Hook responsive pour gérer l'affichage
+  const responsive = useResponsive();
   
   // États pour les filtres comme dans CampaignsListScreen
   const [filters, setFilters] = useState<CampaignFilters>({
@@ -70,25 +74,7 @@ const AvailableMissionsScreen: React.FC<AvailableMissionsScreenProps> = ({
     loadAvailableMissions();
   }, [filters]);
 
-  useEffect(() => {
-    const handleResize = () => {
-      const width = Dimensions.get('window').width;
-      let newColumns = 3;
-      if (width < 1600) {
-        newColumns = 1;
-      } else if (width < 2200) {
-        newColumns = 2;
-      } else {
-        newColumns = 3;
-      }
-      if (newColumns !== numColumns) {
-        setNumColumns(newColumns);
-      }
-    };
-    handleResize();
-    const subscription = Dimensions.addEventListener('change', handleResize);
-    return () => subscription?.remove();
-  }, [numColumns]);
+  // Plus besoin de gérer les colonnes manuellement - ResponsiveGrid s'en charge
 
   const loadAvailableMissions = async () => {
     try {
@@ -400,28 +386,7 @@ const AvailableMissionsScreen: React.FC<AvailableMissionsScreenProps> = ({
     return views.toString();
   };
 
-  const getCardWidth = () => {
-    if (numColumns === 1) return '100%'; // 1 colonne : pleine largeur
-    if (numColumns === 2) return '50%'; // 2 colonnes : 50% pour plus de largeur
-    return '33%'; // 3 colonnes : 33% pour plus de largeur
-  };
-
-  const getNameMaxWidth = () => {
-    if (numColumns === 1) return 600;
-    if (numColumns === 2) return 300;
-    return 180;
-  };
-
-  const getCardPaddingHorizontal = (): number => {
-    if (numColumns === 1) return 16;
-    if (numColumns === 2) return 14;
-    return 12;
-  };
-
-  const getCardMaxWidth = (): number | 'none' => {
-    if (numColumns === 1) return 350;
-    return 'none';
-  };
+  // Plus besoin de ces fonctions - ResponsiveGrid gère tout automatiquement
 
   const renderMissionCard = (campaign: Campaign) => (
     <TouchableOpacity 
@@ -429,10 +394,18 @@ const AvailableMissionsScreen: React.FC<AvailableMissionsScreenProps> = ({
       style={[
         styles.missionCard,
         {
-          width: getCardWidth(),
-          ...(typeof getCardMaxWidth() === 'number' ? { maxWidth: getCardMaxWidth() as number } : {}),
-          paddingHorizontal: getCardPaddingHorizontal(),
-          alignSelf: numColumns === 1 ? 'center' : 'stretch',
+          padding: responsive.getValue({
+            mobile: 12,
+            tablet: 14,
+            desktop: 16,
+            desktopLarge: 18
+          }),
+          minHeight: responsive.getValue({
+            mobile: 200,
+            tablet: 220,
+            desktop: 240,
+            desktopLarge: 260
+          })
         }
       ]}
       onPress={() => {
@@ -457,7 +430,7 @@ const AvailableMissionsScreen: React.FC<AvailableMissionsScreenProps> = ({
         <View style={styles.centerNameFollowersBlockk}>
           <View style={styles.nameAndBadgeContainerRefactored}>
             <Text
-              style={[styles.streamerName, { maxWidth: getNameMaxWidth() }]}
+              style={styles.streamerName}
               numberOfLines={1}
               ellipsizeMode="tail"
             >
@@ -836,21 +809,25 @@ const AvailableMissionsScreen: React.FC<AvailableMissionsScreenProps> = ({
               <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
             }
           >
-          <View style={[
-            styles.missionsList,
-            {
-              justifyContent: numColumns === 1 ? 'center' : 'space-between',
-              gap: numColumns === 1 ? 20 : 16,
-            }
-          ]}>
-              {missions
-                .filter(campaign => {
-                  // Filtrer par plateforme et exclure les missions en suppression
-                  const campaignPlatform = (campaign as any).platform || 'twitch';
-                  return campaignPlatform === selectedPlatform && campaign.status !== 'pending_deletion';
-                })
-                .map(renderMissionCard)}
-          </View>
+          <ResponsiveGrid
+            minItemWidth={responsive.getValue({
+              mobile: 280,
+              tablet: 320,
+              desktop: 340,
+              desktopLarge: 360
+            })}
+            maxColumns={responsive.getValue(GRID_CONFIG.columns)}
+            gap={responsive.getValue(GRID_CONFIG.gap)}
+            style={{ paddingHorizontal: responsive.getValue(GRID_CONFIG.padding) }}
+          >
+            {missions
+              .filter(campaign => {
+                // Filtrer par plateforme et exclure les missions en suppression
+                const campaignPlatform = (campaign as any).platform || 'twitch';
+                return campaignPlatform === selectedPlatform && campaign.status !== 'pending_deletion';
+              })
+              .map(renderMissionCard)}
+          </ResponsiveGrid>
       </ScrollView>
         )}
       </View>
@@ -1042,15 +1019,7 @@ const styles = StyleSheet.create({
     lineHeight: 14,
     paddingHorizontal: SIZES.spacing.xl,
   },
-  missionsList: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    width: '100%',
-    paddingHorizontal: 8,
-    minWidth: 0,
-  },
+  // Plus besoin de missionsList - ResponsiveGrid gère tout
   missionCard: {
     backgroundColor: '#2A2A2E',
     borderRadius: 20,
@@ -1058,7 +1027,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#4A4A4E',
     minHeight: 225,
-    marginBottom: 12,
+    width: '100%', // Prend toute la largeur allouée par ResponsiveGrid
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
