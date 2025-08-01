@@ -639,26 +639,6 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
         <View style={[styles.simpleStatCard, styles.cardBottomRight]}>
           <Text style={styles.simpleStatValue}>{stats.pendingSubmissions || 0}</Text>
           <Text style={styles.simpleStatText}>Pending</Text>
-=======
-        {/* Grid de statistiques simplifiée */}
-        <View style={styles.simpleStatsGrid}>
-          <View style={[styles.simpleStatCard, styles.cardTopLeft]}>
-            <Text style={styles.simpleStatValue}>{formatCurrency(stats.totalEarnings || 0)}</Text>
-            <Text style={styles.simpleStatText}>Total Earnings</Text>
-          </View>
-          <View style={[styles.simpleStatCard, styles.cardTopRight]}>
-            <Text style={styles.simpleStatValue}>{formatViews(stats.totalViews || 0)}</Text>
-            <Text style={styles.simpleStatText}>Total Views</Text>
-          </View>
-          <View style={[styles.simpleStatCard, styles.cardBottomLeft]}>
-            <Text style={styles.simpleStatValue}>{stats.activeCampaigns || 0}</Text>
-            <Text style={styles.simpleStatText}>Available Missions</Text>
-          </View>
-          <View style={[styles.simpleStatCard, styles.cardBottomRight]}>
-            <Text style={styles.simpleStatValue}>{stats.pendingSubmissions || 0}</Text>
-            <Text style={styles.simpleStatText}>Pending</Text>
-          </View>
->>>>>>> 09601d2091a8659e176854ecf8662c4918f16889
         </View>
       </View>
     </ScrollView>
