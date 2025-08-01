@@ -435,64 +435,67 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
       }
       showsVerticalScrollIndicator={false}
     >
-      {/* Section Solde */}
-      <View style={styles.balanceTitleContainer}>
-        <LinearGradient
-          colors={['#0A0A0A', '#0A0A0A']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 0, y: 1 }}
-          style={styles.balanceTitleGradient}
-        >
-          <View style={styles.balanceTitleContent}>
-            <View style={styles.balanceContentSection}>
-              <View style={styles.balanceLeft}>
-                <Text style={styles.balanceLabel}>Available Balance</Text>
-                <Text style={styles.balanceAmount}>{formatCurrency(walletBalance)}</Text>
-              </View>
-              <View style={styles.balanceRight}>
-                <TouchableOpacity 
-                  onPress={() => onTabChange('Payment')}
-                >
-                  <LinearGradient
-                    colors={['#4a5cf9', '#3c82f6']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 0, y: 1 }}
-                    style={styles.addMoneyButton}
+      {/* Conteneur principal avec hauteur flexible */}
+      <View style={styles.mainStatsContainer}>
+        {/* Section Solde */}
+        <View style={styles.balanceTitleContainer}>
+          <LinearGradient
+            colors={['#0A0A0A', '#0A0A0A']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            style={styles.balanceTitleGradient}
+          >
+            <View style={styles.balanceTitleContent}>
+              <View style={styles.balanceContentSection}>
+                <View style={styles.balanceLeft}>
+                  <Text style={styles.balanceLabel}>Available Balance</Text>
+                  <Text style={styles.balanceAmount}>{formatCurrency(walletBalance)}</Text>
+                </View>
+                <View style={styles.balanceRight}>
+                  <TouchableOpacity 
+                    onPress={() => onTabChange('Payment')}
                   >
-                    <Ionicons name="add" size={20} color="#FFFFFF" />
-                  <Text style={styles.addMoneyText}>Add Money</Text>
-                  </LinearGradient>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                  style={styles.simpleActionButton}
-                  onPress={() => onTabChange('Payment')}
-                >
-                  <Ionicons name="time" size={20} color="#89888d" />
-                  <Text style={styles.simpleActionText}>History</Text>
-                </TouchableOpacity>
+                    <LinearGradient
+                      colors={['#4a5cf9', '#3c82f6']}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 0, y: 1 }}
+                      style={styles.addMoneyButton}
+                    >
+                      <Ionicons name="add" size={20} color="#FFFFFF" />
+                    <Text style={styles.addMoneyText}>Add Money</Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={styles.simpleActionButton}
+                    onPress={() => onTabChange('Payment')}
+                  >
+                    <Ionicons name="time" size={20} color="#89888d" />
+                    <Text style={styles.simpleActionText}>History</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
-          </View>
-        </LinearGradient>
-      </View>
+          </LinearGradient>
+        </View>
 
-      {/* Grid de statistiques simplifiée */}
-      <View style={styles.simpleStatsGrid}>
-        <View style={[styles.simpleStatCard, styles.cardTopLeft]}>
-          <Text style={styles.simpleStatValue}>{streamerCampaigns?.reduce((total, campaign) => total + (campaign.submissions?.length || 0), 0) || 0}</Text>
-          <Text style={styles.simpleStatText}>Total Clips</Text>
-        </View>
-        <View style={[styles.simpleStatCard, styles.cardTopRight]}>
-          <Text style={styles.simpleStatValue}>{formatViews(streamerCampaigns?.reduce((total, campaign) => total + (campaign.totalViews || 0), 0) || 0)}</Text>
-          <Text style={styles.simpleStatText}>Total Views</Text>
-        </View>
-        <View style={[styles.simpleStatCard, styles.cardBottomLeft]}>
-          <Text style={styles.simpleStatValue}>{streamerCampaigns?.filter(c => c.status === 'active').length || 0}</Text>
-          <Text style={styles.simpleStatText}>Active Missions</Text>
-        </View>
-        <View style={[styles.simpleStatCard, styles.cardBottomRight]}>
-          <Text style={styles.simpleStatValue}>{streamerCampaigns?.filter(c => c.status === 'completed').length || 0}</Text>
-          <Text style={styles.simpleStatText}>Completed Missions</Text>
+        {/* Grid de statistiques simplifiée */}
+        <View style={styles.simpleStatsGrid}>
+          <View style={[styles.simpleStatCard, styles.cardTopLeft]}>
+            <Text style={styles.simpleStatValue}>{streamerCampaigns?.reduce((total, campaign) => total + (campaign.submissions?.length || 0), 0) || 0}</Text>
+            <Text style={styles.simpleStatText}>Total Clips</Text>
+          </View>
+          <View style={[styles.simpleStatCard, styles.cardTopRight]}>
+            <Text style={styles.simpleStatValue}>{formatViews(streamerCampaigns?.reduce((total, campaign) => total + (campaign.totalViews || 0), 0) || 0)}</Text>
+            <Text style={styles.simpleStatText}>Total Views</Text>
+          </View>
+          <View style={[styles.simpleStatCard, styles.cardBottomLeft]}>
+            <Text style={styles.simpleStatValue}>{streamerCampaigns?.filter(c => c.status === 'active').length || 0}</Text>
+            <Text style={styles.simpleStatText}>Active Missions</Text>
+          </View>
+          <View style={[styles.simpleStatCard, styles.cardBottomRight]}>
+            <Text style={styles.simpleStatValue}>{streamerCampaigns?.filter(c => c.status === 'completed').length || 0}</Text>
+            <Text style={styles.simpleStatText}>Completed Missions</Text>
+          </View>
         </View>
       </View>
 
@@ -511,64 +514,67 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
       }
       showsVerticalScrollIndicator={false}
     >
-      {/* Section Solde */}
-      <View style={styles.balanceTitleContainer}>
-        <LinearGradient
-          colors={['#0A0A0A', '#0A0A0A']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 0, y: 1 }}
-          style={styles.balanceTitleGradient}
-        >
-          <View style={styles.balanceTitleContent}>
-            <View style={styles.balanceContentSection}>
-              <View style={styles.balanceLeft}>
-                <Text style={styles.balanceLabel}>Available Balance</Text>
-                <Text style={styles.balanceAmount}>{formatCurrency(walletBalance)}</Text>
-              </View>
-              <View style={styles.balanceRight}>
-                <TouchableOpacity 
-                  onPress={() => onTabChange('Payment')}
-                >
-                  <LinearGradient
-                    colors={['#4a5cf9', '#3c82f6']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 0, y: 1 }}
-                    style={styles.addMoneyButton}
+      {/* Conteneur principal avec hauteur flexible */}
+      <View style={styles.mainStatsContainer}>
+        {/* Section Solde */}
+        <View style={styles.balanceTitleContainer}>
+          <LinearGradient
+            colors={['#0A0A0A', '#0A0A0A']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            style={styles.balanceTitleGradient}
+          >
+            <View style={styles.balanceTitleContent}>
+              <View style={styles.balanceContentSection}>
+                <View style={styles.balanceLeft}>
+                  <Text style={styles.balanceLabel}>Available Balance</Text>
+                  <Text style={styles.balanceAmount}>{formatCurrency(walletBalance)}</Text>
+                </View>
+                <View style={styles.balanceRight}>
+                  <TouchableOpacity 
+                    onPress={() => onTabChange('Payment')}
                   >
-                    <Ionicons name="arrow-down" size={20} color="#FFFFFF" />
-                  <Text style={styles.addMoneyText}>Withdraw</Text>
-                  </LinearGradient>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                  style={styles.simpleActionButton}
-                  onPress={() => onTabChange('Payment')}
-                >
-                  <Ionicons name="time" size={20} color="#89888d" />
-                  <Text style={styles.simpleActionText}>History</Text>
-                </TouchableOpacity>
+                    <LinearGradient
+                      colors={['#4a5cf9', '#3c82f6']}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 0, y: 1 }}
+                      style={styles.addMoneyButton}
+                    >
+                      <Ionicons name="arrow-down" size={20} color="#FFFFFF" />
+                    <Text style={styles.addMoneyText}>Withdraw</Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={styles.simpleActionButton}
+                    onPress={() => onTabChange('Payment')}
+                  >
+                    <Ionicons name="time" size={20} color="#89888d" />
+                    <Text style={styles.simpleActionText}>History</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
-          </View>
-        </LinearGradient>
-      </View>
+          </LinearGradient>
+        </View>
 
-      {/* Grid de statistiques simplifiée */}
-      <View style={styles.simpleStatsGrid}>
-        <View style={[styles.simpleStatCard, styles.cardTopLeft]}>
-          <Text style={styles.simpleStatValue}>{formatCurrency(stats.totalEarnings || 0)}</Text>
-          <Text style={styles.simpleStatText}>Total Earnings</Text>
-        </View>
-        <View style={[styles.simpleStatCard, styles.cardTopRight]}>
-          <Text style={styles.simpleStatValue}>{formatViews(stats.totalViews || 0)}</Text>
-          <Text style={styles.simpleStatText}>Total Views</Text>
-        </View>
-        <View style={[styles.simpleStatCard, styles.cardBottomLeft]}>
-          <Text style={styles.simpleStatValue}>{stats.activeCampaigns || 0}</Text>
-          <Text style={styles.simpleStatText}>Available Missions</Text>
-        </View>
-        <View style={[styles.simpleStatCard, styles.cardBottomRight]}>
-          <Text style={styles.simpleStatValue}>{stats.pendingSubmissions || 0}</Text>
-          <Text style={styles.simpleStatText}>Pending</Text>
+        {/* Grid de statistiques simplifiée */}
+        <View style={styles.simpleStatsGrid}>
+          <View style={[styles.simpleStatCard, styles.cardTopLeft]}>
+            <Text style={styles.simpleStatValue}>{formatCurrency(stats.totalEarnings || 0)}</Text>
+            <Text style={styles.simpleStatText}>Total Earnings</Text>
+          </View>
+          <View style={[styles.simpleStatCard, styles.cardTopRight]}>
+            <Text style={styles.simpleStatValue}>{formatViews(stats.totalViews || 0)}</Text>
+            <Text style={styles.simpleStatText}>Total Views</Text>
+          </View>
+          <View style={[styles.simpleStatCard, styles.cardBottomLeft]}>
+            <Text style={styles.simpleStatValue}>{stats.activeCampaigns || 0}</Text>
+            <Text style={styles.simpleStatText}>Available Missions</Text>
+          </View>
+          <View style={[styles.simpleStatCard, styles.cardBottomRight]}>
+            <Text style={styles.simpleStatValue}>{stats.pendingSubmissions || 0}</Text>
+            <Text style={styles.simpleStatText}>Pending</Text>
+          </View>
         </View>
       </View>
     </ScrollView>
@@ -583,68 +589,71 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
       }
       showsVerticalScrollIndicator={false}
     >
-      {/* Section Solde */}
-      <View style={styles.balanceTitleContainer}>
-        <LinearGradient
-          colors={['#0A0A0A', '#0A0A0A']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 0, y: 1 }}
-          style={styles.balanceTitleGradient}
-        >
-          <View style={styles.balanceTitleContent}>
-            <View style={styles.balanceContentSection}>
-              <View style={styles.balanceLeft}>
-                <Text style={styles.balanceLabel}>Available Balance</Text>
-                <Text style={styles.balanceAmount}>{formatCurrency(walletBalance)}</Text>
-              </View>
-              <View style={styles.balanceRight}>
-                <TouchableOpacity 
-                  onPress={() => onTabChange('Payment')}
-                >
-                  <LinearGradient
-                    colors={['#4a5cf9', '#3c82f6']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 0, y: 1 }}
-                    style={styles.addMoneyButton}
+      {/* Conteneur principal avec hauteur flexible */}
+      <View style={styles.mainStatsContainer}>
+        {/* Section Solde */}
+        <View style={styles.balanceTitleContainer}>
+          <LinearGradient
+            colors={['#0A0A0A', '#0A0A0A']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            style={styles.balanceTitleGradient}
+          >
+            <View style={styles.balanceTitleContent}>
+              <View style={styles.balanceContentSection}>
+                <View style={styles.balanceLeft}>
+                  <Text style={styles.balanceLabel}>Available Balance</Text>
+                  <Text style={styles.balanceAmount}>{formatCurrency(walletBalance)}</Text>
+                </View>
+                <View style={styles.balanceRight}>
+                  <TouchableOpacity 
+                    onPress={() => onTabChange('Payment')}
                   >
-                    <Ionicons name="add" size={20} color="#FFFFFF" />
-                  <Text style={styles.addMoneyText}>Add Money</Text>
-                  </LinearGradient>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                  style={styles.simpleActionButton}
-                  onPress={() => onTabChange('Payment')}
-                >
-                  <Ionicons name="time" size={20} color="#89888d" />
-                  <Text style={styles.simpleActionText}>History</Text>
-                </TouchableOpacity>
+                    <LinearGradient
+                      colors={['#4a5cf9', '#3c82f6']}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 0, y: 1 }}
+                      style={styles.addMoneyButton}
+                    >
+                      <Ionicons name="add" size={20} color="#FFFFFF" />
+                    <Text style={styles.addMoneyText}>Add Money</Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={styles.simpleActionButton}
+                    onPress={() => onTabChange('Payment')}
+                  >
+                    <Ionicons name="time" size={20} color="#89888d" />
+                    <Text style={styles.simpleActionText}>History</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
-          </View>
-        </LinearGradient>
-      </View>
+          </LinearGradient>
+        </View>
 
-      {/* Grid de statistiques simplifiée */}
-      <View style={styles.simpleStatsGrid}>
-        <View style={[styles.simpleStatCard, styles.cardTopLeft]}>
-          <Ionicons name="videocam" size={35} color="#dcdcdc" />
-          <Text style={styles.simpleStatValue}>{adminStats.totalDeclarations}</Text>
-          <Text style={styles.simpleStatText}>Total Clips</Text>
-        </View>
-        <View style={[styles.simpleStatCard, styles.cardTopRight]}>
-          <Ionicons name="cash" size={35} color="#dcdcdc" />
-          <Text style={styles.simpleStatValue}>{formatCurrency(adminStats.totalEarnings)}</Text>
-          <Text style={styles.simpleStatText}>Earnings</Text>
-        </View>
-        <View style={[styles.simpleStatCard, styles.cardBottomLeft]}>
-          <Ionicons name="people-circle" size={35} color="#dcdcdc" />
-          <Text style={styles.simpleStatValue}>{adminStats.totalCampaigns}</Text>
-          <Text style={styles.simpleStatText}>Total Streamers</Text>
-        </View>
-        <View style={[styles.simpleStatCard, styles.cardBottomRight]}>
-          <Ionicons name="people" size={35} color="#dcdcdc" />
-          <Text style={styles.simpleStatValue}>{adminStats.totalClippers}</Text>
-          <Text style={styles.simpleStatText}>Total Clippers</Text>
+        {/* Grid de statistiques simplifiée */}
+        <View style={styles.simpleStatsGrid}>
+          <View style={[styles.simpleStatCard, styles.cardTopLeft]}>
+            <Ionicons name="videocam" size={35} color="#dcdcdc" />
+            <Text style={styles.simpleStatValue}>{adminStats.totalDeclarations}</Text>
+            <Text style={styles.simpleStatText}>Total Clips</Text>
+          </View>
+          <View style={[styles.simpleStatCard, styles.cardTopRight]}>
+            <Ionicons name="cash" size={35} color="#dcdcdc" />
+            <Text style={styles.simpleStatValue}>{formatCurrency(adminStats.totalEarnings)}</Text>
+            <Text style={styles.simpleStatText}>Earnings</Text>
+          </View>
+          <View style={[styles.simpleStatCard, styles.cardBottomLeft]}>
+            <Ionicons name="people-circle" size={35} color="#dcdcdc" />
+            <Text style={styles.simpleStatValue}>{adminStats.totalCampaigns}</Text>
+            <Text style={styles.simpleStatText}>Total Streamers</Text>
+          </View>
+          <View style={[styles.simpleStatCard, styles.cardBottomRight]}>
+            <Ionicons name="people" size={35} color="#dcdcdc" />
+            <Text style={styles.simpleStatValue}>{adminStats.totalClippers}</Text>
+            <Text style={styles.simpleStatText}>Total Clippers</Text>
+          </View>
         </View>
       </View>
 
@@ -687,8 +696,8 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 9,
-    paddingTop: 4,
-    paddingBottom: 19,
+    paddingTop: 0, // Supprimé pour éliminer l'espace en haut
+    paddingBottom: 0, // Supprimé pour éliminer l'espace en bas
     flexGrow: 1,
   },
   mainContentContainer: {
@@ -1467,6 +1476,7 @@ const styles = StyleSheet.create({
     whiteSpace: 'nowrap',
     textAlign: 'left',
     lineHeight: 15,
+    marginBottom: 5,
   },
   balanceAmount: {
     fontSize: 17,
@@ -1539,11 +1549,19 @@ const styles = StyleSheet.create({
     color: '#0a0a0a',
     fontFamily: 'Inter_18pt-SemiBold',
   },
+  mainStatsContainer: {
+    flex: 1,
+    width: '100%',
+    height: '100%', // Hauteur fixe à 100% pour éliminer les espaces
+    minHeight: 600, // Hauteur minimale pour assurer un bon affichage
+    flexDirection: 'column', // Distribution verticale
+    justifyContent: 'flex-start', // Alignement au début
+  },
   simpleStatsGrid: {
-    height: 460,
+    flex: 0.85, // 80% de l'espace pour les statistiques
     position: 'relative',
     width: '100%',
-    marginTop: 11,
+    marginTop: 0, // Suppression de la marge pour éliminer le trou
   },
   simpleStatCard: {
     width: '48%',
@@ -1836,8 +1854,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   balanceTitleContainer: {
-    alignSelf: 'stretch',
-    marginHorizontal: 20,
+    alignSelf: 'center',
+    width: '98%', // Même largeur que les blocs stats (100% - 2% pour les marges)
+    flex: 0.15, // 20% de l'espace pour la balance
+    marginHorizontal: 0, // Pas de marge supplémentaire
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 2 }, // Réduit de 4 à 2
     shadowOpacity: 0.1,
@@ -1845,17 +1865,19 @@ const styles = StyleSheet.create({
     elevation: 3, // Réduit de 6 à 3
     borderRadius: 15, // Réduit de 30 à 15
     overflow: 'hidden',
-    marginBottom: 12, // Réduit de 24 à 12
+    marginBottom: 0, // Supprimé pour utiliser les % d'espace
   },
   balanceTitleGradient: {
     paddingHorizontal: 20, // Réduit de 40 à 20
-    paddingVertical: 15, // Réduit de 30 à 15
+    paddingVertical: 0, // Supprimé pour éliminer l'espace vertical interne
     borderRadius: 15, // Réduit de 30 à 15
     borderWidth: 1,
     borderColor: '#333',
     borderBottomWidth: 1.5, // Réduit de 3 à 1.5
     borderBottomColor: '#222',
     backgroundColor: '#0A0A0A',
+    flex: 1, // Prend toute la hauteur disponible du conteneur parent
+    justifyContent: 'center', // Centre le contenu verticalement
   },
   balanceTitleContent: {
     flexDirection: 'column',
