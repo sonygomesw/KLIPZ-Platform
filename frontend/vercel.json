@@ -4,11 +4,6 @@
   "framework": "expo",
   "installCommand": "npm install",
   "devCommand": "npm run web",
-  "functions": {
-    "app/api/**/*.ts": {
-      "runtime": "nodejs18.x"
-    }
-  },
   "rewrites": [
     {
       "source": "/(.*)",
