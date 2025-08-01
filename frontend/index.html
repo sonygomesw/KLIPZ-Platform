@@ -1,16 +1,4 @@
-const fs = require('fs');
-const path = require('path');
-
-console.log('🚀 Building KLIPZ for production...');
-
-// Créer le dossier web-build
-const buildDir = path.join(__dirname, 'web-build');
-if (!fs.existsSync(buildDir)) {
-  fs.mkdirSync(buildDir, { recursive: true });
-}
-
-// Créer un index.html avec l'application
-const indexHtml = `<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -176,7 +164,7 @@ const indexHtml = `<!DOCTYPE html>
     <script>
         function showApp() {
             document.getElementById('app-info').style.display = 'block';
-            alert('🚀 Bienvenue sur KLIPZ!\\n\\nL\\'application complète est en cours de déploiement.\\nCette version statique démontre les fonctionnalités principales.');
+            alert('🚀 Bienvenue sur KLIPZ!\n\nL\'application complète est en cours de déploiement.\nCette version statique démontre les fonctionnalités principales.');
         }
         
         // Animation de chargement
@@ -188,14 +176,4 @@ const indexHtml = `<!DOCTYPE html>
         });
     </script>
 </body>
-</html>`;
-
-// Écrire le fichier dans web-build/
-fs.writeFileSync(path.join(buildDir, 'index.html'), indexHtml);
-
-// Aussi créer à la racine pour Vercel
-fs.writeFileSync(path.join(__dirname, 'index.html'), indexHtml);
-
-console.log('✅ Static build completed!');
-console.log('📁 Files created in: web-build/ and root');
-console.log('🌐 Ready for deployment!'); 
+</html>
