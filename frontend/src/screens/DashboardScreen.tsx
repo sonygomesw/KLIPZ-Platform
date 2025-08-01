@@ -640,6 +640,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
           <Text style={styles.simpleStatText}>Pending</Text>
         </View>
       </View>
+      </View>
     </ScrollView>
   );
 
