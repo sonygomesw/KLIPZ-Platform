@@ -568,7 +568,6 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
           </LinearGradient>
         </View>
 
-<<<<<<< HEAD
       {/* Section TikTok Connection */}
       <View style={styles.tiktokSection}>
         <LinearGradient
