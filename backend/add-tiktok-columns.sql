@@ -28,17 +28,39 @@ CREATE INDEX IF NOT EXISTS idx_users_tiktok_username ON users(tiktok_username);
 CREATE INDEX IF NOT EXISTS idx_users_tiktok_follower_count ON users(tiktok_follower_count);
 
 -- Ajouter des contraintes pour assurer l'intégrité des données
-ALTER TABLE users ADD CONSTRAINT IF NOT EXISTS check_tiktok_follower_count 
-  CHECK (tiktok_follower_count >= 0);
+-- Note: PostgreSQL ne supporte pas IF NOT EXISTS pour ADD CONSTRAINT
+-- Ces contraintes seront ajoutées seulement si elles n'existent pas déjà
 
-ALTER TABLE users ADD CONSTRAINT IF NOT EXISTS check_tiktok_following_count 
-  CHECK (tiktok_following_count >= 0);
-
-ALTER TABLE users ADD CONSTRAINT IF NOT EXISTS check_tiktok_likes_count 
-  CHECK (tiktok_likes_count >= 0);
-
-ALTER TABLE users ADD CONSTRAINT IF NOT EXISTS check_tiktok_video_count 
-  CHECK (tiktok_video_count >= 0);
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints 
+                   WHERE constraint_name = 'check_tiktok_follower_count' 
+                   AND table_name = 'users') THEN
+        ALTER TABLE users ADD CONSTRAINT check_tiktok_follower_count 
+          CHECK (tiktok_follower_count >= 0);
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints 
+                   WHERE constraint_name = 'check_tiktok_following_count' 
+                   AND table_name = 'users') THEN
+        ALTER TABLE users ADD CONSTRAINT check_tiktok_following_count 
+          CHECK (tiktok_following_count >= 0);
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints 
+                   WHERE constraint_name = 'check_tiktok_likes_count' 
+                   AND table_name = 'users') THEN
+        ALTER TABLE users ADD CONSTRAINT check_tiktok_likes_count 
+          CHECK (tiktok_likes_count >= 0);
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints 
+                   WHERE constraint_name = 'check_tiktok_video_count' 
+                   AND table_name = 'users') THEN
+        ALTER TABLE users ADD CONSTRAINT check_tiktok_video_count 
+          CHECK (tiktok_video_count >= 0);
+    END IF;
+END $$;
 
 -- Commentaires pour documenter les nouvelles colonnes
 COMMENT ON COLUMN users.tiktok_open_id IS 'TikTok Open ID unique de l''utilisateur';
