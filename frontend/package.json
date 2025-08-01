@@ -7,7 +7,7 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "build": "npx create-react-app build",
+    "build": "node build-static.js",
     "build:vercel": "npm run build",
     "preview": "npx serve dist"
   },
