@@ -21,6 +21,7 @@ import { User, Campaign, CampaignFilters } from '../types';
 import campaignService from '../services/campaignService';
 import ResponsiveGrid from '../components/ResponsiveGrid';
 import { useResponsive, GRID_CONFIG } from '../hooks/useResponsive';
+import { useSubmissionRefresh } from '../contexts/SubmissionContext';
 
 interface AvailableMissionsScreenProps {
   user: User;
@@ -49,6 +50,7 @@ const AvailableMissionsScreen: React.FC<AvailableMissionsScreenProps> = ({
   navigation,
   onMissionSelect
 }) => {
+  const { triggerRefresh } = useSubmissionRefresh();
   const [missions, setAvailableMissions] = useState<Campaign[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -67,11 +69,13 @@ const AvailableMissionsScreen: React.FC<AvailableMissionsScreenProps> = ({
   const [selectedMission, setSelectedMission] = useState<Campaign | null>(null);
   const [clipUrl, setClipUrl] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const scaleAnim = useState(new Animated.Value(0.8))[0];
   const opacityAnim = useState(new Animated.Value(0))[0];
 
   useEffect(() => {
     loadAvailableMissions();
+    console.log('🔍 USER ROLE CHECK:', user.role, user.email);
   }, [filters]);
 
   // Plus besoin de gérer les colonnes manuellement - ResponsiveGrid s'en charge
@@ -85,213 +89,10 @@ const AvailableMissionsScreen: React.FC<AvailableMissionsScreenProps> = ({
       const campaigns = await campaignService.getCampaigns(filters);
       console.log('🔍 Available Missions retrieved with filters:', campaigns.length);
       
-      // Add test data to see the design
-      const mockCampaigns: Campaign[] = [
-        {
-          id: 'mock-1',
-          streamerId: 'KaiCenat',
-          streamerName: 'KaiCenat',
-          streamerAvatar: 'https://static-cdn.jtvnw.net/jtv_user_pictures/bf6a04cf-3f44-4986-8eed-5c36bfad542b-profile_image-300x300.png',
-          streamerFollowers: 18800000,
-          title: 'Epic moment clip',
-          description: 'Create a clip of a particularly epic moment from my stream',
-          imageUrl: 'https://images2.minutemediacdn.com/image/upload/c_crop,w_1582,h_889,x_0,y_0/c_fill,w_720,ar_16:9,f_auto,q_auto,g_auto/images/voltaxMediaLibrary/mmsport/esports_illustrated/01jdbws64a94v3b70kff.jpg',
-          criteria: { hashtags: ['#epic', '#gaming'], style: 'dramatic', duration: 30, minViews: 10000 },
-          budget: 50000,
-          cpm: 30,
-          fanPageCpm: null,
-          status: 'active',
-          createdAt: new Date('2024-01-15'),
-          totalViews: 50000000,
-          totalSpent: 15000,
-        },
-        {
-          id: 'mock-2',
-          streamerId: '2xRaKai',
-          streamerName: '2xRaKai',
-          streamerAvatar: 'https://static-cdn.jtvnw.net/jtv_user_pictures/b5d43658-37ed-4481-907d-3b6939bd0825-profile_image-300x300.png',
-          streamerFollowers: 1600000,
-          title: 'Best stream fail',
-          description: 'Capture the best fail from the session',
-          imageUrl: 'https://static-cdn.jtvnw.net/twitch-clips-thumbnails-prod/PricklyThirstyDootWOOP-CZE0vqAc6zCQVh1N/bfecfd63-8b78-471e-b9d8-6672bc12ed79/preview.jpg',
-          criteria: { hashtags: ['#fail', '#funny'], style: 'humorous', duration: 20, minViews: 8000 },
-          budget: 10000,
-          cpm: 20,
-          fanPageCpm: null,
-          status: 'active',
-          createdAt: new Date('2024-01-16'),
-          totalViews: 10000000,
-          totalSpent: 2000,
-        },
-        {
-          id: 'mock-3',
-          streamerId: 'Duke',
-          streamerName: 'Duke',
-          streamerAvatar: 'https://static-cdn.jtvnw.net/jtv_user_pictures/18255aea-40af-4381-9054-47b6c358e1a7-profile_image-300x300.png',
-          streamerFollowers: 3200000,
-          title: 'Funny moment with chat',
-          description: 'A funny interaction moment with the chat',
-          imageUrl: 'https://static-cdn.jtvnw.net/twitch-clips-thumbnails-prod/WrongFlaccidCroissantSeemsGood-SX6sefN5wiEw4SDF/dd72cf89-1152-4cca-beef-b74cff85d0be/preview.jpg',
-          criteria: { hashtags: ['#chat', '#funny'], style: 'interactive', duration: 25, minViews: 12000 },
-          budget: 30000,
-          cpm: 25,
-          fanPageCpm: null,
-          status: 'active',
-          createdAt: new Date('2024-01-17'),
-          totalViews: 20000000,
-          totalSpent: 5000,
-        },
-        {
-          id: 'mock-4',
-          streamerId: 'Anyme023',
-          streamerName: 'Anyme023',
-          streamerAvatar: 'https://static-cdn.jtvnw.net/jtv_user_pictures/17ef7a09-3473-4ff8-85ca-e6648d392116-profile_image-300x300.png',
-          streamerFollowers: 1900000,
-          title: 'My screen time is scary',
-          description: 'Create a clip of my scariest moments',
-          imageUrl: 'https://worldofgeek.fr/wp-content/uploads/2025/07/anyme-stream-1200x594.png',
-          criteria: { hashtags: ['#scary', '#gaming'], style: 'thrilling', duration: 35, minViews: 15000 },
-          budget: 600,
-          cpm: 35,
-          fanPageCpm: null,
-          status: 'active',
-          createdAt: new Date('2024-01-18'),
-          totalViews: 0,
-          totalSpent: 0,
-        },
-        {
-          id: 'mock-5',
-          streamerId: 'Squeezie',
-          streamerName: 'Squeezie',
-          streamerAvatar: 'https://static-cdn.jtvnw.net/jtv_user_pictures/1939615e-a34d-4fab-a035-8c3d8ffae278-profile_image-300x300.png',
-          streamerFollowers: 5400000,
-          title: 'ÉPISODE 1: DAWALA, ADJINAYA',
-          description: 'The best moments from episode 1 with our guests',
-          imageUrl: 'https://img.nrj.fr/HbiLITTGW-dmBAbVxnVDEchx-Kc=/0x415/smart/medias%2F2025%2F06%2Fyhf-o22uzs7cqgcvm-wbar-th-7s9b05nh8g1bt7jjk_683ec91347e9e.jpg',
-          criteria: { hashtags: ['#qmsm', '#episode1'], style: 'show', duration: 40, minViews: 20000 },
-          budget: 800,
-          cpm: 40,
-          fanPageCpm: null,
-          status: 'active',
-          createdAt: new Date('2024-01-19'),
-          totalViews: 0,
-          totalSpent: 0,
-        },
-        {
-          id: 'mock-6',
-          streamerId: 'DDG',
-          streamerName: 'DDG',
-          streamerAvatar: 'https://static-cdn.jtvnw.net/jtv_user_pictures/01d55c0b-9cfc-4a3d-a622-1bc2b3300f5e-profile_image-300x300.png',
-          streamerFollowers: 1900000,
-          title: 'WE DRIVE STRANGERS CRAZY ON THE PHONE',
-          description: 'The best moments from our phone calls',
-          imageUrl: 'https://picsum.photos/400/300?random=6',
-          criteria: { hashtags: ['#phone', '#prank'], style: 'prank', duration: 30, minViews: 18000 },
-          budget: 450000,
-          cpm: 28,
-          fanPageCpm: null,
-          status: 'active',
-          createdAt: new Date('2024-01-20'),
-          totalViews: 0,
-          totalSpent: 0,
-        },
-        {
-          id: 'mock-7',
-          streamerId: 'Fanum',
-          streamerName: 'Fanum',
-          streamerAvatar: 'https://static-cdn.jtvnw.net/jtv_user_pictures/730415ce-12c3-455f-8218-dfff65238c5b-profile_image-300x300.png',
-          streamerFollowers: 3300000,
-          title: 'j\'ai la plus grande CHAINE ASMR',
-          description: 'The most relaxing moments from my ASMR sessions',
-          imageUrl: 'https://static-cdn.jtvnw.net/cf_vods/d2nvs31859zcd8/90b722af12ee1af91de6_fanum_324308694140_1752456104//thumb/thumb0-276x155.jpg',
-          criteria: { hashtags: ['#asmr', '#relax'], style: 'calm', duration: 45, minViews: 10000 },
-          budget: 35000,
-          cpm: 22,
-          fanPageCpm: null,
-          status: 'active',
-          createdAt: new Date('2024-01-21'),
-          totalViews: 0,
-          totalSpent: 0,
-        },
-        {
-          id: 'mock-8',
-          streamerId: 'JLTOMY',
-          streamerName: 'JLTOMY',
-          streamerAvatar: 'https://static-cdn.jtvnw.net/jtv_user_pictures/aa2bc80a-e317-494a-a94d-7492889e4f66-profile_image-300x300.png',
-          streamerFollowers: 1300000,
-          title: 'Unlikely victory',
-          description: 'Capture my most unlikely victories',
-          imageUrl: 'https://static-cdn.jtvnw.net/cf_vods/d1m7jfoe9zdc1j/f3f30729440b5ab1318c_jltomy_329577544317_1753126344//thumb/thumb0-276x155.jpg',
-          criteria: { hashtags: ['#victory', '#gaming'], style: 'epic', duration: 25, minViews: 25000 },
-          budget: 700,
-          cpm: 45,
-          fanPageCpm: null,
-          status: 'active',
-          createdAt: new Date('2024-01-22'),
-          totalViews: 0,
-          totalSpent: 0,
-        },
-        {
-          id: 'mock-9',
-          streamerId: 'mock-streamer-9',
-          streamerName: 'ComedyKing',
-          streamerAvatar: 'https://static-cdn.jtvnw.net/jtv_user_pictures/comedyking-profile_image-9i0j1k2l-300x300.png',
-          streamerFollowers: 110000,
-          title: 'Killer jokes',
-          description: 'My best jokes and comebacks',
-          imageUrl: 'https://picsum.photos/400/300?random=9',
-          criteria: { hashtags: ['#comedy', '#funny'], style: 'humorous', duration: 20, minViews: 12000 },
-          budget: 400,
-          cpm: 26,
-          fanPageCpm: null,
-          status: 'active',
-          createdAt: new Date('2024-01-23'),
-          totalViews: 0,
-          totalSpent: 0,
-        },
-        {
-          id: 'mock-10',
-          streamerId: 'mock-streamer-10',
-          streamerName: 'TechGuru',
-          streamerAvatar: 'https://static-cdn.jtvnw.net/jtv_user_pictures/techguru-profile_image-0j1k2l3m-300x300.png',
-          streamerFollowers: 85000,
-          title: 'Crazy product review',
-          description: 'My wildest tech product reviews',
-          imageUrl: 'https://picsum.photos/400/300?random=10',
-          criteria: { hashtags: ['#tech', '#review'], style: 'review', duration: 35, minViews: 15000 },
-          budget: 500,
-          cpm: 32,
-          fanPageCpm: null,
-          status: 'active',
-          createdAt: new Date('2024-01-24'),
-          totalViews: 0,
-          totalSpent: 0,
-        },
-        {
-          id: 'mock-11',
-          streamerId: 'mock-streamer-11',
-          streamerName: 'MusicMaker',
-          streamerAvatar: 'https://static-cdn.jtvnw.net/jtv_user_pictures/musicmaker-profile_image-1k2l3m4n-300x300.png',
-          streamerFollowers: 95000,
-          title: 'Live music creation',
-          description: 'My best music creation moments',
-          imageUrl: 'https://picsum.photos/400/300?random=11',
-          criteria: { hashtags: ['#music', '#creation'], style: 'creative', duration: 50, minViews: 8000 },
-          budget: 300,
-          cpm: 18,
-          fanPageCpm: null,
-          status: 'active',
-          createdAt: new Date('2024-01-25'),
-          totalViews: 0,
-          totalSpent: 0,
-        },
-      ];
+      // Use only real data from database
+      console.log('🔍 Total missions from database:', campaigns.length);
       
-      // Combine real campaigns with test data
-      const allCampaigns = [...campaigns, ...mockCampaigns];
-      console.log('🔍 Total missions (real + test):', allCampaigns.length);
-      
-      setAvailableMissions(allCampaigns);
+      setAvailableMissions(campaigns);
     } catch (error) {
       console.error('Error loading missions:', error);
       Alert.alert('Error', 'Unable to load available missions');
@@ -315,6 +116,7 @@ const AvailableMissionsScreen: React.FC<AvailableMissionsScreenProps> = ({
   };
 
   const handleOpenMissionDetails = (campaign: Campaign) => {
+    console.log('🚀 Opening mission details for:', campaign.title);
     setSelectedMission(campaign);
     setShowClipModal(true);
     setModalVisible(true);
@@ -339,20 +141,74 @@ const AvailableMissionsScreen: React.FC<AvailableMissionsScreenProps> = ({
     // No-op, as modal is removed
   };
 
-  const handleSubmitClip = () => {
+  const handleSubmitClip = async () => {
+    console.log('🚀 handleSubmitClip CALLED!');
     if (!clipUrl.trim()) {
       Alert.alert('Error', 'Please enter your clip URL');
       return;
     }
+
+    if (!selectedMission) {
+      Alert.alert('Error', 'No mission selected');
+      return;
+    }
+
+    if (!clipUrl.includes('tiktok.com')) {
+      Alert.alert('Error', 'Please enter a valid TikTok URL');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      console.log('🔍 USER DEBUG:', {
+        userId: user.id,
+        email: user.email,
+        role: user.role
+      });
+      console.log('🔍 SUBMISSION DEBUG:', {
+        clipperId: user.id,
+        campaignId: selectedMission.id,
+        url: clipUrl.trim()
+      });
+      console.log('🔵 Submitting clip for campaign:', selectedMission.id);
+      console.log('🔵 Clip URL:', clipUrl);
+      console.log('🔵 User ID:', user.id);
+
+      const submission = await campaignService.submitClip(user.id, {
+        campaignId: selectedMission.id,
+        tiktokUrl: clipUrl.trim()
+      });
+
+      console.log('✅ Clip submitted successfully:', submission);
+      console.log('🔍 SUBMISSION RESULT:', submission);
     
     Alert.alert(
-      'Clip Submitted!',
-      `Your clip has been submitted for mission: ${selectedMission?.title}`,
-      [{ text: 'OK', onPress: handleCloseModal }]
+        'Clip Submitted Successfully!',
+        `Your clip has been submitted for mission: ${selectedMission.title}\n\nViews: ${submission.views.toLocaleString()}\nEarnings: $${submission.earnings.toFixed(2)}`,
+        [{ 
+          text: 'OK', 
+          onPress: () => {
+            handleCloseModal();
+            // Rafraîchir les données après soumission
+            loadAvailableMissions();
+            // Déclencher un refresh global pour tous les écrans
+            triggerRefresh();
+          }
+        }]
     );
+    } catch (error) {
+      console.error('❌ Error submitting clip:', error);
+      Alert.alert(
+        'Submission Error',
+        error instanceof Error ? error.message : 'An error occurred while submitting your clip'
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleCloseModal = () => {
+    console.log('🚀 Closing modal');
     // Animation de sortie : disparaît en s'éloignant
     Animated.parallel([
       Animated.timing(scaleAnim, {
@@ -686,15 +542,28 @@ const AvailableMissionsScreen: React.FC<AvailableMissionsScreenProps> = ({
             <TouchableOpacity style={styles.cancelButton} onPress={handleCloseModal}>
               <Text style={styles.cancelButtonText}>Cancel</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.submitButton} onPress={handleSubmitClip}>
+            <TouchableOpacity 
+              style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]} 
+              onPress={handleSubmitClip}
+              disabled={isSubmitting}
+            >
             <LinearGradient
                 colors={['#4a5cf9', '#3c82f6']}
               start={{ x: 0, y: 0 }}
               end={{ x: 0, y: 1 }}
                 style={styles.submitButtonGradient}
               >
+                {isSubmitting ? (
+                  <>
+                    <Ionicons name="hourglass" size={16} color="#FFFFFF" style={{ marginRight: 4 }} />
+                    <Text style={styles.submitButtonText}>Submitting...</Text>
+                  </>
+                ) : (
+                  <>
                 <Ionicons name="add" size={16} color="#FFFFFF" style={{ marginRight: 4 }} />
                 <Text style={styles.submitButtonText}>Submit Clip</Text>
+                  </>
+                )}
             </LinearGradient>
             </TouchableOpacity>
           </View>
@@ -1469,6 +1338,9 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     flex: 1,
+  },
+  submitButtonDisabled: {
+    opacity: 0.6,
   },
   submitButtonGradient: {
     flexDirection: 'row',

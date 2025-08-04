@@ -10,6 +10,7 @@ import * as Linking from 'expo-linking';
 import * as Font from 'expo-font';
 import AppNavigator from './src/navigation/AppNavigator';
 import { COLORS } from './src/constants';
+import { SubmissionProvider } from './src/contexts/SubmissionContext';
 
 export default function App() {
   const publishableKey = process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY || '';
@@ -63,7 +64,9 @@ export default function App() {
     return (
       <View style={[styles.container, styles.webContainer]}>
         <SafeAreaProvider>
+          <SubmissionProvider>
           <AppNavigator />
+          </SubmissionProvider>
         </SafeAreaProvider>
       </View>
     );
@@ -74,7 +77,9 @@ export default function App() {
     <View style={styles.container}>
       <SafeAreaProvider>
         <StatusBar style="dark" />
+        <SubmissionProvider>
         <AppNavigator />
+        </SubmissionProvider>
       </SafeAreaProvider>
     </View>
   );
@@ -87,7 +92,7 @@ const styles = StyleSheet.create({
   },
   webContainer: {
     // Web-specific styles
-    minHeight: '100vh',
+    minHeight: '100vh' as any,
     ...(Platform.OS === 'web' && {
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
     }),

@@ -15,6 +15,7 @@ import ProfileScreen from '../screens/ProfileScreen';
 import BoostsScreen from '../screens/BoostsScreen';
 
 import AdminDeclarationsScreen from '../screens/AdminDeclarationsScreen';
+import AdminPanelScreen from '../screens/AdminPanelScreen';
 import AvailableMissionsScreen from '../screens/AvailableMissionsScreen';
 import MissionDetailScreen from '../screens/MissionDetailScreen';
 import ResponsiveLayout from '../components/ResponsiveLayout';
@@ -98,6 +99,8 @@ const MainApp: React.FC<{ user: User; onLogout: () => void }> = ({ user, onLogou
         return <ProfileScreen user={user} activeTab={activeTab} onTabChange={setActiveTab} onSignOut={onLogout} />;
       case 'AdminDeclarations':
         return <AdminDeclarationsScreen user={user} activeTab={activeTab} onTabChange={setActiveTab} onSignOut={onLogout} />;
+      case 'AdminPanel':
+        return <AdminPanelScreen user={user} activeTab={activeTab} onTabChange={setActiveTab} onSignOut={onLogout} />;
       default:
         return <DashboardScreen user={user} activeTab={activeTab} onTabChange={setActiveTab} onSignOut={onLogout} />;
     }

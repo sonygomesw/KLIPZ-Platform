@@ -71,6 +71,8 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
   });
   const [showTikTokModal, setShowTikTokModal] = useState(false);
   const [tiktokData, setTiktokData] = useState<TikTokUserData | null>(null);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   // Use the connected user's role instead of context
   const actualUserRole = user.role;
@@ -83,6 +85,12 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
       // Charger le solde du wallet
       const balance = await StripeService.getWalletBalance(user.id);
       setWalletBalance(balance);
+
+      // Charger les notifications
+      const userNotifications = await notificationService.getUserNotifications(user.id);
+      const unreadNotifications = await notificationService.getUnreadNotifications(user.id);
+      setNotifications(userNotifications);
+      setUnreadCount(unreadNotifications.length);
 
       if (actualUserRole === 'clipper') {
         const clipperStats = await dashboardService.getClipperStats(user.id);
@@ -510,7 +518,35 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
         </View>
       </View>
 
-
+      {/* Section Notifications */}
+      {unreadCount > 0 && (
+        <View style={styles.notificationsSection}>
+          <LinearGradient
+            colors={['#4a5cf9', '#3c82f6']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            style={styles.notificationsCard}
+          >
+            <View style={styles.notificationsContent}>
+              <Ionicons name="notifications" size={24} color="#FFFFFF" />
+              <View style={styles.notificationsText}>
+                <Text style={styles.notificationsTitle}>
+                  {unreadCount} nouvelle{unreadCount > 1 ? 's' : ''} notification{unreadCount > 1 ? 's' : ''}
+                </Text>
+                <Text style={styles.notificationsSubtitle}>
+                  Vous avez de nouveaux clips en attente de validation
+                </Text>
+              </View>
+              <TouchableOpacity 
+                style={styles.notificationsButton}
+                onPress={() => onTabChange('Campaigns')}
+              >
+                <Text style={styles.notificationsButtonText}>Voir</Text>
+              </TouchableOpacity>
+            </View>
+          </LinearGradient>
+        </View>
+      )}
 
       {actualUserRole === 'admin' && renderDeclarationsToVerify()}
     </ScrollView>
@@ -2078,6 +2114,46 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: FONTS.medium,
     marginLeft: 8,
+  },
+  // Notification Styles
+  notificationsSection: {
+    marginHorizontal: 20,
+    marginBottom: 16,
+  },
+  notificationsCard: {
+    borderRadius: 16,
+    padding: 16,
+    ...SHADOWS.medium,
+  },
+  notificationsContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  notificationsText: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  notificationsTitle: {
+    fontSize: 16,
+    fontFamily: FONTS.bold,
+    color: '#FFFFFF',
+    marginBottom: 4,
+  },
+  notificationsSubtitle: {
+    fontSize: 14,
+    fontFamily: FONTS.regular,
+    color: '#E0E0E0',
+  },
+  notificationsButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  notificationsButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontFamily: FONTS.medium,
   },
 });
 

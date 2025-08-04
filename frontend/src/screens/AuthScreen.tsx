@@ -174,48 +174,29 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
         // Clipper login
         const user = await authService.signIn(email, password);
         
-        // If user exists but has no TikTok username, update it
-        if (user.role === 'clipper' && !user.tiktokUsername) {
-          await authService.updateProfile(user.id, { tiktokUsername });
-          user.tiktokUsername = tiktokUsername;
-        }
+        // Note: TikTok username update disabled for now
+        // if (user.role === 'clipper' && !user.tiktokUsername) {
+        //   await authService.updateProfile(user.id, { tiktokUsername });
+        //   user.tiktokUsername = tiktokUsername;
+        // }
         
         console.log('🔵 Connexion clipper réussie:', user);
         onAuthSuccess(user);
       } else {
         console.log('🔵 Tentative d\'inscription clipper...');
         
-        // TikTok OAuth authentication for registration
-        try {
-          console.log('🔵 Début de l\'authentification TikTok...');
-          const tiktokUserInfo = await tiktokAuthService.authenticateWithTikTok();
+        // Clipper registration without TikTok OAuth
+        console.log('🔵 Inscription clipper sans OAuth TikTok...');
           
-          console.log('🔵 Authentification TikTok réussie:', tiktokUserInfo);
-          
-          // Clipper registration with TikTok info
+        // Clipper registration with provided TikTok username
           const user = await authService.signUpClipper({
             email,
             password,
-            tiktokUsername: tiktokUserInfo.username,
+          tiktokUsername,
           });
-          
-          // Save TikTok info in the database
-          await tiktokAuthService.saveTikTokInfo(user.id, tiktokUserInfo);
           
           console.log('🔵 Inscription clipper réussie:', user);
           onAuthSuccess(user);
-        } catch (tiktokError: any) {
-          console.error('❌ Error authentification TikTok:', tiktokError);
-          
-          if (tiktokError.message?.includes('ACCESS_DENIED')) {
-            Alert.alert('Error', 'TikTok connection cancelled. Please try again.');
-          } else if (tiktokError.message?.includes('INVALID_CODE')) {
-            Alert.alert('Error', 'TikTok connection error. Please try again.');
-          } else {
-            Alert.alert('Error', 'Could not connect to TikTok. Please try again.');
-          }
-          throw tiktokError;
-        }
       }
     } catch (error: any) {
       console.error('❌ Error d\'authentification clipper:', error);
@@ -517,9 +498,6 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
                   placeholder="Your TikTok username"
                   autoCapitalize="none"
                 />
-                <Text style={styles.helperText}>
-                  Or connect directly with TikTok
-                </Text>
               </View>
             )}
 
@@ -530,39 +508,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
               style={styles.authButton}
             />
 
-            {!isLogin && (
-              <View style={styles.socialAuthContainer}>
-                <Text style={styles.socialAuthText}>Or</Text>
-                <TouchableOpacity
-                  style={styles.tiktokButton}
-                  onPress={async () => {
-                    try {
-                      setIsLoading(true);
-                      const tiktokUserInfo = await tiktokAuthService.authenticateWithTikTok();
-                      console.log('🔵 TikTok OAuth successful:', tiktokUserInfo);
-                      
-                      // Pre-fill the form
-                      setTiktokUsername(tiktokUserInfo.username);
-                      setEmail(tiktokUserInfo.username + '@tiktok.klipz');
-                      
-                      Alert.alert(
-                        'TikTok Connection Successful',
-                        `Welcome @${tiktokUserInfo.username}! Complete your registration.`
-                      );
-                    } catch (error: any) {
-                      console.error('❌ Error TikTok OAuth:', error);
-                      Alert.alert('Error', 'TikTok connection failed. Please try again.');
-                    } finally {
-                      setIsLoading(false);
-                    }
-                  }}
-                  disabled={isLoading}
-                >
-                  <Ionicons name="logo-tiktok" size={25} color="#000000" />
-                  <Text style={styles.tiktokButtonText}>Connect with TikTok</Text>
-                </TouchableOpacity>
-              </View>
-            )}
+
           </View>
         )}
 
