@@ -390,14 +390,14 @@ const Sidebar: React.FC<{
           <TouchableOpacity 
             style={[
               styles.navItem, 
-              activeTab === 'AdminDeclarations' && styles.navItemActive
+              activeTab === 'AdminPanel' && styles.navItemActive
             ]} 
-            onPress={() => onTabChange('AdminDeclarations')}
+            onPress={() => onTabChange('AdminPanel')}
           >
             <Ionicons 
               name="shield-checkmark-outline" 
               size={25} 
-              color={activeTab === 'AdminDeclarations' ? '#f1f1f1' : '#b5b5b5'} 
+              color={activeTab === 'AdminPanel' ? '#f1f1f1' : '#b5b5b5'} 
             />
           </TouchableOpacity>
         )}

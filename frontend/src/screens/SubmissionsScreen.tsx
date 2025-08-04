@@ -23,7 +23,8 @@ import campaignService from '../services/campaignService';
 import Button from '../components/Button';
 import declarationsService, { Declaration } from '../services/viewsDeclarationService';
 import { supabase } from '../config/supabase';
-import { scrapingService } from '../services/scrapingService';
+// import { scrapingService } from '../services/scrapingService';
+import { useSubmissionRefresh } from '../contexts/SubmissionContext';
 
 const { width } = Dimensions.get('window');
 
@@ -33,6 +34,7 @@ interface SubmissionsScreenProps {
 }
 
 const SubmissionsScreen: React.FC<SubmissionsScreenProps> = ({ user, navigation }) => {
+  const { refreshKey } = useSubmissionRefresh();
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -50,6 +52,13 @@ const SubmissionsScreen: React.FC<SubmissionsScreenProps> = ({ user, navigation 
     loadSubmissions();
     loadDeclarations();
   }, []);
+
+  // Écouter les changements de soumissions pour rafraîchir automatiquement
+  useEffect(() => {
+    if (refreshKey > 0) {
+      loadSubmissions();
+    }
+  }, [refreshKey]);
 
   useEffect(() => {
     if (declarations.some(d => d.status === 'paid')) {
@@ -204,7 +213,47 @@ const SubmissionsScreen: React.FC<SubmissionsScreenProps> = ({ user, navigation 
     }
   };
 
+  const handleDeleteSubmission = async (submission: Submission) => {
+    console.log('🗑️ handleDeleteSubmission appelé pour:', submission.id);
+    
+    Alert.alert(
+      'Supprimer le clip',
+      'Êtes-vous sûr de vouloir supprimer ce clip ? Cette action est irréversible.',
+      [
+        {
+          text: 'Annuler',
+          style: 'cancel',
+        },
+        {
+          text: 'Supprimer',
+          style: 'destructive',
+          onPress: async () => {
+            console.log('🗑️ Suppression confirmée pour submission:', submission.id);
+            try {
+              const { error } = await supabase
+                .from('submissions')
+                .delete()
+                .eq('id', submission.id);
 
+              if (error) {
+                console.error('❌ Error deleting submission:', error);
+                Alert.alert('Error', 'Impossible de supprimer le clip');
+                return;
+              }
+
+              console.log('✅ Submission supprimée avec succès');
+              // Refresh the submissions list
+              loadSubmissions();
+              Alert.alert('Succès', 'Clip supprimé avec succès');
+            } catch (error) {
+              console.error('❌ Error deleting submission:', error);
+              Alert.alert('Error', 'Impossible de supprimer le clip');
+            }
+          },
+        },
+      ]
+    );
+  };
 
   const renderSubmissionsTable = () => (
     <View style={styles.mainCard}>
@@ -318,8 +367,15 @@ const SubmissionsScreen: React.FC<SubmissionsScreenProps> = ({ user, navigation 
                   </TouchableOpacity>
                 )}
                 {user.role !== 'admin' && (
-                  <TouchableOpacity style={styles.actionButton}>
-                    <Ionicons name="ellipsis-horizontal" size={16} color="#6B7280" />
+                  <TouchableOpacity 
+                    style={styles.deleteButton}
+                    onPress={() => {
+                      console.log('🔘 Bouton supprimer cliqué pour submission:', submission.id);
+                      handleDeleteSubmission(submission);
+                    }}
+                  >
+                    <Ionicons name="trash-outline" size={16} color="#EF4444" />
+                    <Text style={styles.deleteButtonText}>Supprimer</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -1143,6 +1199,23 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.bold,
     color: '#FFFFFF',
     letterSpacing: 0.5,
+  },
+  deleteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderColor: '#EF4444',
+    borderWidth: 1,
+    backgroundColor: 'transparent',
+    borderStyle: 'solid',
+    gap: 4,
+  },
+  deleteButtonText: {
+    fontSize: 12,
+    fontFamily: FONTS.medium,
+    color: '#EF4444',
   },
 });
 
