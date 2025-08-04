@@ -133,6 +133,10 @@ CREATE POLICY "Clippers can create submissions" ON submissions FOR INSERT WITH C
 CREATE POLICY "Streamers can update submissions for their campaigns" ON submissions FOR UPDATE USING (
     auth.uid() IN (SELECT streamer_id FROM campaigns WHERE id = campaign_id)
 );
+CREATE POLICY "Clippers can delete own submissions" ON submissions FOR DELETE USING (auth.uid() = clipper_id);
+CREATE POLICY "Streamers can delete submissions for their campaigns" ON submissions FOR DELETE USING (
+    auth.uid() IN (SELECT streamer_id FROM campaigns WHERE id = campaign_id)
+);
 
 -- Politiques RLS pour payments
 CREATE POLICY "Users can view own payments" ON payments FOR SELECT USING (auth.uid() = user_id);
