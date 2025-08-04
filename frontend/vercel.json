@@ -4,6 +4,9 @@
   "framework": "vite",
   "installCommand": "npm install",
   "devCommand": "npm run web",
+  "github": {
+    "silent": true
+  },
   "rewrites": [
     {
       "source": "/(.*)",

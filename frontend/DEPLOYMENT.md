@@ -28,9 +28,7 @@ git push origin main
 **Root Directory:** `frontend`  
 **Build Command:** `npm run web`  
 **Output Directory:** `web-build`  
-**Install Command:** `npm install`
-
-> 📁 **Note:** Les fichiers `vercel.json` et `DEPLOYMENT.md` sont maintenant dans le dossier `frontend/` pour une meilleure organisation.  
+**Install Command:** `npm install`  
 
 ### 3. Variables d'Environnement
 

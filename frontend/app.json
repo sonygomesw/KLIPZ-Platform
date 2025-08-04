@@ -28,9 +28,7 @@
       "edgeToEdgeEnabled": true
     },
     "web": {
-      "favicon": "./assets/favicon.png",
-      "name": "KLIPZ",
-      "shortName": "KLIPZ"
+      "favicon": "./assets/favicon.png"
     },
     "scheme": "klipz",
     "extra": {
