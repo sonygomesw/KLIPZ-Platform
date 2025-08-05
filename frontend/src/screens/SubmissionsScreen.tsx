@@ -12,6 +12,7 @@ import {
   Dimensions,
   ScrollView,
   Platform,
+  Modal,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -31,9 +32,10 @@ const { width } = Dimensions.get('window');
 interface SubmissionsScreenProps {
   user: AuthUser;
   navigation: any;
+  onTabChange?: (tab: string) => void;
 }
 
-const SubmissionsScreen: React.FC<SubmissionsScreenProps> = ({ user, navigation }) => {
+const SubmissionsScreen: React.FC<SubmissionsScreenProps> = ({ user, navigation, onTabChange = () => {} }) => {
   const { refreshKey } = useSubmissionRefresh();
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -47,6 +49,10 @@ const SubmissionsScreen: React.FC<SubmissionsScreenProps> = ({ user, navigation 
   const [loadingDeclarations, setLoadingDeclarations] = useState(false);
   const [finalCode, setFinalCode] = useState<string | null>(null);
   const [tiktokUrl, setTiktokUrl] = useState('');
+  
+  // États pour le modal de confirmation de suppression
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [submissionToDelete, setSubmissionToDelete] = useState<Submission | null>(null);
 
   useEffect(() => {
     loadSubmissions();
@@ -213,46 +219,44 @@ const SubmissionsScreen: React.FC<SubmissionsScreenProps> = ({ user, navigation 
     }
   };
 
-  const handleDeleteSubmission = async (submission: Submission) => {
+  const handleDeleteSubmission = (submission: Submission) => {
     console.log('🗑️ handleDeleteSubmission appelé pour:', submission.id);
-    
-    Alert.alert(
-      'Supprimer le clip',
-      'Êtes-vous sûr de vouloir supprimer ce clip ? Cette action est irréversible.',
-      [
-        {
-          text: 'Annuler',
-          style: 'cancel',
-        },
-        {
-          text: 'Supprimer',
-          style: 'destructive',
-          onPress: async () => {
-            console.log('🗑️ Suppression confirmée pour submission:', submission.id);
-            try {
-              const { error } = await supabase
-                .from('submissions')
-                .delete()
-                .eq('id', submission.id);
+    setSubmissionToDelete(submission);
+    setShowDeleteModal(true);
+  };
 
-              if (error) {
-                console.error('❌ Error deleting submission:', error);
-                Alert.alert('Error', 'Impossible de supprimer le clip');
-                return;
-              }
+  const confirmDeleteSubmission = async () => {
+    if (!submissionToDelete) return;
 
-              console.log('✅ Submission supprimée avec succès');
-              // Refresh the submissions list
-              loadSubmissions();
-              Alert.alert('Succès', 'Clip supprimé avec succès');
-            } catch (error) {
-              console.error('❌ Error deleting submission:', error);
-              Alert.alert('Error', 'Impossible de supprimer le clip');
-            }
-          },
-        },
-      ]
-    );
+    console.log('🗑️ Suppression confirmée pour submission:', submissionToDelete.id);
+    try {
+      const { error } = await supabase
+        .from('submissions')
+        .delete()
+        .eq('id', submissionToDelete.id);
+
+      if (error) {
+        console.error('❌ Error deleting submission:', error);
+        Alert.alert('Error', 'Impossible de supprimer le clip');
+        return;
+      }
+
+      console.log('✅ Submission supprimée avec succès');
+      // Refresh the submissions list
+      loadSubmissions();
+      setShowDeleteModal(false);
+      setSubmissionToDelete(null);
+      Alert.alert('Succès', 'Clip supprimé avec succès');
+    } catch (error) {
+      console.error('❌ Error deleting submission:', error);
+      Alert.alert('Error', 'Impossible de supprimer le clip');
+    }
+  };
+
+  const cancelDeleteSubmission = () => {
+    console.log('🚫 Suppression annulée par l\'utilisateur');
+    setShowDeleteModal(false);
+    setSubmissionToDelete(null);
   };
 
   const renderSubmissionsTable = () => (
@@ -292,16 +296,16 @@ const SubmissionsScreen: React.FC<SubmissionsScreenProps> = ({ user, navigation 
         </View>
         <TouchableOpacity 
           style={styles.browseButton}
-          onPress={() => navigation?.navigate('Discover')}
+          onPress={() => onTabChange('AvailableMissions')}
         >
           <LinearGradient
-            colors={['#4a5cf9', '#4a5cf9']}
+            colors={['#475ae8', '#397ce8']}
             start={{ x: 0, y: 0 }}
             end={{ x: 0, y: 1 }}
             style={styles.browseGradient}
           >
-            <Ionicons name="add-outline" size={18} color="#FFFFFF" />
-            <Text style={styles.browseButtonText}>Create Clip</Text>
+            <Ionicons name="add-outline" size={20} color="#FFFFFF" />
+            <Text style={styles.browseButtonText}>Add a clip</Text>
           </LinearGradient>
         </TouchableOpacity>
       </View>
@@ -375,7 +379,6 @@ const SubmissionsScreen: React.FC<SubmissionsScreenProps> = ({ user, navigation 
                     }}
                   >
                     <Ionicons name="trash-outline" size={16} color="#EF4444" />
-                    <Text style={styles.deleteButtonText}>Supprimer</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -384,49 +387,14 @@ const SubmissionsScreen: React.FC<SubmissionsScreenProps> = ({ user, navigation 
         ) : (
           <View style={styles.emptyState}>
             <View style={styles.emptyIconContainer}>
-              <Ionicons name="videocam-off-outline" size={48} color="#FF8C42" />
+              <Ionicons name="videocam-off-outline" size={48} color="#8eaad6" />
             </View>
             <Text style={styles.emptyTitle}>No clips yet</Text>
             <Text style={styles.emptyDescription}>
               Start creating clips to see them here. Join campaigns and earn money with your content!
             </Text>
-            <TouchableOpacity style={styles.emptyAction}>
-              <LinearGradient
-                colors={['#FF8C42', '#E65100']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 0, y: 1 }}
-                style={styles.emptyActionGradient}
-              >
-                <Ionicons name="add-outline" size={20} color="#FFFFFF" />
-                <Text style={styles.emptyActionText}>Create Your First Clip</Text>
-              </LinearGradient>
-            </TouchableOpacity>
           </View>
         )}
-      </View>
-      
-      <View style={styles.paginationSection}>
-        <Text style={styles.paginationText}>
-          Showing 1 to {getFilteredSubmissions().length} of {getFilteredSubmissions().length} clips
-        </Text>
-        <View style={styles.paginationControls}>
-          <TouchableOpacity style={styles.paginationButton}>
-            <Ionicons name="chevron-back" size={14} color="#6B7280" />
-          </TouchableOpacity>
-          <View style={styles.currentPage}>
-            <Text style={styles.currentPageText}>1</Text>
-          </View>
-          <TouchableOpacity style={styles.paginationButton}>
-            <Ionicons name="chevron-forward" size={14} color="#6B7280" />
-          </TouchableOpacity>
-        </View>
-        <View style={styles.showEntriesContainer}>
-          <Text style={styles.showEntriesText}>Show</Text>
-          <TouchableOpacity style={styles.showEntriesDropdown}>
-            <Text style={styles.showEntriesValue}>10</Text>
-            <Ionicons name="chevron-down" size={14} color="#6B7280" />
-          </TouchableOpacity>
-        </View>
       </View>
     </View>
   );
@@ -462,9 +430,6 @@ const SubmissionsScreen: React.FC<SubmissionsScreenProps> = ({ user, navigation 
           <View style={styles.emptyState}>
             <Ionicons name="document-text-outline" size={48} color="#9CA3AF" />
             <Text style={styles.emptyTitle}>No declarations</Text>
-            <Text style={styles.emptyText}>
-              You haven't declared any views yet. Use the "Declare" button on your submissions.
-            </Text>
           </View>
         )}
       </View>
@@ -549,8 +514,8 @@ const SubmissionsScreen: React.FC<SubmissionsScreenProps> = ({ user, navigation 
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <Ionicons name="refresh" size={40} color={COLORS.primarySolid} />
-        <Text style={styles.loadingText}>Loading submissions...</Text>
+        <Ionicons name="refresh" size={30} color={COLORS.primarySolid} />
+        <Text style={styles.loadingText}>Loading clips...</Text>
       </View>
     );
   }
@@ -569,7 +534,68 @@ const SubmissionsScreen: React.FC<SubmissionsScreenProps> = ({ user, navigation 
         {renderSubmissionsTable()}
       </ScrollView>
 
+      {/* Pagination en dessous du conteneur principal */}
+      <View style={styles.paginationSection}>
+        <Text style={styles.paginationText}>
+          Showing 1 to {getFilteredSubmissions().length} of {getFilteredSubmissions().length} clips
+        </Text>
+        <View style={styles.paginationControls}>
+          <TouchableOpacity style={styles.paginationButton}>
+            <Ionicons name="chevron-back" size={14} color="#6B7280" />
+          </TouchableOpacity>
+          <View style={styles.currentPage}>
+            <Text style={styles.currentPageText}>1</Text>
+          </View>
+          <TouchableOpacity style={styles.paginationButton}>
+            <Ionicons name="chevron-forward" size={14} color="#6B7280" />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.showEntriesContainer}>
+          <Text style={styles.showEntriesText}>Show</Text>
+          <TouchableOpacity style={styles.showEntriesDropdown}>
+            <Text style={styles.showEntriesValue}>10</Text>
+            <Ionicons name="chevron-down" size={14} color="#6B7280" />
+          </TouchableOpacity>
+        </View>
+      </View>
+
       {showDeclareModal && renderDeclareModal()}
+      
+      {/* Modal de confirmation de suppression */}
+      <Modal
+        visible={showDeleteModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={cancelDeleteSubmission}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.deleteModalContainer}>
+            <View style={styles.deleteModalHeader}>
+              <Ionicons name="trash-outline" size={32} color="#EF4444" />
+              <Text style={styles.deleteModalTitle}>Supprimer le clip</Text>
+            </View>
+            
+            <Text style={styles.deleteModalMessage}>
+              Êtes-vous sûr de vouloir supprimer ce clip ? Cette action est irréversible.
+            </Text>
+            
+            <View style={styles.deleteModalButtons}>
+              <TouchableOpacity 
+                style={styles.cancelDeleteButton}
+                onPress={cancelDeleteSubmission}
+              >
+                <Text style={styles.cancelDeleteButtonText}>Annuler</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.confirmDeleteButton}
+                onPress={confirmDeleteSubmission}
+              >
+                <Text style={styles.confirmDeleteButtonText}>Supprimer</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -659,9 +685,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#0A0A0A',
   },
   loadingText: {
-    fontSize: 42,
+    fontSize: 14,
     fontFamily: FONTS.medium,
-    color: '#6B7280',
+    color: '#8B8B8D',
     marginTop: 16,
   },
   mainCard: {
@@ -670,6 +696,7 @@ const styles = StyleSheet.create({
     borderRadius: 12, // Réduit de 20 à 12
     borderWidth: 1,
     borderColor: '#38383A', // Couleur sombre
+    flex: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 }, // Réduit de 4 à 2
     shadowOpacity: 0.08,
@@ -702,14 +729,15 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     flex: 1,
+    minWidth: 400,
     borderWidth: 1,
     borderColor: '#38383A',
   },
   platformImage: {
-    width: 35,
-    height: 35,
+    width: 40,
+    height: 40,
     borderRadius: 4,
-    marginRight: 8,
+    marginRight: 20,
     resizeMode: 'contain',
   },
   platformStatContent: {
@@ -729,7 +757,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   statsText: {
-    fontSize: 13, // Réduit de 24 à 12
+    fontSize: 14, // Augmenté de 13 à 15
     fontFamily: 'Inter_18pt-Medium',
     fontWeight: '600',
     color: '#ededee', // Couleur thème sombre
@@ -760,7 +788,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   browseButtonText: {
-    fontSize: 12, // Réduit de 24 à 12
+    fontSize: 14, // Réduit de 24 à 12
     fontFamily: 'Inter_18pt-SemiBold',
     fontWeight: '600',
     color: '#FFFFFF',
@@ -938,21 +966,22 @@ const styles = StyleSheet.create({
   emptyState: {
     alignItems: 'center',
     padding: 60,
-    backgroundColor: '#faf9f0',
+    backgroundColor: '#1C1C1E',
   },
   emptyIconContainer: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: 'rgba(255, 140, 66, 0.1)',
+    backgroundColor: '#485aeb',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 24,
+    marginTop: 100,
   },
   emptyTitle: {
     fontSize: 22,
     fontFamily: FONTS.bold,
-    color: '#000000',
+    color: '#e4e4e4',
     marginBottom: 8,
   },
   emptyDescription: {
@@ -964,34 +993,14 @@ const styles = StyleSheet.create({
     marginBottom: 32,
     maxWidth: 300,
   },
-  emptyAction: {
-    borderRadius: 12,
-    shadowColor: '#E65100',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  emptyActionGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    gap: 8,
-  },
-  emptyActionText: {
-    fontSize: 16,
-    fontFamily: FONTS.bold,
-    color: '#FFFFFF',
-  },
   paginationSection: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 24,
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
+    paddingHorizontal: 16,
+    marginHorizontal: 16,
+    marginTop: -20,
+    marginBottom: 20,
   },
   paginationText: {
     fontSize: 12,
@@ -1216,6 +1225,81 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: FONTS.medium,
     color: '#EF4444',
+  },
+  
+  // Styles pour le modal de suppression
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  deleteModalContainer: {
+    backgroundColor: '#1A1A1E',
+    borderRadius: 20,
+    padding: 24,
+    width: '90%',
+    maxWidth: 400,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  deleteModalHeader: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  deleteModalTitle: {
+    fontSize: 20,
+    fontFamily: FONTS.bold,
+    color: '#FFFFFF',
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  deleteModalMessage: {
+    fontSize: 16,
+    fontFamily: FONTS.regular,
+    color: '#B0B0B0',
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 16,
+  },
+
+  deleteModalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  cancelDeleteButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: '#2A2A2E',
+    borderWidth: 1,
+    borderColor: '#38383A',
+    alignItems: 'center',
+  },
+  cancelDeleteButtonText: {
+    fontSize: 16,
+    fontFamily: FONTS.medium,
+    color: '#FFFFFF',
+  },
+  confirmDeleteButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: '#EF4444',
+    alignItems: 'center',
+    shadowColor: '#EF4444',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  confirmDeleteButtonText: {
+    fontSize: 16,
+    fontFamily: FONTS.bold,
+    color: '#FFFFFF',
   },
 });
 

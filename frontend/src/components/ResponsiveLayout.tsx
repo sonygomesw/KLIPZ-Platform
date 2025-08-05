@@ -314,22 +314,6 @@ const Sidebar: React.FC<{
           <TouchableOpacity 
             style={[
               styles.navItem, 
-              activeTab === 'Earnings' && styles.navItemActive
-            ]} 
-            onPress={() => onTabChange('Earnings')}
-          >
-            <Ionicons 
-              name="wallet-outline" 
-              size={25} 
-              color={activeTab === 'Earnings' ? '#f1f1f1' : '#b5b5b5'} 
-            />
-          </TouchableOpacity>
-        )}
-        
-        {isClipper && (
-          <TouchableOpacity 
-            style={[
-              styles.navItem, 
               activeTab === 'Submissions' && styles.navItemActive
             ]} 
             onPress={() => onTabChange('Submissions')}
@@ -338,6 +322,22 @@ const Sidebar: React.FC<{
               name="videocam-outline" 
               size={25} 
               color={activeTab === 'Submissions' ? '#f1f1f1' : '#b5b5b5'} 
+            />
+          </TouchableOpacity>
+        )}
+        
+        {isClipper && (
+          <TouchableOpacity 
+            style={[
+              styles.navItem, 
+              activeTab === 'Earnings' && styles.navItemActive
+            ]} 
+            onPress={() => onTabChange('Earnings')}
+          >
+            <Ionicons 
+              name="wallet-outline" 
+              size={25} 
+              color={activeTab === 'Earnings' ? '#f1f1f1' : '#b5b5b5'} 
             />
           </TouchableOpacity>
         )}

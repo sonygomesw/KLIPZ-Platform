@@ -265,9 +265,9 @@ const CreateCampaignScreen: React.FC<CreateCampaignScreenProps> = ({
 
   return (
     <View style={styles.container}>
-                      <Text style={styles.pageTitle}>Create Mission</Text>
+      <Text style={styles.pageTitle}>Create Mission</Text>
       <View style={styles.mainContentContainer}>
-        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        <View style={styles.centeredContainer}>
           <View style={styles.mainContent}>
             {/* Left Side - Form */}
             <View style={styles.leftSide}>
@@ -577,7 +577,7 @@ const CreateCampaignScreen: React.FC<CreateCampaignScreenProps> = ({
                </View>
              </View>
            </View>
-        </ScrollView>
+        </View>
       </View>
 
       {/* Insufficient Balance Modal */}
@@ -673,9 +673,19 @@ const styles = StyleSheet.create({
     margin: 5,
     padding: 7,
     flex: 1,
+    height: '96%',
+    justifyContent: 'center',
   },
   scrollView: {
     flex: 1,
+    height: '100%',
+    justifyContent: 'center',
+  },
+  centeredContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: '100%',
   },
   pageTitleContainer: {
     backgroundColor: '#1A1A1E',
@@ -710,17 +720,21 @@ const styles = StyleSheet.create({
     backgroundColor: '#0A0A0B',
     width: '100%',
     flex: 1,
-    minHeight: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minHeight: '100%',
   },
   leftSide: {
     flex: 1,
     maxWidth: '55%',
-    minHeight: 0,
+    alignSelf: 'center',
+    height: 630,
   },
   rightSide: {
     flex: 1,
     maxWidth: '45%',
-    minHeight: 0,
+    alignSelf: 'center',
+    height: 630,
   },
   setupCard: {
     backgroundColor: '#1A1A1E',
@@ -728,8 +742,8 @@ const styles = StyleSheet.create({
     padding: 20,
     borderWidth: 1,
     borderColor: '#2A2A2E',
-    flex: 1,
-    minHeight: 0,
+    height: '100%',
+    alignSelf: 'stretch',
   },
   setupHeader: {
     flexDirection: 'row',
@@ -996,7 +1010,8 @@ const styles = StyleSheet.create({
     padding: 25,
     borderWidth: 1,
     borderColor: '#2A2A2E',
-    flex: 1,
+    height: '100%',
+    alignSelf: 'stretch',
   },
   previewTitle: {
     color: '#FFFFFF',

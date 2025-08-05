@@ -295,35 +295,6 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
         </View>
       </View>
 
-      {/* Connexion Stripe Connect */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Receive payments</Text>
-        <Text style={styles.sectionDescription}>
-          Connect to Stripe to receive your payments as a clipper
-        </Text>
-        
-        <TouchableOpacity
-          style={[
-            styles.connectButton,
-            isConnectedToStripe && styles.connectedButton
-          ]}
-          onPress={handleConnectStripe}
-          disabled={loading || isConnectedToStripe}
-        >
-          <Ionicons 
-            name={isConnectedToStripe ? "checkmark-circle" : "card"} 
-            size={24} 
-            color={isConnectedToStripe ? COLORS.success : '#181818'} 
-          />
-          <Text style={[
-            styles.connectButtonText,
-            isConnectedToStripe && styles.connectedButtonText
-          ]}>
-            {isConnectedToStripe ? 'Connected to Stripe' : 'Connect to Stripe'}
-          </Text>
-        </TouchableOpacity>
-      </View>
-
       {/* Informations */}
       <View style={styles.infoSection}>
         <Text style={styles.infoTitle}>Comment ça marche ?</Text>
@@ -445,7 +416,7 @@ const styles = StyleSheet.create({
   },
   section: {
     margin: 12,
-    marginTop: 8,
+    marginTop: 30,
   },
   sectionTitle: {
     fontSize: 14,
@@ -530,7 +501,7 @@ const styles = StyleSheet.create({
   },
   infoSection: {
     margin: 12,
-    marginTop: 16,
+    marginTop: 70,
     backgroundColor: '#1A1A1E',
     padding: 20,
     borderRadius: 12,
@@ -564,7 +535,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#FFFFFF',
     fontFamily: 'Inter_18pt-Medium',
-    marginBottom: 8,
+    marginBottom: 12,
+    marginTop: 10,
   },
   customAmountContainer: {
     flexDirection: 'row',

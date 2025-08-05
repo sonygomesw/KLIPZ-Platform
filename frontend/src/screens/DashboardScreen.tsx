@@ -604,58 +604,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
           </LinearGradient>
         </View>
 
-      {/* Section TikTok Connection */}
-      <View style={styles.tiktokSection}>
-        <LinearGradient
-          colors={['#ffffff', '#f8f9fa']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 0, y: 1 }}
-          style={styles.tiktokCard}
-        >
-          <View style={styles.tiktokHeader}>
-            <Ionicons name="logo-tiktok" size={24} color="#ff0050" />
-            <Text style={styles.tiktokTitle}>TikTok Account</Text>
-          </View>
-          
-          {tiktokData ? (
-            <View style={styles.tiktokConnected}>
-              <View style={styles.tiktokProfile}>
-                <Text style={styles.tiktokUsername}>{tiktokData.nickname}</Text>
-                <Text style={styles.tiktokHandle}>@{tiktokData.custom_username}</Text>
-              </View>
-              <View style={styles.tiktokStats}>
-                <View style={styles.tiktokStat}>
-                  <Text style={styles.tiktokStatNumber}>{tiktokData.follower_count.toLocaleString()}</Text>
-                  <Text style={styles.tiktokStatLabel}>Followers</Text>
-                </View>
-                <View style={styles.tiktokStat}>
-                  <Text style={styles.tiktokStatNumber}>{tiktokData.video_count.toLocaleString()}</Text>
-                  <Text style={styles.tiktokStatLabel}>Videos</Text>
-                </View>
-              </View>
-              <TouchableOpacity 
-                style={styles.tiktokManageButton}
-                onPress={() => setShowTikTokModal(true)}
-              >
-                <Text style={styles.tiktokManageText}>Manage Account</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <View style={styles.tiktokNotConnected}>
-              <Text style={styles.tiktokDescription}>
-                Connect your TikTok account to submit clips and track your performance
-              </Text>
-              <TouchableOpacity 
-                style={styles.tiktokConnectButton}
-                onPress={() => setShowTikTokModal(true)}
-              >
-                <Ionicons name="logo-tiktok" size={20} color="#ffffff" />
-                <Text style={styles.tiktokConnectText}>Connect TikTok</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </LinearGradient>
-      </View>
+
 
       {/* Grid de statistiques simplifiée */}
       <View style={styles.simpleStatsGrid}>

@@ -70,8 +70,10 @@ const AvailableMissionsScreen: React.FC<AvailableMissionsScreenProps> = ({
   const [clipUrl, setClipUrl] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
   const scaleAnim = useState(new Animated.Value(0.8))[0];
   const opacityAnim = useState(new Animated.Value(0))[0];
+  const buttonScaleAnim = useState(new Animated.Value(1))[0];
 
   useEffect(() => {
     loadAvailableMissions();
@@ -181,21 +183,32 @@ const AvailableMissionsScreen: React.FC<AvailableMissionsScreenProps> = ({
 
       console.log('✅ Clip submitted successfully:', submission);
       console.log('🔍 SUBMISSION RESULT:', submission);
-    
-    Alert.alert(
-        'Clip Submitted Successfully!',
-        `Your clip has been submitted for mission: ${selectedMission.title}\n\nViews: ${submission.views.toLocaleString()}\nEarnings: $${submission.earnings.toFixed(2)}`,
-        [{ 
-          text: 'OK', 
-          onPress: () => {
-            handleCloseModal();
-            // Rafraîchir les données après soumission
-            loadAvailableMissions();
-            // Déclencher un refresh global pour tous les écrans
-            triggerRefresh();
-          }
-        }]
-    );
+      
+      // Animation du bouton qui devient vert
+      setIsSubmitted(true);
+      Animated.sequence([
+        Animated.spring(buttonScaleAnim, {
+          toValue: 1.1,
+          tension: 300,
+          friction: 10,
+          useNativeDriver: true,
+        }),
+        Animated.spring(buttonScaleAnim, {
+          toValue: 1,
+          tension: 300,
+          friction: 10,
+          useNativeDriver: true,
+        }),
+      ]).start();
+      
+      // Attendre 2 secondes puis fermer le modal
+      setTimeout(() => {
+        handleCloseModal();
+        // Rafraîchir les données après soumission
+        loadAvailableMissions();
+        // Déclencher un refresh global pour tous les écrans
+        triggerRefresh();
+      }, 2000);
     } catch (error) {
       console.error('❌ Error submitting clip:', error);
       Alert.alert(
@@ -226,6 +239,9 @@ const AvailableMissionsScreen: React.FC<AvailableMissionsScreenProps> = ({
       setModalVisible(false);
       setClipUrl('');
       setSelectedMission(null);
+      setIsSubmitted(false);
+      setIsSubmitting(false);
+      buttonScaleAnim.setValue(1);
     });
   };
 
@@ -384,7 +400,7 @@ const AvailableMissionsScreen: React.FC<AvailableMissionsScreenProps> = ({
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <Ionicons name="refresh" size={40} color={COLORS.primarySolid} />
+        <Ionicons name="refresh" size={30} color={COLORS.primarySolid} />
         <Text style={styles.loadingText}>Loading missions...</Text>
       </View>
     );
@@ -542,30 +558,37 @@ const AvailableMissionsScreen: React.FC<AvailableMissionsScreenProps> = ({
             <TouchableOpacity style={styles.cancelButton} onPress={handleCloseModal}>
               <Text style={styles.cancelButtonText}>Cancel</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]} 
-              onPress={handleSubmitClip}
-              disabled={isSubmitting}
-            >
-            <LinearGradient
-                colors={['#4a5cf9', '#3c82f6']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 0, y: 1 }}
-                style={styles.submitButtonGradient}
+            <Animated.View style={{ transform: [{ scale: buttonScaleAnim }] }}>
+              <TouchableOpacity 
+                style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]} 
+                onPress={handleSubmitClip}
+                disabled={isSubmitting || isSubmitted}
               >
-                {isSubmitting ? (
-                  <>
-                    <Ionicons name="hourglass" size={16} color="#FFFFFF" style={{ marginRight: 4 }} />
-                    <Text style={styles.submitButtonText}>Submitting...</Text>
-                  </>
-                ) : (
-                  <>
-                <Ionicons name="add" size={16} color="#FFFFFF" style={{ marginRight: 4 }} />
-                <Text style={styles.submitButtonText}>Submit Clip</Text>
-                  </>
-                )}
-            </LinearGradient>
-            </TouchableOpacity>
+              <LinearGradient
+                  colors={isSubmitted ? ['#22c55e', '#16a34a'] : ['#4a5cf9', '#3c82f6']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 0, y: 1 }}
+                  style={styles.submitButtonGradient}
+                >
+                  {isSubmitted ? (
+                    <>
+                      <Ionicons name="checkmark-circle" size={16} color="#FFFFFF" style={{ marginRight: 4 }} />
+                      <Text style={styles.submitButtonText}>Submitted!</Text>
+                    </>
+                  ) : isSubmitting ? (
+                    <>
+                      <Ionicons name="hourglass" size={16} color="#FFFFFF" style={{ marginRight: 4 }} />
+                      <Text style={styles.submitButtonText}>Submitting...</Text>
+                    </>
+                  ) : (
+                    <>
+                  <Ionicons name="add" size={16} color="#FFFFFF" style={{ marginRight: 4 }} />
+                  <Text style={styles.submitButtonText}>Submit Clip</Text>
+                    </>
+                  )}
+              </LinearGradient>
+              </TouchableOpacity>
+            </Animated.View>
           </View>
         </Animated.View>
       </Animated.View>
@@ -862,7 +885,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#0A0A0A',
   },
   loadingText: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#8B8B8D',
     fontFamily: FONTS.medium,
     marginTop: SIZES.spacing.base,
