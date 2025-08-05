@@ -145,22 +145,67 @@ const AvailableMissionsScreen: React.FC<AvailableMissionsScreenProps> = ({
 
   const handleSubmitClip = async () => {
     console.log('🚀 handleSubmitClip CALLED!');
+    console.log('🔍 Current states:', {
+      clipUrl: clipUrl.trim(),
+      selectedMission: selectedMission?.id,
+      isSubmitting,
+      isSubmitted,
+      userId: user.id
+    });
+
     if (!clipUrl.trim()) {
+      console.log('❌ No clip URL provided');
       Alert.alert('Error', 'Please enter your clip URL');
       return;
     }
-
+    
     if (!selectedMission) {
+      console.log('❌ No mission selected');
       Alert.alert('Error', 'No mission selected');
       return;
     }
 
     if (!clipUrl.includes('tiktok.com')) {
+      console.log('❌ Invalid TikTok URL');
       Alert.alert('Error', 'Please enter a valid TikTok URL');
       return;
     }
 
+    console.log('✅ All validations passed, starting submission...');
     setIsSubmitting(true);
+    
+    console.log('🎉 Setting isSubmitted to true and starting animation IMMEDIATEMENT...');
+    // Déclencher l'animation IMMÉDIATEMENT pour éviter les problèmes
+    setIsSubmitted(true);
+    
+    console.log('🎬 Starting button animation...');
+    Animated.sequence([
+      Animated.spring(buttonScaleAnim, {
+        toValue: 1.1,
+        tension: 300,
+        friction: 10,
+        useNativeDriver: true,
+      }),
+      Animated.spring(buttonScaleAnim, {
+        toValue: 1,
+        tension: 300,
+        friction: 10,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      console.log('🎬 Animation completed!');
+    });
+    
+    // Déclencher le refresh IMMÉDIATEMENT pour que My Clips se mette à jour
+    console.log('🔄 Triggering immediate global refresh...');
+    triggerRefresh();
+    
+    console.log('⏰ Setting timeout to close modal in 2 seconds...');
+    setTimeout(() => {
+      console.log('⏰ Timeout reached, closing modal...');
+      handleCloseModal();
+    }, 2000);
+    
     try {
       console.log('🔍 USER DEBUG:', {
         userId: user.id,
@@ -176,6 +221,7 @@ const AvailableMissionsScreen: React.FC<AvailableMissionsScreenProps> = ({
       console.log('🔵 Clip URL:', clipUrl);
       console.log('🔵 User ID:', user.id);
 
+      console.log('📡 Calling campaignService.submitClip...');
       const submission = await campaignService.submitClip(user.id, {
         campaignId: selectedMission.id,
         tiktokUrl: clipUrl.trim()
@@ -184,38 +230,26 @@ const AvailableMissionsScreen: React.FC<AvailableMissionsScreenProps> = ({
       console.log('✅ Clip submitted successfully:', submission);
       console.log('🔍 SUBMISSION RESULT:', submission);
       
-      // Animation du bouton qui devient vert
-      setIsSubmitted(true);
-      Animated.sequence([
-        Animated.spring(buttonScaleAnim, {
-          toValue: 1.1,
-          tension: 300,
-          friction: 10,
-          useNativeDriver: true,
-        }),
-        Animated.spring(buttonScaleAnim, {
-          toValue: 1,
-          tension: 300,
-          friction: 10,
-          useNativeDriver: true,
-        }),
-      ]).start();
+      // Rafraîchir les données en arrière-plan
+      console.log('🔄 Refreshing data in background...');
+      loadAvailableMissions();
       
-      // Attendre 2 secondes puis fermer le modal
-      setTimeout(() => {
-        handleCloseModal();
-        // Rafraîchir les données après soumission
-        loadAvailableMissions();
-        // Déclencher un refresh global pour tous les écrans
-        triggerRefresh();
-      }, 2000);
+      // Second refresh pour s'assurer que My Clips se met à jour
+      console.log('🔄 Second refresh for My Clips...');
+      triggerRefresh();
+      
     } catch (error) {
       console.error('❌ Error submitting clip:', error);
-      Alert.alert(
-        'Submission Error',
-        error instanceof Error ? error.message : 'An error occurred while submitting your clip'
-      );
+      console.error('❌ Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
+      
+      // N'afficher l'erreur que si c'est vraiment critique
+      // (l'animation et la fermeture du modal ont déjà eu lieu)
+      console.log('⚠️ Erreur en arrière-plan, mais animation déjà effectuée');
     } finally {
+      console.log('🔧 Finally block: setting isSubmitting to false');
       setIsSubmitting(false);
     }
   };
@@ -564,12 +598,12 @@ const AvailableMissionsScreen: React.FC<AvailableMissionsScreenProps> = ({
                 onPress={handleSubmitClip}
                 disabled={isSubmitting || isSubmitted}
               >
-              <LinearGradient
+            <LinearGradient
                   colors={isSubmitted ? ['#22c55e', '#16a34a'] : ['#4a5cf9', '#3c82f6']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 0, y: 1 }}
-                  style={styles.submitButtonGradient}
-                >
+              start={{ x: 0, y: 0 }}
+              end={{ x: 0, y: 1 }}
+                style={styles.submitButtonGradient}
+              >
                   {isSubmitted ? (
                     <>
                       <Ionicons name="checkmark-circle" size={16} color="#FFFFFF" style={{ marginRight: 4 }} />
@@ -582,12 +616,12 @@ const AvailableMissionsScreen: React.FC<AvailableMissionsScreenProps> = ({
                     </>
                   ) : (
                     <>
-                  <Ionicons name="add" size={16} color="#FFFFFF" style={{ marginRight: 4 }} />
-                  <Text style={styles.submitButtonText}>Submit Clip</Text>
+                <Ionicons name="add" size={16} color="#FFFFFF" style={{ marginRight: 4 }} />
+                <Text style={styles.submitButtonText}>Submit Clip</Text>
                     </>
                   )}
-              </LinearGradient>
-              </TouchableOpacity>
+            </LinearGradient>
+            </TouchableOpacity>
             </Animated.View>
           </View>
         </Animated.View>

@@ -728,13 +728,13 @@ const styles = StyleSheet.create({
     flex: 1,
     maxWidth: '55%',
     alignSelf: 'center',
-    height: 630,
+    height: 600,
   },
   rightSide: {
     flex: 1,
     maxWidth: '45%',
     alignSelf: 'center',
-    height: 630,
+    height: 600,
   },
   setupCard: {
     backgroundColor: '#1A1A1E',
@@ -956,7 +956,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 5,
     elevation: 5,
-    marginTop: 10,
   },
   createButtonDisabled: {
     opacity: 0.6,

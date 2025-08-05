@@ -22,6 +22,8 @@ import campaignService from '../services/campaignService';
 import Button from '../components/Button';
 import CampaignCard from '../components/CampaignCard';
 import ResponsiveLayout from '../components/ResponsiveLayout';
+import ResponsiveGrid from '../components/ResponsiveGrid';
+import { useResponsive, GRID_CONFIG } from '../hooks/useResponsive';
 import CampaignDetailScreen from './CampaignDetailScreen';
 
 const { width } = Dimensions.get('window');
@@ -49,16 +51,12 @@ const CampaignsListScreen: React.FC<CampaignsListScreenProps> = ({
   
   // État pour la plateforme sélectionnée
   const [selectedPlatform, setSelectedPlatform] = useState<'twitch' | 'youtube'>('twitch');
+  const [selectedStatus, setSelectedStatus] = useState<string>('active');
   
-  // État pour le statut sélectionné
-  const [selectedStatus, setSelectedStatus] = useState<'active' | 'completed' | 'pending_deletion'>('active');
+  // Hook responsive pour le système de grille
+  const responsive = useResponsive();
   
-  // État pour le dropdown de tri
-
-
-  
-  // Calcul du nombre de colonnes basé sur la largeur de l'écran
-  const [numColumns, setNumColumns] = useState(3);
+  // Responsive logic removed - ResponsiveGrid handles this now
 
   useEffect(() => {
     loadCampaigns();
@@ -75,14 +73,12 @@ const CampaignsListScreen: React.FC<CampaignsListScreenProps> = ({
       } else {
         newColumns = 3;
       }
-      if (newColumns !== numColumns) {
-        setNumColumns(newColumns);
-      }
+      // This useEffect is no longer needed as ResponsiveGrid handles column logic
     };
     handleResize();
     const subscription = Dimensions.addEventListener('change', handleResize);
     return () => subscription?.remove();
-  }, [numColumns]);
+  }, []); // Removed numColumns from dependency array
 
   const loadCampaigns = async () => {
     try {
@@ -161,26 +157,24 @@ const CampaignsListScreen: React.FC<CampaignsListScreenProps> = ({
 
 
   // Fonctions pour calculer la largeur des cartes (comme dans AvailableMissionsScreen)
+  // These functions are no longer needed as ResponsiveGrid handles this
   const getCardWidth = () => {
-    if (numColumns === 1) return '100%'; // 1 colonne : pleine largeur
-    if (numColumns === 2) return '50%'; // 2 colonnes : 50% pour laisser de l'espace
-    return '33%'; // 3 colonnes : 33% pour laisser de l'espace
+    // This function is no longer needed
+    return '100%'; // 1 colonne : pleine largeur
   };
 
   const getNameMaxWidth = () => {
-    if (numColumns === 1) return 600;
-    if (numColumns === 2) return 300;
-    return 180;
+    // This function is no longer needed
+    return 600;
   };
 
   const getCardPaddingHorizontal = () => {
-    if (numColumns === 1) return 32;
-    if (numColumns === 2) return 28;
-    return 24;
+    // This function is no longer needed
+    return 32;
   };
 
   const getCardMaxWidth = () => {
-    if (numColumns === 1) return 350;
+    // This function is no longer needed
     return 'none';
   };
 
@@ -189,12 +183,10 @@ const CampaignsListScreen: React.FC<CampaignsListScreenProps> = ({
       style={[
         styles.missionCard,
         {
-          width: getCardWidth(),
-          ...(typeof getCardMaxWidth() === 'number' ? { maxWidth: getCardMaxWidth() as number } : {}),
-          paddingHorizontal: getCardPaddingHorizontal(),
-          alignSelf: numColumns === 1 ? 'center' : 'stretch',
-          marginTop: 12 // Toutes les cartes ont maintenant le même marginTop
-        } as any
+          width: '100%', // ResponsiveGrid gère la largeur
+          paddingHorizontal: 16,
+          marginTop: 12
+        }
       ]}
       onPress={() => handleCampaignPress(item)}
       activeOpacity={0.8}
@@ -638,13 +630,17 @@ const CampaignsListScreen: React.FC<CampaignsListScreenProps> = ({
           >
 
             
-            <View style={[
-              styles.missionsList,
-              {
-                justifyContent: numColumns === 1 ? 'center' : 'space-between',
-                gap: numColumns === 1 ? 20 : 16,
-              }
-            ]}>
+            <ResponsiveGrid
+              minItemWidth={responsive.getValue({
+                mobile: 280,
+                tablet: 320,
+                desktop: 340,
+                desktopLarge: 360
+              })}
+              maxColumns={responsive.getValue(GRID_CONFIG.columns)}
+              gap={responsive.getValue(GRID_CONFIG.gap)}
+              style={{ paddingHorizontal: responsive.getValue(GRID_CONFIG.padding) }}
+            >
               {campaigns
                 .filter(campaign => {
                   // Filtrer par plateforme et statut
@@ -652,7 +648,7 @@ const CampaignsListScreen: React.FC<CampaignsListScreenProps> = ({
                   return campaignPlatform === selectedPlatform && campaign.status === selectedStatus;
                 })
                 .map((campaign, index) => renderModernCampaignCard({ item: campaign, index }))}
-            </View>
+            </ResponsiveGrid>
           </ScrollView>
         </>
       ) : (

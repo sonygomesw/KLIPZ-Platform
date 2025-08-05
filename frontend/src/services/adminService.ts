@@ -137,47 +137,9 @@ class AdminService {
   /**
    * Données simulées pour le développement
    */
+  // Plus de données fictives - on utilise seulement les vraies données de la base
   private getMockData(): CampaignGroup[] {
-    return [
-      {
-        clipperId: 'test-clipper',
-        clipperEmail: 'test-clipper@example.com',
-        clips: [
-          {
-            id: '14072125-7cd5-459c-b3f1-bb7655dea6d6',
-            campaign_id: 'd87c9ac2-c1d1-4a4c-ae36-67d116f2ee75',
-            clipper_id: 'test-clipper',
-            tiktok_url: 'https://www.tiktok.com/@user/video/7530475273502887199',
-            status: 'pending',
-            views: 388199,
-            declared_views: 388199,
-            earnings: 450,
-            submitted_at: '2025-07-27T23:28:35.097372+00:00',
-            created_at: '2025-07-27T23:28:35.097372+00:00',
-            updated_at: '2025-07-28T00:19:55.323917+00:00',
-            campaign_name: 'Clip Kai Cenat'
-          },
-          {
-            id: '3e17e210-40de-46cc-a8d7-f3fb9e0f8651',
-            campaign_id: '39e8b93a-bbea-4491-8eb2-362e23994a56',
-            clipper_id: 'test-clipper',
-            tiktok_url: 'https://www.tiktok.com/@footbulambostyle/video/7529622157291179286',
-            status: 'pending',
-            views: 0,
-            declared_views: 0,
-            earnings: 0,
-            submitted_at: '2025-07-27T15:36:01.564+00:00',
-            created_at: '2025-07-27T15:36:01.698792+00:00',
-            updated_at: '2025-07-27T15:36:01.698792+00:00',
-            campaign_name: 'Speed x Pogba'
-          }
-        ],
-        totalViews: 388199,
-        totalEarnings: 450,
-        pendingClips: 2,
-        paidClips: 0,
-      }
-    ];
+    return [];
   }
 
   /**

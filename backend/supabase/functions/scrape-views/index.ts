@@ -10,64 +10,25 @@ const supabase = createClient(
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
 );
 
-// Fonction pour extraire les vues d'une URL TikTok (version améliorée)
+// Fonction pour extraire les vues d'une URL TikTok (version propre - pas de vues fictives)
 async function scrapeTikTokViews(url: string): Promise<number> {
   try {
     console.log('🔍 Scraping TikTok views for:', url);
     
-    // Option 1: Utiliser l'API TikTok officielle (nécessite un compte développeur)
-    // Option 2: Utiliser un service tiers comme RapidAPI
-    // Option 3: Utiliser une approche avec Selenium/Puppeteer (non disponible dans Supabase Edge Functions)
+    // Pour l'instant, on retourne 0 car on va implémenter un vrai scraping
+    // Plus de vues fictives/aléatoires !
+    console.log('⚠️ Real scraping not implemented yet, returning 0 views');
+    return 0;
     
-    // Pour l'instant, utilisons une approche plus robuste avec des headers améliorés
-    const headers = {
-      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-      'Accept-Language': 'en-US,en;q=0.9,fr;q=0.8',
-      'Accept-Encoding': 'gzip, deflate, br',
-      'DNT': '1',
-      'Connection': 'keep-alive',
-      'Upgrade-Insecure-Requests': '1',
-      'Sec-Fetch-Dest': 'document',
-      'Sec-Fetch-Mode': 'navigate',
-      'Sec-Fetch-Site': 'none',
-      'Sec-Fetch-User': '?1',
-      'Cache-Control': 'max-age=0',
-    };
-    
-    // Faire la requête HTTP
-    const response = await fetch(url, { 
-      headers,
-      redirect: 'follow',
-      mode: 'cors'
-    });
-    
-    if (!response.ok) {
-      console.log('⚠️ HTTP error, trying alternative approach...');
-      // Si TikTok bloque, utiliser une valeur de test plus réaliste
-      return Math.floor(Math.random() * 500000) + 10000; // Entre 10k et 510k
-    }
-    
-    const html = await response.text();
-    console.log('📄 HTML received, length:', html.length);
-    
-    // Chercher des patterns plus spécifiques à TikTok
-    const views = extractViewsFromHTML(html);
-    
-    if (views > 0 && views < 1000) {
-      // Si on trouve un petit nombre, c'est probablement incorrect
-      console.log('⚠️ Low view count detected, likely incorrect. Using realistic estimate.');
-      return Math.floor(Math.random() * 500000) + 10000;
-    }
-    
-    console.log('✅ Scraped views:', views);
-    return views;
+    // TODO: Implémenter le vrai scraping TikTok ici
+    // Options possibles :
+    // 1. API TikTok officielle
+    // 2. Service tiers (RapidAPI, etc.)
+    // 3. Headless browser service
     
   } catch (error) {
     console.error('❌ Error scraping TikTok views:', error);
-    // Retourner une valeur réaliste pour le développement
-    console.log('🔄 Returning realistic test value');
-    return Math.floor(Math.random() * 500000) + 10000; // Entre 10k et 510k
+    return 0; // Retourner 0 au lieu de vues fictives
   }
 }
 
@@ -113,13 +74,13 @@ function extractViewsFromHTML(html: string): number {
       }
     }
     
-    // Si aucun pattern trouvé, retourner une valeur réaliste
-    console.log('⚠️ No views pattern found in HTML, using realistic estimate');
-    return Math.floor(Math.random() * 500000) + 10000;
+    // Si aucun pattern trouvé, retourner 0 (pas de vues fictives)
+    console.log('⚠️ No views pattern found in HTML, returning 0');
+    return 0;
     
   } catch (error) {
     console.error('❌ Error extracting views from HTML:', error);
-    return Math.floor(Math.random() * 500000) + 10000;
+    return 0; // Retourner 0 au lieu de vues fictives
   }
 }
 

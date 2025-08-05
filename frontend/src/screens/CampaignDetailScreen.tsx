@@ -12,12 +12,15 @@ import {
   TextInput,
   Platform,
   Modal,
+  Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, SIZES, FONTS } from '../constants';
 import { Campaign, Submission, User } from '../types';
 import campaignService from '../services/campaignService';
+import ResponsiveGrid from '../components/ResponsiveGrid';
+import { useResponsive, GRID_CONFIG } from '../hooks/useResponsive';
 
 interface CampaignDetailScreenProps {
   user: User;
@@ -37,12 +40,13 @@ const CampaignDetailScreen: React.FC<CampaignDetailScreenProps> = ({
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'submissions' | 'settings'>('overview');
   
+  // Hook responsive pour le système de grille
+  const responsive = useResponsive();
+  
   // États pour les settings
   const [editableTitle, setEditableTitle] = useState(campaign.title || '');
   const [editableDescription, setEditableDescription] = useState(campaign.description || '');
   const [addBudgetAmount, setAddBudgetAmount] = useState('');
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
 
   useEffect(() => {
     loadSubmissions();
@@ -59,73 +63,6 @@ const CampaignDetailScreen: React.FC<CampaignDetailScreenProps> = ({
       setAddBudgetAmount('');
     } else {
       alert('Insufficient balance or invalid amount');
-    }
-  };
-
-  // Fonction pour supprimer la campagne
-  const handleDeleteCampaign = async () => {
-    console.log('🗑️ handleDeleteCampaign - Début de la suppression');
-    try {
-      setIsDeleting(true);
-      console.log('🗑️ handleDeleteCampaign - setIsDeleting(true)');
-      
-      // Vérifier s'il y a des submissions en cours (pending/approved mais pas encore payées)
-      const pendingSubmissions = submissions.filter(sub => 
-        sub.status === 'pending' || sub.status === 'approved'
-      );
-      console.log('🗑️ handleDeleteCampaign - Submissions en cours:', pendingSubmissions.length);
-
-      if (pendingSubmissions.length > 0) {
-        console.log('🗑️ handleDeleteCampaign - Suppression programmée (submissions en cours)');
-        // Mettre en mode "suppression en cours"
-        await campaignService.updateCampaign(campaign.id, { status: 'pending_deletion' });
-        console.log('🗑️ handleDeleteCampaign - Campaign mis à jour avec status pending_deletion');
-        
-        // Actualiser les données
-        await loadSubmissions();
-        console.log('🗑️ handleDeleteCampaign - Submissions rechargées');
-        
-        Alert.alert(
-          '✅ Suppression programmée',
-          `La mission sera supprimée automatiquement une fois que toutes les submissions (${pendingSubmissions.length}) seront traitées. Le budget restant sera remboursé.`,
-          [{ 
-            text: 'OK', 
-            onPress: () => {
-              console.log('🗑️ handleDeleteCampaign - Alert OK pressed, calling onBack()');
-              // Retourner à la liste et la rafraîchir
-              onBack();
-            }
-          }]
-        );
-      } else {
-        console.log('🗑️ handleDeleteCampaign - Suppression immédiate (pas de submissions)');
-        // Suppression immédiate et remboursement
-        const remainingBudget = campaign.budget - (campaign.totalSpent || 0);
-        console.log('🗑️ handleDeleteCampaign - Budget restant:', remainingBudget);
-        await campaignService.deleteCampaign(campaign.id);
-        console.log('🗑️ handleDeleteCampaign - Campaign supprimée');
-        
-        // Note: Le remboursement sera géré côté backend
-        Alert.alert(
-          '✅ Mission supprimée',
-          `Mission supprimée avec succès. ${remainingBudget > 0 ? `$${remainingBudget.toFixed(2)} ont été remboursés dans votre wallet.` : ''}`,
-          [{ 
-            text: 'OK', 
-            onPress: () => {
-              console.log('🗑️ handleDeleteCampaign - Alert OK pressed, calling onBack()');
-              // Retourner à la liste et la rafraîchir
-              onBack();
-            }
-          }]
-        );
-      }
-    } catch (error) {
-      console.error('❌ handleDeleteCampaign - Erreur:', error);
-      Alert.alert('❌ Erreur', 'Impossible de supprimer la mission. Veuillez réessayer.');
-    } finally {
-      console.log('🗑️ handleDeleteCampaign - Finally: setIsDeleting(false), setShowDeleteConfirmation(false)');
-      setIsDeleting(false);
-      setShowDeleteConfirmation(false);
     }
   };
 
@@ -198,7 +135,270 @@ const CampaignDetailScreen: React.FC<CampaignDetailScreenProps> = ({
     }
   };
 
+  // Fonction pour récupérer le thumbnail via un service API
+  const getTikTokThumbnailFromAPI = async (tiktokUrl: string): Promise<string | null> => {
+    try {
+      console.log('🎯 Récupération thumbnail via API pour:', tiktokUrl);
+      
+      // Utiliser l'API oEmbed de TikTok directement (pas de CORS)
+      const oembedUrl = `https://www.tiktok.com/oembed?url=${encodeURIComponent(tiktokUrl)}`;
+      
+      const response = await fetch(oembedUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ Données oEmbed récupérées:', data);
+        
+        if (data.thumbnail_url) {
+          console.log('✅ Thumbnail trouvé via oEmbed:', data.thumbnail_url);
+          return data.thumbnail_url;
+        }
+      }
+      
+      console.log('❌ oEmbed failed, trying alternative API');
+      
+      // Alternative: Utiliser un service public sans CORS
+      try {
+        const alternativeUrl = `https://api.tiklydown.eu.org/api/download?url=${encodeURIComponent(tiktokUrl)}`;
+        const altResponse = await fetch(alternativeUrl);
+        
+        if (altResponse.ok) {
+          const altData = await altResponse.json();
+          console.log('✅ Données alternative API:', altData);
+          
+          if (altData.video && altData.video.cover) {
+            return altData.video.cover;
+          }
+        }
+      } catch (altError) {
+        console.log('❌ Alternative API failed:', altError);
+      }
+      
+      return null;
+      
+    } catch (error) {
+      console.error('❌ Erreur API thumbnail:', error);
+      return null;
+    }
+  };
 
+  // Fonction pour extraire l'ID TikTok et générer l'URL du thumbnail
+  const getTikTokThumbnail = (tiktokUrl: string): string | null => {
+    try {
+      console.log('🎯 Extraction thumbnail pour URL:', tiktokUrl);
+      
+      // Extraire l'ID de la vidéo TikTok depuis l'URL
+      const regex = /\/video\/(\d+)/;
+      const match = tiktokUrl.match(regex);
+      
+      if (match && match[1]) {
+        const videoId = match[1];
+        console.log('🎯 ID vidéo extrait:', videoId);
+        
+        // Méthode 1: Essayer le format thumbnail TikTok mis à jour
+        return `https://p16-sign-sg.tiktokcdn.com/aweme/100x100/${videoId}.jpeg`;
+      }
+      
+      console.log('❌ Impossible d\'extraire l\'ID de la vidéo');
+      return null;
+      
+    } catch (error) {
+      console.error('❌ Erreur lors de la génération de l\'URL:', error);
+      return null;
+    }
+  };
+
+  // Fonction pour essayer différentes URLs si la première échoue
+  const getThumbnailWithFallbacks = (tiktokUrl: string): string[] => {
+    const regex = /\/video\/(\d+)/;
+    const match = tiktokUrl.match(regex);
+    
+    if (match && match[1]) {
+      const videoId = match[1];
+      return [
+        `https://p16-sign-sg.tiktokcdn.com/aweme/100x100/${videoId}.jpeg`,
+        `https://p16-va.tiktokcdn.com/img/tos-useast2a-v-2774/${videoId}~tplv-resize:100:100.jpeg`,
+        `https://p16-sign-va.tiktokcdn.com/obj/tos-maliva-p-0068/${videoId}.jpeg`,
+        `https://www.tiktok.com/api/img/?itemId=${videoId}`
+      ];
+    }
+    return [];
+  };
+
+  const renderSubmissionCard = (submission: Submission) => {
+    const thumbnailUrl = getTikTokThumbnail(submission.tiktokUrl);
+    const fallbackUrls = getThumbnailWithFallbacks(submission.tiktokUrl);
+    
+    // Composant pour gérer les fallbacks d'images
+    const TikTokThumbnail = ({ urls, tiktokUrl, style }: { urls: string[], tiktokUrl: string, style: any }) => {
+      const [currentIndex, setCurrentIndex] = useState(0);
+      const [hasError, setHasError] = useState(false);
+      const [apiThumbnail, setApiThumbnail] = useState<string | null>(null);
+      const [isLoadingApi, setIsLoadingApi] = useState(true);
+      
+      useEffect(() => {
+        // Essayer d'abord l'API backend
+        getTikTokThumbnailFromAPI(tiktokUrl).then((apiUrl) => {
+          if (apiUrl) {
+            setApiThumbnail(apiUrl);
+          }
+          setIsLoadingApi(false);
+        }).catch(() => {
+          setIsLoadingApi(false);
+        });
+      }, [tiktokUrl]);
+      
+      const handleError = () => {
+        console.log(`❌ Erreur URL ${currentIndex + 1}:`, urls[currentIndex]);
+        if (currentIndex < urls.length - 1) {
+          setCurrentIndex(currentIndex + 1);
+          setHasError(false);
+        } else {
+          setHasError(true);
+        }
+      };
+      
+      const handleLoad = () => {
+        console.log(`✅ Succès URL ${currentIndex + 1}:`, urls[currentIndex]);
+      };
+      
+      const handleApiError = () => {
+        console.log('❌ Erreur API thumbnail, passage aux fallbacks');
+        setApiThumbnail(null);
+      };
+      
+      const handleApiLoad = () => {
+        console.log('✅ Succès API thumbnail:', apiThumbnail);
+      };
+      
+      if (isLoadingApi) {
+        return (
+          <View style={[style, styles.thumbnailFallback]}>
+            <View style={styles.thumbnailPlaceholder}>
+              <Ionicons name="reload" size={32} color="#8B8B8D" />
+              <Text style={styles.thumbnailPlaceholderText}>Loading...</Text>
+            </View>
+          </View>
+        );
+      }
+      
+      // Si on a un thumbnail de l'API, l'utiliser en priorité
+      if (apiThumbnail) {
+        return (
+          <Image 
+            source={{ uri: apiThumbnail }} 
+            style={style}
+            resizeMode="cover"
+            onError={handleApiError}
+            onLoad={handleApiLoad}
+          />
+        );
+      }
+      
+      // Sinon, utiliser les fallbacks classiques
+      if (hasError || !urls[currentIndex]) {
+        return (
+          <View style={[style, styles.thumbnailFallback]}>
+            <View style={styles.thumbnailPlaceholder}>
+              <Ionicons name="videocam-outline" size={32} color="#8B8B8D" />
+              <Text style={styles.thumbnailPlaceholderText}>Video Preview</Text>
+            </View>
+          </View>
+        );
+      }
+      
+      return (
+        <Image 
+          source={{ uri: urls[currentIndex] }} 
+          style={style}
+          resizeMode="cover"
+          onError={handleError}
+          onLoad={handleLoad}
+        />
+      );
+    };
+    
+    return (
+      <View key={submission.id} style={styles.submissionCard}>
+        {/* Thumbnail TikTok */}
+        <View style={styles.thumbnailContainer}>
+          <TikTokThumbnail urls={fallbackUrls} tiktokUrl={submission.tiktokUrl} style={styles.thumbnail} />
+          <View style={styles.thumbnailOverlay}>
+            <Ionicons name="logo-tiktok" size={20} color="#FFFFFF" />
+          </View>
+        </View>
+        
+        <View style={styles.submissionHeader}>
+          <View style={styles.submissionInfo}>
+            <Text style={styles.submissionTitle}>Clip by {submission.clipperName}</Text>
+            <Text style={styles.submissionDate}>
+              {new Date((submission as any).createdAt || Date.now()).toLocaleDateString()}
+            </Text>
+          </View>
+          <View style={[
+            styles.statusBadge, 
+            { backgroundColor: getStatusColor(submission.status) }
+          ]}>
+            <Text style={styles.statusText}>{getStatusText(submission.status)}</Text>
+          </View>
+        </View>
+        
+        <View style={styles.submissionStats}>
+          <View style={styles.submissionStatItem}>
+            <Ionicons name="eye" size={16} color="#8B8B8D" />
+            <Text style={styles.submissionStatText}>{formatViews(submission.views || 0)}</Text>
+          </View>
+          <View style={styles.submissionStatItem}>
+            <Ionicons name="wallet" size={16} color="#8B8B8D" />
+            <Text style={styles.submissionStatText}>{formatCurrency(submission.earnings || 0)}</Text>
+          </View>
+          <TouchableOpacity 
+            style={styles.submissionStatItem}
+            onPress={() => Linking.openURL(submission.tiktokUrl)}
+          >
+            <Ionicons name="logo-tiktok" size={16} color="#FF0050" />
+            <Text style={[styles.submissionStatText, { color: '#FF0050' }]}>View</Text>
+          </TouchableOpacity>
+        </View>
+        
+        {/* Lien TikTok complet */}
+        <TouchableOpacity 
+          style={styles.linkContainer}
+          onPress={() => Linking.openURL(submission.tiktokUrl)}
+        >
+          <Ionicons name="link" size={14} color="#8B8B8D" />
+          <Text style={styles.linkText} numberOfLines={1}>
+            {submission.tiktokUrl.replace('https://', '')}
+          </Text>
+          <Ionicons name="open-outline" size={14} color="#8B8B8D" />
+        </TouchableOpacity>
+        
+        {submission.status === 'pending' && (
+          <View style={styles.submissionActions}>
+            <TouchableOpacity
+              style={[styles.actionButton, styles.rejectButton]}
+              onPress={() => handleRejectSubmission(submission.id)}
+            >
+              <Ionicons name="close" size={14} color="#FFFFFF" />
+              <Text style={styles.actionButtonText}>Reject</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.actionButton, styles.approveButton]}
+              onPress={() => handleApproveSubmission(submission.id)}
+            >
+              <Ionicons name="checkmark" size={14} color="#FFFFFF" />
+              <Text style={styles.actionButtonText}>Approve</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+    );
+  };
 
   const renderTabs = () => (
     <View style={styles.tabsContainer}>
@@ -348,51 +548,19 @@ const CampaignDetailScreen: React.FC<CampaignDetailScreenProps> = ({
           </Text>
         </View>
       ) : (
-        submissions.map((submission) => (
-          <View key={submission.id} style={styles.submissionCard}>
-            <View style={styles.submissionHeader}>
-              <View style={styles.submissionInfo}>
-                <Text style={styles.submissionTitle}>Clip by {submission.clipperName}</Text>
-                <Text style={styles.submissionDate}>
-                  {new Date((submission as any).createdAt || Date.now()).toLocaleDateString()}
-                </Text>
-              </View>
-              <View style={[
-                styles.statusBadge, 
-                { backgroundColor: getStatusColor(submission.status) }
-              ]}>
-                <Text style={styles.statusText}>{getStatusText(submission.status)}</Text>
-              </View>
-            </View>
-            
-            <View style={styles.submissionContent}>
-              <Text style={styles.submissionUrl}>{submission.tiktokUrl}</Text>
-              <Text style={styles.submissionViews}>
-                Views: {formatViews(submission.views || 0)}
-              </Text>
-            </View>
-            
-            {submission.status === 'pending' && (
-              <View style={styles.submissionActions}>
-                <TouchableOpacity
-                  style={[styles.actionButton, styles.approveButton]}
-                  onPress={() => handleApproveSubmission(submission.id)}
-                >
-                  <Ionicons name="checkmark" size={20} color="#FFFFFF" />
-                  <Text style={styles.actionButtonText}>Approve</Text>
-                </TouchableOpacity>
-                
-                <TouchableOpacity
-                  style={[styles.actionButton, styles.rejectButton]}
-                  onPress={() => handleRejectSubmission(submission.id)}
-                >
-                  <Ionicons name="close" size={20} color="#FFFFFF" />
-                  <Text style={styles.actionButtonText}>Reject</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
-        ))
+        <ResponsiveGrid
+          minItemWidth={responsive.getValue({
+            mobile: 280,
+            tablet: 320,
+            desktop: 340,
+            desktopLarge: 360
+          })}
+          maxColumns={responsive.getValue(GRID_CONFIG.columns)}
+          gap={responsive.getValue(GRID_CONFIG.gap)}
+          style={{ paddingHorizontal: responsive.getValue(GRID_CONFIG.padding) }}
+        >
+          {submissions.map(renderSubmissionCard)}
+        </ResponsiveGrid>
       )}
     </View>
   );
@@ -521,22 +689,6 @@ const CampaignDetailScreen: React.FC<CampaignDetailScreenProps> = ({
                 </TouchableOpacity>
               </View>
 
-              {/* Delete Button */}
-              {campaign.status !== 'pending_deletion' && (
-                <View style={[styles.createButtonContainer, { marginTop: 16 }]}>
-                  <TouchableOpacity 
-                    style={[styles.createButton, styles.deleteButton]}
-                    onPress={() => setShowDeleteConfirmation(true)}
-                    disabled={isDeleting}
-                  >
-                    <Ionicons name="trash-outline" size={18} color="#FFFFFF" />
-                    <Text style={[styles.createButtonText, { color: '#FFFFFF' }]}>
-                      {isDeleting ? 'Deleting...' : 'Delete mission'}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-
               {/* Message si suppression en cours */}
               {campaign.status === 'pending_deletion' && (
                 <View style={styles.deletionWarningContainer}>
@@ -577,53 +729,6 @@ const CampaignDetailScreen: React.FC<CampaignDetailScreenProps> = ({
           {activeTab === 'settings' && renderSettings()}
         </ScrollView>
       </View>
-
-      {/* Modal de confirmation de suppression */}
-      <Modal
-        visible={showDeleteConfirmation}
-        transparent={true}
-        animationType="fade"
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.deleteConfirmationModal}>
-            <View style={styles.deleteModalHeader}>
-              <Ionicons name="warning" size={32} color="#FF6B35" />
-              <Text style={styles.deleteModalTitle}>Delete</Text>
-            </View>
-            
-            <Text style={styles.deleteModalText}>
-              Êtes-vous sûr de vouloir supprimer cette mission ? Cette action est irréversible.
-            </Text>
-            
-            {submissions.filter(sub => sub.status === 'pending' || sub.status === 'approved').length > 0 && (
-              <View style={styles.deleteModalWarning}>
-                <Text style={styles.deleteModalWarningText}>
-                  ⚠️ Des submissions sont en cours de traitement. La mission sera marquée pour suppression et sera automatiquement supprimée une fois toutes les submissions traitées.
-                </Text>
-              </View>
-            )}
-
-            <View style={styles.deleteModalButtons}>
-              <TouchableOpacity 
-                style={styles.cancelDeleteButton}
-                onPress={() => setShowDeleteConfirmation(false)}
-              >
-                <Text style={styles.cancelDeleteButtonText}>Annuler</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={styles.confirmDeleteButton}
-                onPress={handleDeleteCampaign}
-                disabled={isDeleting}
-              >
-                <Text style={styles.confirmDeleteButtonText}>
-                  {isDeleting ? 'Suppression...' : 'Supprimer'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </SafeAreaView>
   );
 };
@@ -986,12 +1091,34 @@ const styles = StyleSheet.create({
     maxWidth: 300, // Limite la largeur pour un meilleur centrage
   },
   submissionCard: {
-    backgroundColor: '#2A2A2E',
-    borderRadius: 6, // Réduit de 12 à 6
-    padding: 8, // Réduit de 16 à 8
-    marginBottom: 8, // Réduit de 16 à 8
+    backgroundColor: '#181818',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#3A3A3E',
+    borderColor: '#2A2A2A',
+    width: '100%', // ResponsiveGrid gère la largeur
+  },
+  thumbnailContainer: {
+    position: 'relative',
+    width: '100%',
+    height: 150,
+    borderRadius: 8,
+    overflow: 'hidden',
+    marginBottom: 10,
+  },
+  thumbnail: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#2A2A2A', // fallback color
+  },
+  thumbnailOverlay: {
+    position: 'absolute',
+    bottom: 6,
+    right: 6,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    borderRadius: 12,
+    padding: 6,
   },
   submissionHeader: {
     flexDirection: 'row',
@@ -1018,38 +1145,44 @@ const styles = StyleSheet.create({
     fontSize: 9, // Même taille que My Missions
     fontFamily: 'Inter_18pt-Medium',
   },
-  submissionContent: {
-    marginBottom: 6, // Réduit de 12 à 6
+  submissionStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 10,
+    paddingHorizontal: 5,
   },
-  submissionUrl: {
-    color: '#4F46E5',
-    fontSize: 9, // Même taille que My Missions
-    fontFamily: 'Inter_18pt-Regular',
-    marginBottom: 2, // Réduit de 4 à 2
+  submissionStatItem: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 5,
   },
-  submissionViews: {
+  submissionStatText: {
     color: '#8B8B8D',
-    fontSize: 9, // Même taille que My Missions
-    fontFamily: 'Inter_18pt-Regular',
+    fontSize: 10,
+    fontFamily: 'Inter_18pt-Medium',
+    marginTop: 3,
   },
   submissionActions: {
     flexDirection: 'row',
-    gap: 6, // Réduit de 12 à 6
+    gap: 8,
+    marginTop: 8,
   },
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 8, // Réduit de 16 à 8
-    paddingVertical: 4, // Réduit de 8 à 4
-    borderRadius: 4, // Réduit de 8 à 4
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
     flex: 1,
     justifyContent: 'center',
   },
   approveButton: {
-    backgroundColor: '#10B981',
+    backgroundColor: '#5146e6',
   },
   rejectButton: {
-    backgroundColor: '#EF4444',
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: '#333236',
   },
   actionButtonText: {
     color: '#FFFFFF',
@@ -1625,6 +1758,46 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     textAlign: 'center',
+  },
+  thumbnailFallback: {
+    backgroundColor: '#2A2A2E',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  thumbnailPlaceholder: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  thumbnailPlaceholderText: {
+    color: '#8B8B8D',
+    fontSize: 10,
+    marginTop: 4,
+  },
+  linkContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#2A2A2E',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: '#3A3A3E',
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  linkText: {
+    color: '#8B8B8D',
+    fontSize: 11,
+    fontFamily: 'Inter_18pt-Medium',
+    flex: 1,
+    marginHorizontal: 8,
+  },
+  debugText: {
+    color: '#FF0000',
+    fontSize: 10,
+    marginTop: 4,
   },
 });
 

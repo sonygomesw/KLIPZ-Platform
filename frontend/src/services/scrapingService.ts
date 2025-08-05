@@ -33,34 +33,40 @@ export class ScrapingService {
     }
   }
 
-  // Scraper les vues d'une URL spécifique
+  // Scraper une URL TikTok spécifique - VERSION PROPRE (pas de vues fictives)
   static async scrapeSingleUrl(url: string): Promise<{ success: boolean; views: number }> {
     try {
-      console.log('🔍 Scraping views for URL:', url);
+      console.log('🔍 ScrapingService - Scraping views for URL:', url);
       
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/scrape-views`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY}`,
-        },
-        body: JSON.stringify({
-          action: 'scrape-single',
-          url: url
-        }),
+      // Appeler la fonction Edge Supabase pour scraper
+      const { data, error } = await supabase.functions.invoke('scrape-views', {
+        body: { url }
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to scrape URL');
+      if (error) {
+        console.error('❌ Error calling scrape-views function:', error);
+        // Retourner 0 au lieu de vues fictives
+        return { success: false, views: 0 };
       }
 
-      const data = await response.json();
-      console.log('✅ Scraped views:', data.views);
-      return data;
+      if (!data || typeof data.views !== 'number') {
+        console.error('❌ Invalid response from scrape-views function:', data);
+        // Retourner 0 au lieu de vues fictives
+        return { success: false, views: 0 };
+      }
+
+      console.log('✅ ScrapingService - Scraped views:', data.views);
+      
+      // Retourner les vraies vues (même si c'est 0)
+      return { 
+        success: true, 
+        views: data.views // Pas de minimum artificiel
+      };
+
     } catch (error) {
-      console.error('❌ Error scraping URL:', error);
-      throw error;
+      console.error('❌ ScrapingService error:', error);
+      // En cas d'erreur, retourner 0 (pas de vues fictives)
+      return { success: false, views: 0 };
     }
   }
 
